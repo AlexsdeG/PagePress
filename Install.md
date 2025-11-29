@@ -11,7 +11,7 @@ First, we need to install the core tools. Open your terminal.
 sudo apt update && sudo apt install curl -y
 
 # Install NVM (Node Version Manager)
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
 
 # Close and reopen terminal, or run:
 source ~/.bashrc
@@ -49,7 +49,7 @@ sudo usermod -aG docker $USER
 
 ---
 
-# Part 2: Scaffolding the Codebase
+# Part 2: Scaffolding the Codebase or Copy from github
 
 We will create a directory for your project and set up the Monorepo.
 
