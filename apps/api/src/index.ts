@@ -1,22 +1,108 @@
+// PagePress v0.0.2 - 2025-11-30
+
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import { env } from './lib/env.js';
+import { initializeDatabase, closeDatabase } from './lib/db.js';
+import { healthRoutes } from './routes/health.js';
 
-const server = Fastify({ logger: true });
-
-server.register(cors, { 
-  origin: true // Allow dev frontend to connect
+/**
+ * Create and configure Fastify server
+ */
+const server = Fastify({
+  logger: {
+    level: env.NODE_ENV === 'development' ? 'debug' : 'info',
+    transport: env.NODE_ENV === 'development'
+      ? {
+          target: 'pino-pretty',
+          options: {
+            colorize: true,
+            translateTime: 'HH:MM:ss Z',
+            ignore: 'pid,hostname',
+          },
+        }
+      : undefined,
+  },
 });
 
-server.get('/', async (request, reply) => {
-  return { status: 'ok', message: 'PagePress API Running' };
-});
+/**
+ * Register plugins
+ */
+async function registerPlugins(): Promise<void> {
+  // CORS - Allow frontend to connect
+  await server.register(cors, {
+    origin: env.NODE_ENV === 'development' ? true : ['http://localhost:5173'],
+    credentials: true,
+  });
+}
 
-const start = async () => {
+/**
+ * Register routes
+ */
+async function registerRoutes(): Promise<void> {
+  // Health check routes
+  await server.register(healthRoutes);
+
+  // Root route
+  server.get('/', async (_request, _reply) => {
+    return {
+      status: 'ok',
+      message: 'PagePress API Running',
+      version: '0.0.2',
+      documentation: '/docs',
+    };
+  });
+}
+
+/**
+ * Graceful shutdown handler
+ */
+async function gracefulShutdown(signal: string): Promise<void> {
+  server.log.info(`Received ${signal}. Shutting down gracefully...`);
+  
   try {
-    await server.listen({ port: 3000, host: '0.0.0.0' });
+    await server.close();
+    closeDatabase();
+    server.log.info('Server closed successfully');
+    process.exit(0);
+  } catch (err) {
+    server.log.error(err, 'Error during shutdown');
+    process.exit(1);
+  }
+}
+
+/**
+ * Start the server
+ */
+async function start(): Promise<void> {
+  try {
+    // Initialize database
+    server.log.info('Initializing database...');
+    await initializeDatabase();
+    server.log.info(`Database connected: ${env.DATABASE_URL}`);
+
+    // Register plugins and routes
+    await registerPlugins();
+    await registerRoutes();
+
+    // Start listening
+    await server.listen({
+      port: env.PORT,
+      host: '0.0.0.0',
+    });
+
+    server.log.info(`🚀 PagePress API v0.0.2 running on port ${env.PORT}`);
+    server.log.info(`📊 Environment: ${env.NODE_ENV}`);
+
   } catch (err) {
     server.log.error(err);
     process.exit(1);
   }
-};
+}
+
+// Handle shutdown signals
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Start the server
 start();

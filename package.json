@@ -1,7 +1,7 @@
 {
   "name": "pagepress",
-  "version": "1.0.0",
-  "description": "![License](https://img.shields.io/badge/license-MIT-blue.svg) ![Stack](https://img.shields.io/badge/stack-React_Vite_Fastify_Drizzle-green.svg) ![Status](https://img.shields.io/badge/status-Alpha_Development-orange.svg)",
+  "version": "0.0.2",
+  "description": "High-performance, self-hosted static site builder",
   "homepage": "https://github.com/AlexsdeG/PagePress#readme",
   "bugs": {
     "url": "https://github.com/AlexsdeG/PagePress/issues"
@@ -10,13 +10,21 @@
     "type": "git",
     "url": "git+https://github.com/AlexsdeG/PagePress.git"
   },
-  "license": "ISC",
+  "license": "MIT",
   "author": "ProGrammer",
-  "type": "commonjs",
-  "main": "index.js",
+  "type": "module",
   "scripts": {
+    "dev": "pnpm --recursive --parallel dev",
     "dev:api": "pnpm --filter api dev",
     "dev:admin": "pnpm --filter admin dev",
-    "dev": "pnpm --recursive --parallel dev"
-  }
+    "build": "pnpm --recursive build",
+    "build:api": "pnpm --filter api build",
+    "build:admin": "pnpm --filter admin build",
+    "lint": "pnpm --recursive lint",
+    "clean": "pnpm --recursive exec rm -rf dist node_modules",
+    "db:generate": "pnpm --filter @pagepress/db db:generate",
+    "db:migrate": "pnpm --filter @pagepress/db db:migrate",
+    "db:studio": "pnpm --filter @pagepress/db db:studio"
+  },
+  "devDependencies": {}
 }
