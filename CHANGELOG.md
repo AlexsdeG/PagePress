@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.0.3] - 2025-11-30
+
+### Added
+- **Authentication System:** Implemented full auth with sessions and HTTP-Only cookies
+- **Password Hashing:** Added bcrypt password utilities
+- **Auth Routes:** Created `/auth/login`, `/auth/register`, `/auth/logout`, `/auth/me` endpoints
+- **Auth Middleware:** Created `requireAuth` middleware for protected routes
+- **Security Headers:** Added `@fastify/helmet` for security headers
+- **Rate Limiting:** Added `@fastify/rate-limit` for brute force protection
+- **Sessions Table:** Added sessions table to database schema
+- **Login Page:** Created login page with form validation
+- **Protected Routes:** Created ProtectedRoute wrapper component
+- **Auth Store:** Created Zustand store for auth state management
+- **API Client:** Created fetch wrapper with credentials support
+- **Dashboard Page:** Created placeholder dashboard page
+
+### Changed
+- Updated API entry point with security plugins
+- Updated environment validation for auth secrets
+
+---
+
 ## [v0.0.2] - 2025-11-30
 
 ### Added

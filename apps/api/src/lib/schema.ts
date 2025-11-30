@@ -1,4 +1,4 @@
-// PagePress v0.0.2 - 2025-11-30
+// PagePress v0.0.3 - 2025-11-30
 
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
@@ -8,9 +8,25 @@ import { sql } from 'drizzle-orm';
  */
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
+  username: text('username').notNull().unique(),
   email: text('email').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
   role: text('role', { enum: ['admin', 'editor'] }).default('editor').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .default(sql`(unixepoch())`)
+    .notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .default(sql`(unixepoch())`)
+    .notNull(),
+});
+
+/**
+ * Sessions table - Stores user authentication sessions
+ */
+export const sessions = sqliteTable('sessions', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
   createdAt: integer('created_at', { mode: 'timestamp' })
     .default(sql`(unixepoch())`)
     .notNull(),
@@ -30,5 +46,7 @@ export const siteSettings = sqliteTable('site_settings', {
 // Type exports
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
+export type Session = typeof sessions.$inferSelect;
+export type NewSession = typeof sessions.$inferInsert;
 export type SiteSetting = typeof siteSettings.$inferSelect;
 export type NewSiteSetting = typeof siteSettings.$inferInsert;

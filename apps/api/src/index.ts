@@ -1,10 +1,14 @@
-// PagePress v0.0.2 - 2025-11-30
+// PagePress v0.0.3 - 2025-11-30
 
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import helmet from '@fastify/helmet';
+import rateLimit from '@fastify/rate-limit';
+import cookie from '@fastify/cookie';
 import { env } from './lib/env.js';
 import { initializeDatabase, closeDatabase } from './lib/db.js';
 import { healthRoutes } from './routes/health.js';
+import { authRoutes } from './routes/auth.js';
 
 /**
  * Create and configure Fastify server
@@ -29,6 +33,27 @@ const server = Fastify({
  * Register plugins
  */
 async function registerPlugins(): Promise<void> {
+  // Helmet - Security headers
+  await server.register(helmet, {
+    contentSecurityPolicy: env.NODE_ENV === 'production',
+  });
+
+  // Rate limiting - Prevent abuse
+  await server.register(rateLimit, {
+    max: 100, // Max 100 requests per window
+    timeWindow: '1 minute',
+    // More strict limits for auth routes
+    keyGenerator: (request) => {
+      return request.ip;
+    },
+  });
+
+  // Cookie support for sessions
+  await server.register(cookie, {
+    secret: env.COOKIE_SECRET,
+    parseOptions: {},
+  });
+
   // CORS - Allow frontend to connect
   await server.register(cors, {
     origin: env.NODE_ENV === 'development' ? true : ['http://localhost:5173'],
@@ -43,12 +68,15 @@ async function registerRoutes(): Promise<void> {
   // Health check routes
   await server.register(healthRoutes);
 
+  // Authentication routes
+  await server.register(authRoutes, { prefix: '/auth' });
+
   // Root route
   server.get('/', async (_request, _reply) => {
     return {
       status: 'ok',
       message: 'PagePress API Running',
-      version: '0.0.2',
+      version: '0.0.3',
       documentation: '/docs',
     };
   });
@@ -91,7 +119,7 @@ async function start(): Promise<void> {
       host: '0.0.0.0',
     });
 
-    server.log.info(`🚀 PagePress API v0.0.2 running on port ${env.PORT}`);
+    server.log.info(`🚀 PagePress API v0.0.3 running on port ${env.PORT}`);
     server.log.info(`📊 Environment: ${env.NODE_ENV}`);
 
   } catch (err) {

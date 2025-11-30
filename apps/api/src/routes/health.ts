@@ -1,4 +1,4 @@
-// PagePress v0.0.2 - 2025-11-30
+// PagePress v0.0.3 - 2025-11-30
 
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify';
 import { checkDatabaseHealth } from '../lib/db.js';
@@ -9,9 +9,15 @@ import { checkDatabaseHealth } from '../lib/db.js';
 interface HealthResponse {
   status: 'ok' | 'error';
   timestamp: string;
-  version: string;
-  database: 'connected' | 'disconnected';
-  uptime: number;
+  database: {
+    connected: boolean;
+    type: string;
+  };
+  memory: {
+    heapUsed: number;
+    heapTotal: number;
+    rss: number;
+  };
 }
 
 /**
@@ -26,13 +32,20 @@ export async function healthRoutes(
    */
   fastify.get<{ Reply: HealthResponse }>('/health', async (_request, _reply) => {
     const dbHealthy = await checkDatabaseHealth();
+    const memoryUsage = process.memoryUsage();
     
     return {
       status: dbHealthy ? 'ok' : 'error',
       timestamp: new Date().toISOString(),
-      version: '0.0.2',
-      database: dbHealthy ? 'connected' : 'disconnected',
-      uptime: process.uptime(),
+      database: {
+        connected: dbHealthy,
+        type: 'sqlite',
+      },
+      memory: {
+        heapUsed: memoryUsage.heapUsed,
+        heapTotal: memoryUsage.heapTotal,
+        rss: memoryUsage.rss,
+      },
     };
   });
 

@@ -2,29 +2,29 @@
 
 ## Phase 1: Foundation & Infrastructure (The Skeleton)
 **Goal:** Setup Monorepo, Docker, Database, and Basic API health.
-- [ ] **Repo Setup:** Initialize `pnpm` monorepo (Turborepo optional, or simple workspaces).
-- [ ] **Docker:** Create `docker-compose.yml` for Node (API), Vite (Admin), and Persistant Volume (SQLite).
+- [x] **Repo Setup:** Initialize `pnpm` monorepo (Turborepo optional, or simple workspaces).
+- [x] **Docker:** Create `docker-compose.yml` for Node (API), Vite (Admin), and Persistant Volume (SQLite).
 - [ ] **Database:**
     - [ ] Initialize **Drizzle ORM** with **SQLite** (`libsql`).
     - [ ] Create Schema: `users` (id, email, password, role), `sites_settings` (key, value).
-- [ ] **Backend Core:**
+- [x] **Backend Core:**
     - [ ] Setup **Fastify** server with TypeScript.
     - [ ] Setup `pino` logger.
     - [ ] Setup **Zod** for env validation.
-- [ ] **Frontend Core:**
+- [x] **Frontend Core:**
     - [ ] Initialize Vite + React + TypeScript + **Tailwind CSS**.
     - [ ] Install **Shadcn/UI** and setup `cn` utility.
 
 ## Phase 2: Authentication & Security ( The Gatekeeper)
 **Goal:** Secure the admin panel using modern standards.
-- [ ] **Auth Implementation:**
+- [x] **Auth Implementation:**
     - [ ] Install **Better-Auth** (or Lucia Auth).
     - [ ] Create API routes: `/api/auth/login`, `/api/auth/register` (first run only), `/api/auth/me`.
     - [ ] Implement HTTP-Only Cookies (Strict, Secure).
-- [ ] **Admin UI Auth:**
+- [x] **Admin UI Auth:**
     - [ ] Create Login Page (`/login`).
     - [ ] Create Protected Route Wrapper (redirects if not auth).
-- [ ] **Security:**
+- [x] **Security:**
     - [ ] Add `@fastify/helmet` (Security Headers).
     - [ ] Add `@fastify/rate-limit` (Brute force protection).
 

@@ -1,4 +1,4 @@
-// PagePress v0.0.2 - 2025-11-30
+// PagePress v0.0.3 - 2025-11-30
 
 import { createClient, type Client } from '@libsql/client';
 import { drizzle, type LibSQLDatabase } from 'drizzle-orm/libsql';
@@ -40,11 +40,32 @@ export async function initializeDatabase(): Promise<void> {
   await client.execute(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
+      username TEXT NOT NULL UNIQUE,
       email TEXT NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
       role TEXT DEFAULT 'editor' NOT NULL,
+      created_at INTEGER DEFAULT (unixepoch()) NOT NULL,
+      updated_at INTEGER DEFAULT (unixepoch()) NOT NULL
+    )
+  `);
+
+  // Create sessions table
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS sessions (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      expires_at INTEGER NOT NULL,
       created_at INTEGER DEFAULT (unixepoch()) NOT NULL
     )
+  `);
+
+  // Create index on sessions for faster lookups
+  await client.execute(`
+    CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id)
+  `);
+
+  await client.execute(`
+    CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions(expires_at)
   `);
 
   // Create site_settings table
