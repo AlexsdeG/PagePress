@@ -1,4 +1,4 @@
-// PagePress v0.0.4 - 2025-11-30
+// PagePress v0.0.5 - 2025-11-30
 // Media library page with upload and management
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -197,6 +197,7 @@ export function MediaPage() {
       loadMedia();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to upload file');
+      setUploadProgress(null); // Fixed: Clear progress on error
     } finally {
       setUploading(false);
       // Reset file input

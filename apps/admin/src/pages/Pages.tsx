@@ -1,7 +1,8 @@
-// PagePress v0.0.4 - 2025-11-30
+// PagePress v0.0.5 - 2025-11-30
 // Pages management page with CRUD operations
 
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -67,6 +68,7 @@ const pageSchema = z.object({
 type PageFormData = z.infer<typeof pageSchema>;
 
 export function Pages() {
+  const navigate = useNavigate();
   const [pages, setPages] = useState<Page[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -97,7 +99,7 @@ export function Pages() {
       slug: '',
       type: 'page',
       published: false,
-      contentJson: '{}',
+      contentJson: '',
     },
   });
 
@@ -108,7 +110,7 @@ export function Pages() {
       slug: '',
       type: 'page',
       published: false,
-      contentJson: '{}',
+      contentJson: '',
     },
   });
 
@@ -145,13 +147,24 @@ export function Pages() {
   const handleCreate = async (data: PageFormData) => {
     try {
       setSubmitting(true);
+      
+      // Parse contentJson string to object if provided and not empty
+      let parsedContentJson: Record<string, unknown> | undefined;
+      if (data.contentJson && data.contentJson.trim() !== '' && data.contentJson !== '{}') {
+        try {
+          parsedContentJson = JSON.parse(data.contentJson);
+        } catch {
+          parsedContentJson = undefined;
+        }
+      }
+      
       const createData: CreatePageData = {
         title: data.title,
         type: data.type,
         published: data.published,
-        contentJson: data.contentJson || '{}',
       };
       if (data.slug) createData.slug = data.slug;
+      if (parsedContentJson) createData.contentJson = parsedContentJson;
       
       await api.pages.create(createData);
       setCreateDialogOpen(false);
@@ -172,12 +185,23 @@ export function Pages() {
     
     try {
       setSubmitting(true);
+      
+      // Parse contentJson string to object if provided
+      let parsedContentJson: Record<string, unknown> | undefined;
+      if (data.contentJson) {
+        try {
+          parsedContentJson = JSON.parse(data.contentJson);
+        } catch {
+          parsedContentJson = undefined;
+        }
+      }
+      
       const updateData: UpdatePageData = {
         title: data.title,
         slug: data.slug || undefined,
         type: data.type,
         published: data.published,
-        contentJson: data.contentJson,
+        contentJson: parsedContentJson,
       };
       
       await api.pages.update(selectedPage.id, updateData);
@@ -239,7 +263,7 @@ export function Pages() {
       slug: page.slug,
       type: page.type,
       published: page.published,
-      contentJson: page.contentJson,
+      contentJson: page.contentJson ? JSON.stringify(page.contentJson, null, 2) : '{}',
     });
     setEditDialogOpen(true);
   };
@@ -390,8 +414,11 @@ export function Pages() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => navigate(`/pages/${page.id}/edit`)}>
+                              Edit in Builder
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => openEditDialog(page)}>
-                              Edit
+                              Edit Details
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleDuplicate(page)}>
                               Duplicate

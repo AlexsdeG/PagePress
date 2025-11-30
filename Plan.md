@@ -30,16 +30,17 @@
 
 ## Phase 3: The Dashboard & CMS Logic (The WordPress Backend)
 **Goal:** Manage pages, media, and settings outside the visual builder.
-- [ ] **Database Expansion:**
+- [x] **Database Expansion:**
     - [ ] Add Tables: `pages` (id, title, slug, content_json, published, type), `media` (id, path, mime).
-- [ ] **API - Content:**
-    - [ ] CRUD Routes for Pages (`GET`, `POST`, `PUT`, `DELETE`).
+- [x] **API - Content:**
+    - [x] CRUD Routes for Pages (`GET`, `POST`, `PUT`, `DELETE`).
     - [ ] Multer/Fastify-Multipart for Media Uploads.
-- [ ] **Admin Dashboard:**
-    - [ ] Dashboard Home (Stats).
-    - [ ] Page List View (Data Table with Shadcn).
-    - [ ] Media Library Grid.
-    - [ ] Settings Page (Site Title, Global SEO).
+- [x] **Admin Dashboard:**
+    - [x] Dashboard Home (Stats).
+    - [x] Page List View (Data Table with Shadcn).
+    - [x] Media Library Grid.
+    - [ ] Users Management Page.
+    - [x] Settings Page (Site Title, Global SEO).
 
 ## Phase 4: The Visual Builder Engine (The "Oxygen" Core)
 **Goal:** A React-based Drag-and-Drop editor using Craft.js.

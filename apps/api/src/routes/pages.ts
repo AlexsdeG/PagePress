@@ -1,4 +1,4 @@
-// PagePress v0.0.4 - 2025-11-30
+// PagePress v0.0.5 - 2025-11-30
 // Pages CRUD routes
 
 import type { FastifyInstance } from 'fastify';
@@ -11,9 +11,9 @@ import { requireAuth } from '../middleware/auth.js';
 import { generateUniqueSlug, isValidSlug, isSlugUnique } from '../lib/slug.js';
 
 /**
- * Page type enum values
+ * Page type enum values - Fixed: unified with frontend types
  */
-const pageTypes = ['page', 'header', 'footer'] as const;
+const pageTypes = ['page', 'post', 'template'] as const;
 
 /**
  * Create page request schema

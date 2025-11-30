@@ -1,4 +1,4 @@
-// PagePress v0.0.4 - 2025-11-30
+// PagePress v0.0.5 - 2025-11-30
 // API client for communicating with the backend
 
 /**
@@ -11,20 +11,13 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
  * API Error class for handling API errors
  */
 export class ApiError extends Error {
-  status: number;
-  statusText: string;
-  data: Record<string, unknown>;
-  
   constructor(
-    status: number,
-    statusText: string,
-    data: Record<string, unknown>
+    public status: number,
+    public statusText: string,
+    public data?: Record<string, unknown>
   ) {
-    super(data.message as string || statusText);
+    super(data?.message as string || statusText);
     this.name = 'ApiError';
-    this.status = status;
-    this.statusText = statusText;
-    this.data = data;
   }
 }
 
@@ -127,7 +120,7 @@ export interface Page {
   id: string;
   title: string;
   slug: string;
-  contentJson: string;
+  contentJson: Record<string, unknown> | null;
   published: boolean;
   type: 'page' | 'post' | 'template';
   authorId: string;
@@ -152,7 +145,7 @@ export interface PageListResponse {
 export interface CreatePageData {
   title: string;
   slug?: string;
-  contentJson?: string;
+  contentJson?: Record<string, unknown>;
   published?: boolean;
   type?: 'page' | 'post' | 'template';
 }
@@ -160,7 +153,7 @@ export interface CreatePageData {
 export interface UpdatePageData {
   title?: string;
   slug?: string;
-  contentJson?: string;
+  contentJson?: Record<string, unknown>;
   published?: boolean;
   type?: 'page' | 'post' | 'template';
 }
@@ -357,13 +350,13 @@ export const api = {
     },
 
     /**
-     * Upload a file
+     * Upload a file - Fixed: Changed from /media/upload to /media
      */
     upload: (file: File, altText?: string) => {
       const formData = new FormData();
       formData.append('file', file);
       if (altText) formData.append('altText', altText);
-      return fetchApiFormData<{ media: Media }>('/media/upload', formData);
+      return fetchApiFormData<{ media: Media }>('/media', formData);
     },
 
     /**

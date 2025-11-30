@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.0.5] - 2025-11-30
+
+### Added
+- **Visual Builder Engine:** Full Craft.js integration for drag-and-drop page building
+- **Base Components:** Container, Text, Heading, Image, Button, HTMLBlock builder components
+- **Editor Layout:** TopBar, LeftSidebar (Toolbox), RightSidebar (Inspector), Canvas
+- **Settings Inspector:** Component property editors with ColorInput, SpacingInput, ClassInput
+- **Layers Panel:** Visual component tree using @craftjs/layers
+- **Undo/Redo:** Built-in history navigation with keyboard shortcuts (Ctrl+Z/Ctrl+Y)
+- **Auto-Save:** Debounced auto-save with visual indicator (configurable)
+- **Manual Save:** Explicit save button with loading state
+- **Viewport Modes:** Desktop, Tablet, Mobile responsive preview
+- **Builder Store:** Zustand store for editor state management
+- **Page Builder Hook:** React Query integration for page loading/saving
+- **Radix UI Components:** Slider, Accordion, Popover, Tooltip primitives
+- **DOMPurify:** HTML sanitization for HTMLBlock security
+
+### Fixed
+- **Media Upload Route:** Changed `/media/upload` to `/media` to match backend
+- **Page Types:** Unified page types to `['page', 'post', 'template']` across frontend and backend
+- **Upload Progress:** Fixed progress indicator not clearing on error
+
+### Changed
+- Updated API page types schema to include 'post' and 'template'
+- Enhanced contentJson handling for Craft.js serialization
+
+---
+
 ## [v0.0.4] - 2025-11-30
 
 ### Added

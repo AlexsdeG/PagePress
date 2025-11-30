@@ -1,4 +1,4 @@
-// PagePress v0.0.4 - 2025-11-30
+// PagePress v0.0.5 - 2025-11-30
 
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
@@ -41,7 +41,7 @@ export const pages = sqliteTable('pages', {
   slug: text('slug').notNull().unique(),
   contentJson: text('content_json', { mode: 'json' }).$type<Record<string, unknown>>(),
   published: integer('published', { mode: 'boolean' }).default(false).notNull(),
-  type: text('type', { enum: ['page', 'header', 'footer'] }).default('page').notNull(),
+  type: text('type', { enum: ['page', 'post', 'template'] }).default('page').notNull(),
   authorId: text('author_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   createdAt: integer('created_at', { mode: 'timestamp' })
     .default(sql`(unixepoch())`)

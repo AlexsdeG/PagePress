@@ -1,4 +1,4 @@
-// PagePress v0.0.4 - 2025-11-30
+// PagePress v0.0.5 - 2025-11-30
 
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, NavLink, Outlet, useNavigate } from 'react-router-dom';
@@ -11,6 +11,7 @@ import { DashboardPage } from './pages/Dashboard';
 import { Pages } from './pages/Pages';
 import { MediaPage } from './pages/Media';
 import { Settings } from './pages/Settings';
+import { BuilderPage } from './pages/Builder';
 import { Button } from './components/ui/button';
 
 // Create a React Query client
@@ -162,6 +163,16 @@ function App() {
               <Route path="/media" element={<MediaPage />} />
               <Route path="/settings" element={<Settings />} />
             </Route>
+            
+            {/* Builder route - full screen, no sidebar */}
+            <Route
+              path="/pages/:id/edit"
+              element={
+                <ProtectedRoute>
+                  <BuilderPage />
+                </ProtectedRoute>
+              }
+            />
             
             {/* Default redirect */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
