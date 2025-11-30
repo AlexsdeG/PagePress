@@ -68,7 +68,7 @@
 ## Phase 6: The Public Renderer (The Frontend)
 **Goal:** Convert the saved JSON into high-speed HTML.
 - [ ] **Routing:** Create a wildcard route `/*` in Fastify (or a separate Next.js/Astro frontend if desired, but Fastify+React SSR is simpler).
-    - [ ] admin apge and dashboard under /pp-admin/* (eg /pp-admin/pages)
+    - [ ] admin apge and dashboard under `/pp-admin/*` (eg /pp-admin/pages)
 - [ ] **Renderer Engine:**
     - [ ] A lightweight React App that takes the `content_json` from DB.
     - [ ] Resolves components (same map as Builder).
@@ -76,7 +76,14 @@
     - [ ] Impl json safe for craft.js builder and html, css for lighning fast access of build pages in frontend, also safe them in folder strucutre so they can be used directly as entry points for specific routes
 - [ ] **SEO:** Inject `<title>` and `<meta>` tags based on page settings.
 
-## Phase 7: Extensibility & API (The Plugin System)
+## Phase 7: QoL
+**Goal:**: Big Quality of life with many small chagnes and improvments
+- [ ] setting invide link only(also default acitve), no one can create account in admin apge only with invide link + roles and rules like editor, admin, ...
+- [ ] full usermanagent tab in sidebar with page and settings, also stuff like personal profile with change username, email, password
+- [ ] invide link send email, email code verify new email, login with username or email, forget paswrod, jwt token login
+- [ ] full working settings safed and used in frontend + better notice eg with sonnet toast
+
+## Phase 8: Extensibility & API (The Plugin System)
 **Goal:** "WordPress-like" Hooks and Filters.
 - [ ] **Backend Hooks:**
     - [ ] Implement `EventBus` (e.g., `mitt`).
