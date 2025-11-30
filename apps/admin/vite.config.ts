@@ -14,7 +14,10 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:3000',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '')
+        rewrite: (path) => path.replace(/^\/api/, ''),
+        // Forward cookies properly
+        cookieDomainRewrite: 'localhost',
+        secure: false,
       }
     }
   }

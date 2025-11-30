@@ -68,10 +68,12 @@
 ## Phase 6: The Public Renderer (The Frontend)
 **Goal:** Convert the saved JSON into high-speed HTML.
 - [ ] **Routing:** Create a wildcard route `/*` in Fastify (or a separate Next.js/Astro frontend if desired, but Fastify+React SSR is simpler).
+    - [ ] admin apge and dashboard under /pp-admin/* (eg /pp-admin/pages)
 - [ ] **Renderer Engine:**
     - [ ] A lightweight React App that takes the `content_json` from DB.
     - [ ] Resolves components (same map as Builder).
     - [ ] Renders static HTML string.
+    - [ ] Impl json safe for craft.js builder and html, css for lighning fast access of build pages in frontend, also safe them in folder strucutre so they can be used directly as entry points for specific routes
 - [ ] **SEO:** Inject `<title>` and `<meta>` tags based on page settings.
 
 ## Phase 7: Extensibility & API (The Plugin System)

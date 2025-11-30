@@ -171,7 +171,12 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
     const session = await createSession(user.id);
     
     // Set session cookie
-    reply.setCookie(SESSION_COOKIE_NAME, session.id, getSessionCookieOptions(session.expiresAt));
+    const cookieOptions = getSessionCookieOptions(session.expiresAt);
+    request.log.info({ 
+      sessionId: session.id.substring(0, 8) + '...', 
+      cookieOptions,
+    }, 'Setting session cookie');
+    reply.setCookie(SESSION_COOKIE_NAME, session.id, cookieOptions);
     
     return reply.send({
       message: 'Login successful',

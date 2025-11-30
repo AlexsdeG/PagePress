@@ -28,6 +28,13 @@ export const requireAuth: preHandlerHookHandler = async (
 ) => {
   const sessionId = request.cookies[SESSION_COOKIE_NAME];
   
+  // Debug: log incoming cookies
+  request.log.info({ 
+    cookieHeader: request.headers.cookie,
+    parsedCookies: Object.keys(request.cookies),
+    hasSessionCookie: !!sessionId,
+  }, 'Auth middleware - checking cookies');
+  
   if (!sessionId) {
     return reply.status(401).send({
       error: 'Unauthorized',

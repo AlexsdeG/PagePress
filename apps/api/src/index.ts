@@ -1,14 +1,20 @@
-// PagePress v0.0.3 - 2025-11-30
+// PagePress v0.0.4 - 2025-11-30
 
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import cookie from '@fastify/cookie';
+import multipart from '@fastify/multipart';
+import fastifyStatic from '@fastify/static';
+import * as path from 'path';
 import { env } from './lib/env.js';
-import { initializeDatabase, closeDatabase } from './lib/db.js';
+import { initializeDatabase, closeDatabase, getUploadsDir } from './lib/db.js';
 import { healthRoutes } from './routes/health.js';
 import { authRoutes } from './routes/auth.js';
+import { pagesRoutes } from './routes/pages.js';
+import { mediaRoutes } from './routes/media.js';
+import { settingsRoutes } from './routes/settings.js';
 
 /**
  * Create and configure Fastify server
@@ -54,6 +60,21 @@ async function registerPlugins(): Promise<void> {
     parseOptions: {},
   });
 
+  // Multipart support for file uploads
+  await server.register(multipart, {
+    limits: {
+      fileSize: 10 * 1024 * 1024, // 10MB max file size
+      files: 1, // Single file upload
+    },
+  });
+
+  // Static file serving for uploads
+  await server.register(fastifyStatic, {
+    root: path.resolve(getUploadsDir()),
+    prefix: '/uploads/',
+    decorateReply: false,
+  });
+
   // CORS - Allow frontend to connect
   await server.register(cors, {
     origin: env.NODE_ENV === 'development' ? true : ['http://localhost:5173'],
@@ -71,12 +92,21 @@ async function registerRoutes(): Promise<void> {
   // Authentication routes
   await server.register(authRoutes, { prefix: '/auth' });
 
+  // Pages routes
+  await server.register(pagesRoutes, { prefix: '/pages' });
+
+  // Media routes
+  await server.register(mediaRoutes, { prefix: '/media' });
+
+  // Settings routes
+  await server.register(settingsRoutes, { prefix: '/settings' });
+
   // Root route
   server.get('/', async (_request, _reply) => {
     return {
       status: 'ok',
       message: 'PagePress API Running',
-      version: '0.0.3',
+      version: '0.0.4',
       documentation: '/docs',
     };
   });
@@ -119,7 +149,7 @@ async function start(): Promise<void> {
       host: '0.0.0.0',
     });
 
-    server.log.info(`🚀 PagePress API v0.0.3 running on port ${env.PORT}`);
+    server.log.info(`🚀 PagePress API v0.0.4 running on port ${env.PORT}`);
     server.log.info(`📊 Environment: ${env.NODE_ENV}`);
 
   } catch (err) {
