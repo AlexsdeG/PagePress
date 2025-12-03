@@ -1,8 +1,9 @@
-// PagePress v0.0.5 - 2025-11-30
+// PagePress v0.0.6 - 2025-12-03
 // Heading component for the page builder
 
-import { useNode } from '@craftjs/core';
+import { useNode, useEditor } from '@craftjs/core';
 import { cn } from '@/lib/utils';
+import { useBuilderStore } from '@/stores/builder';
 import type { FC } from 'react';
 import type { HeadingProps } from '../types';
 import { HeadingSettings } from './Heading.settings';
@@ -31,11 +32,18 @@ export const Heading: FC<HeadingProps> & { craft?: Record<string, unknown> } = (
   color = '#000000',
   className = '',
 }) => {
+  const { isPreviewMode } = useBuilderStore();
+  
   const {
     connectors: { connect, drag },
-    selected,
-  } = useNode((state) => ({
-    selected: state.events.selected,
+    id,
+  } = useNode((node) => ({
+    id: node.id,
+  }));
+
+  const { isSelected, isHovered } = useEditor((state) => ({
+    isSelected: state.events.selected.has(id),
+    isHovered: state.events.hovered.has(id),
   }));
 
   const fontWeightClass: Record<string, string> = {
@@ -54,20 +62,49 @@ export const Heading: FC<HeadingProps> & { craft?: Record<string, unknown> } = (
   const HeadingTag = `h${level}` as keyof JSX.IntrinsicElements;
   const actualFontSize = fontSize ?? defaultFontSizes[level];
 
+  // Get outline styles based on selection/hover state
+  const getOutlineStyles = (): React.CSSProperties => {
+    if (isPreviewMode) return {};
+    
+    if (isSelected) {
+      return {
+        outline: '2px solid #2563eb',
+        outlineOffset: '-2px',
+      };
+    }
+    
+    if (isHovered) {
+      return {
+        outline: '2px dashed #60a5fa',
+        outlineOffset: '-2px',
+      };
+    }
+    
+    return {};
+  };
+
   return (
     <HeadingTag
       ref={(ref) => ref && connect(drag(ref))}
       className={cn(
+        'relative',
         fontWeightClass[fontWeight],
         textAlignClass[textAlign],
-        selected && 'outline-dashed outline-2 outline-blue-500 outline-offset-2',
+        !isPreviewMode && 'transition-all duration-150',
         className
       )}
       style={{
         fontSize: `${actualFontSize}px`,
         color,
+        ...getOutlineStyles(),
       }}
     >
+      {/* Selection label */}
+      {isSelected && !isPreviewMode && (
+        <span className="absolute -top-5 left-0 text-xs text-white bg-blue-600 px-1.5 py-0.5 rounded-t font-medium z-10">
+          Heading
+        </span>
+      )}
       {text}
     </HeadingTag>
   );

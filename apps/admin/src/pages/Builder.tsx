@@ -1,14 +1,25 @@
-// PagePress v0.0.5 - 2025-11-30
+// PagePress v0.0.6 - 2025-12-03
 // Visual page builder with Craft.js
 
-import { useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Editor } from '@craftjs/core';
+import { useEffect } from 'react';
+import { useParams, useNavigate, useBlocker } from 'react-router-dom';
+import { Editor, useEditor } from '@craftjs/core';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { usePageBuilder } from '@/hooks/usePageBuilder';
 import { useBuilderStore } from '@/stores/builder';
 import { componentResolver } from '@/components/builder/resolver';
 import { TopBar, LeftSidebar, RightSidebar, Canvas } from '@/components/builder/layout';
+import { BuilderProvider } from '@/components/builder/context';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 /**
  * Builder page component
@@ -26,7 +37,13 @@ export function BuilderPage() {
     isSaving,
   } = usePageBuilder(id || '');
 
-  const { reset, setHasUnsavedChanges, isPreviewMode } = useBuilderStore();
+  const { reset, setHasUnsavedChanges, isPreviewMode, hasUnsavedChanges } = useBuilderStore();
+
+  // Navigation blocker for unsaved changes
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      hasUnsavedChanges && currentLocation.pathname !== nextLocation.pathname
+  );
 
   // Reset builder state on mount
   useEffect(() => {
@@ -43,25 +60,20 @@ export function BuilderPage() {
     }
   }, [id, navigate]);
 
-  // Handle save
-  const handleSave = useCallback(async () => {
-    // Get serialized content from Craft.js
-    // This will be called from the Editor component
-  }, []);
-
-  // Handle keyboard shortcuts
+  // Warn before browser close with unsaved changes
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl+S to save
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
         e.preventDefault();
-        handleSave();
+        e.returnValue = '';
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleSave]);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
+  // Handle keyboard shortcuts are now in BuilderProvider
 
   // Loading state
   if (isLoading) {
@@ -123,24 +135,40 @@ export function BuilderPage() {
       <Editor
         resolver={componentResolver}
         enabled={!isPreviewMode}
-        onNodesChange={(query) => {
+        onNodesChange={() => {
           // Mark as having unsaved changes
           setHasUnsavedChanges(true);
-          
-          // Queue auto-save with serialized content
-          const json = query.serialize();
-          queueAutoSave(JSON.parse(json));
         }}
       >
-        <BuilderLayout
-          pageTitle={page.title}
-          initialContent={initialContent}
-          onSave={async () => {
-            // This will be handled by the internal EditorSaveHandler
-          }}
-          isSaving={isSaving}
-        />
+        <BuilderProvider onSave={save} isSaving={isSaving}>
+          <BuilderLayout
+            pageTitle={page.title}
+            initialContent={initialContent}
+            isSaving={isSaving}
+            queueAutoSave={queueAutoSave}
+          />
+        </BuilderProvider>
       </Editor>
+
+      {/* Unsaved changes dialog */}
+      <AlertDialog open={blocker.state === 'blocked'}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes. Are you sure you want to leave? Your changes will be lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => blocker.reset?.()}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={() => blocker.proceed?.()}>
+              Leave Anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </TooltipProvider>
   );
 }
@@ -151,26 +179,16 @@ export function BuilderPage() {
 interface BuilderLayoutProps {
   pageTitle: string;
   initialContent?: string;
-  onSave: () => void;
   isSaving: boolean;
+  queueAutoSave: (content: Record<string, unknown>) => void;
 }
 
-function BuilderLayout({ pageTitle, initialContent, isSaving }: BuilderLayoutProps) {
-  const { id } = useParams<{ id: string }>();
-  const { save } = usePageBuilder(id || '');
-
-  // Handle save with editor query
-  const handleSave = useCallback(async () => {
-    // We need to get the serialized content from within the Editor context
-    // This is handled by EditorSaveHandler
-  }, []);
-
+function BuilderLayout({ pageTitle, initialContent, isSaving, queueAutoSave }: BuilderLayoutProps) {
   return (
     <div className="h-screen flex flex-col bg-background">
-      <EditorSaveHandler save={save} />
+      <AutoSaveHandler queueAutoSave={queueAutoSave} />
       <TopBar
         pageTitle={pageTitle}
-        onSave={handleSave}
         isSaving={isSaving}
       />
       <div className="flex-1 flex overflow-hidden">
@@ -183,26 +201,24 @@ function BuilderLayout({ pageTitle, initialContent, isSaving }: BuilderLayoutPro
 }
 
 /**
- * Component to handle save with editor context
+ * Component to handle auto-save by watching editor changes
  */
-function EditorSaveHandler({ save }: { save: (content: Record<string, unknown>) => Promise<unknown> }) {
+function AutoSaveHandler({ queueAutoSave }: { queueAutoSave: (content: Record<string, unknown>) => void }) {
   const { query } = useEditor();
-  
-  // Expose save function that uses editor query
-  useEffect(() => {
-    // Make the save function available globally for the TopBar
-    (window as Record<string, unknown>).__builderSave = async () => {
-      const json = query.serialize();
-      await save(JSON.parse(json));
-    };
+  const { autoSaveEnabled, autoSaveInterval, hasUnsavedChanges } = useBuilderStore();
 
-    return () => {
-      delete (window as Record<string, unknown>).__builderSave;
-    };
-  }, [query, save]);
+  useEffect(() => {
+    if (!autoSaveEnabled || !hasUnsavedChanges) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      const json = query.serialize();
+      queueAutoSave(JSON.parse(json));
+    }, autoSaveInterval);
+
+    return () => clearTimeout(timer);
+  }, [autoSaveEnabled, autoSaveInterval, hasUnsavedChanges, query, queueAutoSave]);
 
   return null;
 }
-
-// Import useEditor hook for EditorSaveHandler
-import { useEditor } from '@craftjs/core';

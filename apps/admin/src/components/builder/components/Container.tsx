@@ -1,8 +1,9 @@
-// PagePress v0.0.5 - 2025-11-30
+// PagePress v0.0.6 - 2025-12-03
 // Container component for the page builder
 
-import { useNode } from '@craftjs/core';
+import { useNode, useEditor } from '@craftjs/core';
 import { cn } from '@/lib/utils';
+import { useBuilderStore } from '@/stores/builder';
 import type { FC } from 'react';
 import type { ContainerProps } from '../types';
 import { ContainerSettings } from './Container.settings';
@@ -35,11 +36,20 @@ export const Container: FC<ContainerProps> & { craft?: Record<string, unknown> }
   className = '',
   children,
 }) => {
+  const { isPreviewMode } = useBuilderStore();
+  
   const {
     connectors: { connect, drag },
+    id,
     isCanvas,
   } = useNode((node) => ({
+    id: node.id,
     isCanvas: node.data.isCanvas,
+  }));
+
+  const { isSelected, isHovered } = useEditor((state) => ({
+    isSelected: state.events.selected.has(id),
+    isHovered: state.events.hovered.has(id),
   }));
 
   const flexClasses: Record<string, Record<string, string>> = {
@@ -84,6 +94,31 @@ export const Container: FC<ContainerProps> & { craft?: Record<string, unknown> }
     marginLeft: marginLeft ?? margin,
   };
 
+  // Determine outline styles based on selection/hover state
+  const getOutlineStyles = () => {
+    if (isPreviewMode) return {};
+    
+    if (isSelected) {
+      return {
+        outline: '2px solid #2563eb',
+        outlineOffset: '-2px',
+      };
+    }
+    
+    if (isHovered) {
+      return {
+        outline: '2px dashed #60a5fa',
+        outlineOffset: '-2px',
+      };
+    }
+    
+    // Default dotted outline for containers to show structure
+    return {
+      outline: '1px dashed #d1d5db',
+      outlineOffset: '-1px',
+    };
+  };
+
   return (
     <div
       ref={(ref) => {
@@ -98,12 +133,14 @@ export const Container: FC<ContainerProps> & { craft?: Record<string, unknown> }
         }
       }}
       className={cn(
+        'relative',
         display === 'flex' && 'flex',
         display === 'grid' && 'grid',
         display === 'flex' && flexClasses.flexDirection[flexDirection],
         display === 'flex' && flexClasses.justifyContent[justifyContent],
         display === 'flex' && flexClasses.alignItems[alignItems],
         widthClass,
+        !isPreviewMode && 'transition-all duration-150',
         className
       )}
       style={{
@@ -116,8 +153,15 @@ export const Container: FC<ContainerProps> & { craft?: Record<string, unknown> }
         borderColor,
         borderStyle: borderWidth > 0 ? 'solid' : 'none',
         minHeight: `${minHeight}px`,
+        ...getOutlineStyles(),
       }}
     >
+      {/* Selection label */}
+      {isSelected && !isPreviewMode && (
+        <span className="absolute -top-5 left-0 text-xs text-white bg-blue-600 px-1.5 py-0.5 rounded-t font-medium z-10">
+          Container
+        </span>
+      )}
       {children}
     </div>
   );

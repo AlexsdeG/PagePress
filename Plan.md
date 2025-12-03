@@ -69,32 +69,38 @@
 - [ ] **Missing:**
     - [ ] Users management page
     - [ ] Role-based permission display
+    - [ ] invite url, first time setup you can create account, after first time setup, var in a created config file or .env file, for admin backend page "/admin". login page remove create account option.
+    - [ ] users dispaly eg who created which pages, tempalte, logs of all actions
+    - [ ] email and username login, emial code when changing email or for admin first account setup
+    - [ ] forgot pw and jwt token login when saved otherwise username/email and password
+    - [ ] update all backend admin routes to /admin/... (eg /admin/dashboard)
+    - [ ] seperate pages from tempaltes and other, only pages can be dispalyed on the forntend, everything else has to be part or dispalyed on a page
 
 ---
 
 ## Phase 4A: Builder Critical Fixes
 **Goal:** Fix blocking bugs and core functionality.
-**Status:** 🐛 Needs Work
+**Status:** ✅ Complete
 
-### Save System (BROKEN)
+### Save System
 - [x] Auto-save infrastructure exists
-- [ ] 🐛 **FIX:** Save button in TopBar does nothing (`handleSave` is empty)
-- [ ] 🐛 **FIX:** Remove `window.__builderSave` hack, use proper React context
-- [ ] Implement save flow: `query.serialize()` → API PUT
-- [ ] Toast notifications for save success/error (install Sonner)
-- [ ] Unsaved changes warning on page navigation
+- [x] ✅ **FIXED:** Save button now works with BuilderContext
+- [x] ✅ **FIXED:** Removed `window.__builderSave` hack, using React context
+- [x] Implement save flow: `query.serialize()` → API PUT
+- [x] Toast notifications for save success/error (Sonner installed)
+- [x] Unsaved changes warning on page navigation (with AlertDialog)
 
 ### Keyboard Shortcuts
-- [x] Ctrl+S to save (but save is broken)
-- [ ] Implement Ctrl+Z / Ctrl+Y for undo/redo
-- [ ] Implement Delete/Backspace to remove selected
-- [ ] Implement Escape to deselect
-- [ ] Implement Ctrl+D to duplicate
+- [x] Ctrl+S to save
+- [x] Ctrl+Z / Ctrl+Y for undo/redo
+- [x] Delete/Backspace to remove selected
+- [x] Escape to deselect
+- [x] Ctrl+D to duplicate
 
 ### Media Integration
-- [ ] 🐛 **FIX:** Image component requires manual URL entry
-- [ ] Add media library picker dialog to Image settings
-- [ ] Thumbnail preview in image settings
+- [x] ✅ **FIXED:** Image component has media library picker
+- [x] MediaPickerDialog component created
+- [x] Thumbnail preview in image settings
 
 ---
 

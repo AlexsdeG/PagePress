@@ -1,4 +1,4 @@
-// PagePress v0.0.5 - 2025-11-30
+// PagePress v0.0.6 - 2025-12-03
 // Top bar for the page builder
 
 import { useEditor } from '@craftjs/core';
@@ -17,18 +17,19 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useBuilderStore, VIEWPORT_DIMENSIONS, type ViewportMode } from '@/stores/builder';
+import { useBuilderContext } from '../context';
 
 interface TopBarProps {
   pageTitle: string;
-  onSave: () => void;
   isSaving: boolean;
 }
 
 /**
  * Top bar with save, undo/redo, viewport, and preview controls
  */
-export function TopBar({ pageTitle, onSave, isSaving }: TopBarProps) {
+export function TopBar({ pageTitle, isSaving }: TopBarProps) {
   const navigate = useNavigate();
+  const { save } = useBuilderContext();
   
   const {
     viewport,
@@ -172,7 +173,10 @@ export function TopBar({ pageTitle, onSave, isSaving }: TopBarProps) {
         </span>
 
         {/* Save button */}
-        <Button onClick={onSave} disabled={isSaving || saveStatus === 'saving'}>
+        <Button 
+          onClick={save} 
+          disabled={isSaving || saveStatus === 'saving' || !hasUnsavedChanges}
+        >
           {isSaving ? 'Saving...' : 'Save'}
         </Button>
       </div>

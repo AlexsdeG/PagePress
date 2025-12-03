@@ -1,4 +1,4 @@
-// PagePress v0.0.3 - 2025-11-30
+// PagePress v0.0.6 - 2025-12-03
 // Zustand auth store for managing authentication state
 
 import { create } from 'zustand';
@@ -12,6 +12,10 @@ interface AuthState {
   isLoading: boolean;
   isAuthenticated: boolean;
   error: string | null;
+  /** Flag to prevent multiple concurrent auth checks */
+  _authCheckInProgress: boolean;
+  /** Flag to track if initial auth check has been done */
+  _initialCheckDone: boolean;
 }
 
 /**
@@ -57,22 +61,39 @@ const initialState: AuthState = {
   isLoading: true, // Start loading to check auth on mount
   isAuthenticated: false,
   error: null,
+  _authCheckInProgress: false,
+  _initialCheckDone: false,
 };
 
 /**
  * Auth store combining state and actions
  */
-export const useAuthStore = create<AuthState & AuthActions>((set) => ({
+export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
   ...initialState,
   
   checkAuth: async () => {
-    set({ isLoading: true, error: null });
+    const state = get();
+    
+    // Prevent multiple concurrent auth checks
+    if (state._authCheckInProgress) {
+      return;
+    }
+    
+    // If initial check is done and we're authenticated, skip
+    if (state._initialCheckDone && state.isAuthenticated) {
+      return;
+    }
+    
+    set({ isLoading: true, error: null, _authCheckInProgress: true });
+    
     try {
       const response = await api.auth.me();
       set({
         user: response.user,
         isAuthenticated: true,
         isLoading: false,
+        _authCheckInProgress: false,
+        _initialCheckDone: true,
       });
     } catch (error) {
       // Not authenticated is not an error state
@@ -80,6 +101,8 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
         user: null,
         isAuthenticated: false,
         isLoading: false,
+        _authCheckInProgress: false,
+        _initialCheckDone: true,
       });
     }
   },

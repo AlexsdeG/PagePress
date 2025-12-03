@@ -1,4 +1,4 @@
-// PagePress v0.0.5 - 2025-11-30
+// PagePress v0.0.6 - 2025-12-03
 // Builder module exports
 
 // Components
@@ -20,6 +20,9 @@ export { HTMLBlockSettings } from './components/HTMLBlock.settings';
 // Inspector inputs
 export { ColorInput } from './inspector/inputs/ColorInput';
 export { SpacingInput } from './inspector/inputs/SpacingInput';
+
+// Context
+export { BuilderProvider, useBuilderContext } from './context';
 
 // Resolver
 export { componentResolver } from './resolver';

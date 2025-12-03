@@ -1,9 +1,11 @@
-// PagePress v0.0.5 - 2025-11-30
+// PagePress v0.0.6 - 2025-12-03
 // Image component settings panel
 
+import { useState } from 'react';
 import { useNode } from '@craftjs/core';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -18,12 +20,15 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import { MediaPickerDialog } from '../inspector/MediaPickerDialog';
 import type { ImageProps } from '../types';
 
 /**
  * Settings panel for Image component
  */
 export function ImageSettings() {
+  const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
+  
   const {
     actions: { setProp },
     props,
@@ -32,32 +37,57 @@ export function ImageSettings() {
   }));
 
   return (
-    <Accordion type="multiple" defaultValue={['source', 'dimensions', 'style']} className="w-full">
-      {/* Source Section */}
-      <AccordionItem value="source">
-        <AccordionTrigger className="text-sm">Source</AccordionTrigger>
-        <AccordionContent className="space-y-4">
-          {/* Image URL */}
-          <div className="space-y-2">
-            <Label className="text-xs">Image URL</Label>
-            <Input
-              value={props.src || ''}
-              onChange={(e) => setProp((p: ImageProps) => (p.src = e.target.value))}
-              placeholder="Enter image URL or select from media..."
-            />
-          </div>
+    <>
+      <Accordion type="multiple" defaultValue={['source', 'dimensions', 'style']} className="w-full">
+        {/* Source Section */}
+        <AccordionItem value="source">
+          <AccordionTrigger className="text-sm">Source</AccordionTrigger>
+          <AccordionContent className="space-y-4">
+            {/* Image URL with Media Picker */}
+            <div className="space-y-2">
+              <Label className="text-xs">Image URL</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={props.src || ''}
+                  onChange={(e) => setProp((p: ImageProps) => (p.src = e.target.value))}
+                  placeholder="Enter URL or select..."
+                  className="flex-1"
+                />
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setMediaPickerOpen(true)}
+                >
+                  📁
+                </Button>
+              </div>
+              
+              {/* Image preview */}
+              {props.src && (
+                <div className="mt-2 rounded-md overflow-hidden border bg-muted">
+                  <img 
+                    src={props.src} 
+                    alt="Preview" 
+                    className="w-full h-24 object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect fill="%23ccc" width="100%" height="100%"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="%23666">Invalid URL</text></svg>';
+                    }}
+                  />
+                </div>
+              )}
+            </div>
 
-          {/* Alt Text */}
-          <div className="space-y-2">
-            <Label className="text-xs">Alt Text</Label>
-            <Input
-              value={props.alt || ''}
-              onChange={(e) => setProp((p: ImageProps) => (p.alt = e.target.value))}
-              placeholder="Describe the image..."
-            />
-          </div>
-        </AccordionContent>
-      </AccordionItem>
+            {/* Alt Text */}
+            <div className="space-y-2">
+              <Label className="text-xs">Alt Text</Label>
+              <Input
+                value={props.alt || ''}
+                onChange={(e) => setProp((p: ImageProps) => (p.alt = e.target.value))}
+                placeholder="Describe the image..."
+              />
+            </div>
+          </AccordionContent>
+        </AccordionItem>
 
       {/* Dimensions Section */}
       <AccordionItem value="dimensions">
@@ -166,5 +196,21 @@ export function ImageSettings() {
         </AccordionContent>
       </AccordionItem>
     </Accordion>
+    
+    {/* Media Picker Dialog */}
+    <MediaPickerDialog
+      open={mediaPickerOpen}
+      onOpenChange={setMediaPickerOpen}
+      onSelect={(media) => {
+        setProp((p: ImageProps) => {
+          p.src = media.url;
+          if (media.altText) {
+            p.alt = media.altText;
+          }
+        });
+      }}
+      accept="image"
+    />
+    </>
   );
 }

@@ -1,8 +1,16 @@
-// PagePress v0.0.5 - 2025-11-30
+// PagePress v0.0.6 - 2025-12-03
 
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { 
+  createBrowserRouter, 
+  RouterProvider, 
+  Navigate, 
+  NavLink, 
+  Outlet, 
+  useNavigate 
+} from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from 'sonner';
 import { useAuthStore } from './stores/auth';
 import { ProtectedRoute, PublicOnlyRoute } from './components/ProtectedRoute';
 import { LoginPage } from './pages/Login';
@@ -14,29 +22,29 @@ import { Settings } from './pages/Settings';
 import { BuilderPage } from './pages/Builder';
 import { Button } from './components/ui/button';
 
-// Create a React Query client
+// Create a React Query client with smart retry logic
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60, // 1 minute
-      retry: 1,
+      retry: (failureCount, error) => {
+        // Don't retry on auth errors or rate limiting
+        if (error instanceof Error) {
+          const status = (error as { status?: number }).status;
+          if (status === 401 || status === 403 || status === 429) {
+            return false;
+          }
+        }
+        // Retry once for other errors
+        return failureCount < 1;
+      },
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    },
+    mutations: {
+      retry: false, // Never retry mutations
     },
   },
 });
-
-/**
- * Auth initializer component
- * Checks authentication status on app mount
- */
-function AuthInitializer({ children }: { children: React.ReactNode }) {
-  const checkAuth = useAuthStore((state) => state.checkAuth);
-  
-  useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
-  
-  return <>{children}</>;
-}
 
 /**
  * Navigation item data
@@ -124,64 +132,85 @@ function AdminLayout() {
 }
 
 /**
+ * Auth initializer - runs once on app mount
+ */
+function AuthInitializer({ children }: { children: React.ReactNode }) {
+  const checkAuth = useAuthStore((state) => state.checkAuth);
+  const initialCheckDone = useAuthStore((state) => state._initialCheckDone);
+  
+  useEffect(() => {
+    if (!initialCheckDone) {
+      checkAuth();
+    }
+  }, [checkAuth, initialCheckDone]);
+  
+  return <>{children}</>;
+}
+
+/**
+ * Auth wrapper for protected routes - no longer calls checkAuth
+ */
+function ProtectedRouteWrapper({ children }: { children: React.ReactNode }) {
+  return <ProtectedRoute>{children}</ProtectedRoute>;
+}
+
+/**
+ * Auth wrapper for public-only routes - no longer calls checkAuth
+ */
+function PublicOnlyRouteWrapper({ children }: { children: React.ReactNode }) {
+  return <PublicOnlyRoute>{children}</PublicOnlyRoute>;
+}
+
+/**
+ * Router configuration using createBrowserRouter for data router features
+ */
+const router = createBrowserRouter([
+  // Public routes
+  {
+    path: '/login',
+    element: <PublicOnlyRouteWrapper><LoginPage /></PublicOnlyRouteWrapper>,
+  },
+  {
+    path: '/register',
+    element: <PublicOnlyRouteWrapper><RegisterPage /></PublicOnlyRouteWrapper>,
+  },
+  // Protected admin routes with sidebar
+  {
+    element: <ProtectedRouteWrapper><AdminLayout /></ProtectedRouteWrapper>,
+    children: [
+      { path: '/dashboard', element: <DashboardPage /> },
+      { path: '/pages', element: <Pages /> },
+      { path: '/media', element: <MediaPage /> },
+      { path: '/settings', element: <Settings /> },
+    ],
+  },
+  // Builder route - full screen, no sidebar
+  {
+    path: '/pages/:id/edit',
+    element: <ProtectedRouteWrapper><BuilderPage /></ProtectedRouteWrapper>,
+  },
+  // Default redirect
+  {
+    path: '/',
+    element: <Navigate to="/dashboard" replace />,
+  },
+  // 404 fallback
+  {
+    path: '*',
+    element: <Navigate to="/dashboard" replace />,
+  },
+]);
+
+/**
  * Main App component with routing
  */
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthInitializer>
-          <Routes>
-            {/* Public routes - redirect to dashboard if authenticated */}
-            <Route
-              path="/login"
-              element={
-                <PublicOnlyRoute>
-                  <LoginPage />
-                </PublicOnlyRoute>
-              }
-            />
-            <Route
-              path="/register"
-              element={
-                <PublicOnlyRoute>
-                  <RegisterPage />
-                </PublicOnlyRoute>
-              }
-            />
-            
-            {/* Protected routes - require authentication */}
-            <Route
-              element={
-                <ProtectedRoute>
-                  <AdminLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/pages" element={<Pages />} />
-              <Route path="/media" element={<MediaPage />} />
-              <Route path="/settings" element={<Settings />} />
-            </Route>
-            
-            {/* Builder route - full screen, no sidebar */}
-            <Route
-              path="/pages/:id/edit"
-              element={
-                <ProtectedRoute>
-                  <BuilderPage />
-                </ProtectedRoute>
-              }
-            />
-            
-            {/* Default redirect */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            
-            {/* 404 fallback */}
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
-        </AuthInitializer>
-      </BrowserRouter>
+      <AuthInitializer>
+        <Toaster position="top-right" richColors closeButton />
+        <RouterProvider router={router} />
+      </AuthInitializer>
     </QueryClientProvider>
   );
 }
