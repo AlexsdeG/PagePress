@@ -17,6 +17,16 @@ import {
   Layers,
   PanelLeftClose,
   PanelLeft,
+  Square,
+  Columns,
+  Rows,
+  Minus,
+  MoveVertical,
+  Circle,
+  LayoutDashboard,
+  Link2,
+  ListOrdered,
+  Video,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,7 +35,12 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useBuilderStore, type SidebarPanel } from '@/stores/builder';
-import { Container, Text, Heading, BuilderImage, BuilderButton, HTMLBlock } from '../index';
+import { 
+  Container, Text, Heading, BuilderImage, BuilderButton, HTMLBlock,
+  Section, Row, Column, Div,
+  Divider, Spacer, Icon, IconBox, Link, List,
+  Video as BuilderVideo,
+} from '../index';
 import { StructureTree } from './StructureTree';
 import { cn } from '@/lib/utils';
 
@@ -45,6 +60,7 @@ interface ComponentDef {
  * All available components organized by category
  */
 const COMPONENTS: ComponentDef[] = [
+  // Layout Components
   {
     id: 'container',
     icon: Box,
@@ -53,6 +69,39 @@ const COMPONENTS: ComponentDef[] = [
     category: 'layout',
     element: <Element is={Container} canvas />,
   },
+  {
+    id: 'section',
+    icon: LayoutDashboard,
+    label: 'Section',
+    description: 'Full-width page section',
+    category: 'layout',
+    element: <Element is={Section} canvas />,
+  },
+  {
+    id: 'row',
+    icon: Rows,
+    label: 'Row',
+    description: 'Horizontal flex container',
+    category: 'layout',
+    element: <Element is={Row} canvas />,
+  },
+  {
+    id: 'column',
+    icon: Columns,
+    label: 'Column',
+    description: 'Flex column item',
+    category: 'layout',
+    element: <Element is={Column} canvas />,
+  },
+  {
+    id: 'div',
+    icon: Square,
+    label: 'Div',
+    description: 'Generic wrapper block',
+    category: 'layout',
+    element: <Element is={Div} canvas />,
+  },
+  // Basic Components
   {
     id: 'text',
     icon: Type,
@@ -70,6 +119,63 @@ const COMPONENTS: ComponentDef[] = [
     element: <Heading text="Heading" />,
   },
   {
+    id: 'button',
+    icon: MousePointer2,
+    label: 'Button',
+    description: 'Interactive button',
+    category: 'basic',
+    element: <BuilderButton text="Click me" />,
+  },
+  {
+    id: 'divider',
+    icon: Minus,
+    label: 'Divider',
+    description: 'Horizontal line separator',
+    category: 'basic',
+    element: <Divider />,
+  },
+  {
+    id: 'spacer',
+    icon: MoveVertical,
+    label: 'Spacer',
+    description: 'Vertical spacing block',
+    category: 'basic',
+    element: <Spacer height="40px" />,
+  },
+  {
+    id: 'icon',
+    icon: Circle,
+    label: 'Icon',
+    description: 'Lucide icon display',
+    category: 'basic',
+    element: <Icon iconName="Star" />,
+  },
+  {
+    id: 'iconbox',
+    icon: LayoutGrid,
+    label: 'Icon Box',
+    description: 'Icon with title and text',
+    category: 'basic',
+    element: <IconBox iconName="Star" heading="Feature Title" />,
+  },
+  {
+    id: 'link',
+    icon: Link2,
+    label: 'Link',
+    description: 'Styled anchor link',
+    category: 'basic',
+    element: <Link text="Click here" href="#" />,
+  },
+  {
+    id: 'list',
+    icon: ListOrdered,
+    label: 'List',
+    description: 'Bullet or numbered list',
+    category: 'basic',
+    element: <List />,
+  },
+  // Media Components
+  {
     id: 'image',
     icon: ImageIcon,
     label: 'Image',
@@ -78,13 +184,14 @@ const COMPONENTS: ComponentDef[] = [
     element: <BuilderImage />,
   },
   {
-    id: 'button',
-    icon: MousePointer2,
-    label: 'Button',
-    description: 'Interactive button',
-    category: 'basic',
-    element: <BuilderButton text="Click me" />,
+    id: 'video',
+    icon: Video,
+    label: 'Video',
+    description: 'YouTube/Vimeo/MP4 embed',
+    category: 'media',
+    element: <BuilderVideo />,
   },
+  // Advanced Components
   {
     id: 'html',
     icon: Code2,

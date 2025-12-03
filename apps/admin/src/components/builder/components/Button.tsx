@@ -4,6 +4,7 @@
 import { useNode, useEditor } from '@craftjs/core';
 import { cn } from '@/lib/utils';
 import { useBuilderStore } from '@/stores/builder';
+import { renderIcon } from '../inspector/inputs/IconPicker';
 import type { FC } from 'react';
 import type { ButtonProps } from '../types';
 import { ButtonSettings } from './Button.settings';
@@ -22,6 +23,9 @@ export const BuilderButton: FC<ButtonProps> & { craft?: Record<string, unknown> 
   borderRadius = 6,
   fullWidth = false,
   className = '',
+  iconBefore,
+  iconAfter,
+  iconSize = 16,
 }) => {
   const { isPreviewMode } = useBuilderStore();
   
@@ -91,28 +95,37 @@ export const BuilderButton: FC<ButtonProps> & { craft?: Record<string, unknown> 
   const ButtonElement = href ? 'a' : 'button';
   const linkProps = href ? { href, target, rel: target === '_blank' ? 'noopener noreferrer' : undefined } : {};
 
+  // Render icons
+  const iconBeforeElement = iconBefore ? renderIcon(iconBefore, { size: iconSize }) : null;
+  const iconAfterElement = iconAfter ? renderIcon(iconAfter, { size: iconSize }) : null;
+
   return (
     <span className="relative inline-block">
       {/* Selection label */}
       {isSelected && !isPreviewMode && (
-        <span className="absolute -top-5 left-0 text-xs text-white bg-blue-600 px-1.5 py-0.5 rounded-t font-medium z-10">
+        <span className="absolute -top-5 left-0 text-xs text-white bg-blue-600 px-1.5 py-0.5 rounded-t-lg font-medium z-10">
           Button
         </span>
       )}
       <ButtonElement
-        ref={(ref) => ref && connect(drag(ref))}
+        ref={(ref: HTMLButtonElement | HTMLAnchorElement | null) => {
+          if (ref) connect(drag(ref));
+        }}
         className={cn(
           baseStyles,
           sizeStyles[size],
           !hasCustomColors && variantStyles[variant],
           fullWidth && 'w-full',
           !isPreviewMode && 'transition-all duration-150',
+          (iconBefore || iconAfter) && 'gap-2',
           className
         )}
         style={customStyle}
         {...linkProps}
       >
+        {iconBeforeElement}
         {text}
+        {iconAfterElement}
       </ButtonElement>
     </span>
   );
@@ -132,6 +145,9 @@ BuilderButton.craft = {
     borderRadius: 6,
     fullWidth: false,
     className: '',
+    iconBefore: '',
+    iconAfter: '',
+    iconSize: 16,
   },
   related: {
     settings: ButtonSettings,

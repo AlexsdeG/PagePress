@@ -109,9 +109,9 @@
 **Status:** ✅ Complete
 
 ### Element Visual States (HIGH PRIORITY)
-- [ ] **Hover Outline:** Light dashed border on element hover
-- [ ] **Selection Highlight:** Solid border with corner handles on selected
-- [ ] **Parent Highlight:** Subtle outline on parent when child selected
+- [x] **Hover Outline:** Light dashed border on element hover
+- [x] **Selection Highlight:** Solid border with corner handles on selected
+- [x] **Parent Highlight:** Subtle outline on parent when child selected
 - [x] **Debug/Wireframe Mode:** Toggle to show all container boundaries
 - [x] **Spacing Visualizer:** Color-coded margin (orange) / padding (green)
 

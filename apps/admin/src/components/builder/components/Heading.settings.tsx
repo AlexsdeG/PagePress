@@ -163,6 +163,41 @@ export function HeadingSettings() {
           </div>
         </AccordionContent>
       </AccordionItem>
+
+      {/* Link Section */}
+      <AccordionItem value="link">
+        <AccordionTrigger className="text-sm">Link</AccordionTrigger>
+        <AccordionContent className="space-y-4">
+          {/* Link URL */}
+          <div className="space-y-2">
+            <Label className="text-xs">Link URL (optional)</Label>
+            <Input
+              value={props.linkUrl || ''}
+              onChange={(e) => setProp((p: HeadingProps) => (p.linkUrl = e.target.value))}
+              placeholder="https://example.com"
+            />
+          </div>
+
+          {/* Link Target */}
+          {props.linkUrl && (
+            <div className="space-y-2">
+              <Label className="text-xs">Open In</Label>
+              <Select
+                value={props.linkTarget || '_self'}
+                onValueChange={(value) => setProp((p: HeadingProps) => (p.linkTarget = value as HeadingProps['linkTarget']))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_self">Same Window</SelectItem>
+                  <SelectItem value="_blank">New Window</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </AccordionContent>
+      </AccordionItem>
     </Accordion>
   );
 }

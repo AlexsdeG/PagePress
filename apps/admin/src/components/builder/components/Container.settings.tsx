@@ -20,7 +20,9 @@ import {
 } from '@/components/ui/accordion';
 import { ColorInput } from '../inspector/inputs/ColorInput';
 import { SpacingInput } from '../inspector/inputs/SpacingInput';
+import { TagSelector } from '../inspector/inputs/TagSelector';
 import type { ContainerProps } from '../types';
+import type { HtmlTag } from '../inspector/inputs/TagSelector';
 
 /**
  * Settings panel for Container component
@@ -34,7 +36,20 @@ export function ContainerSettings() {
   }));
 
   return (
-    <Accordion type="multiple" defaultValue={['layout', 'spacing', 'style']} className="w-full">
+    <Accordion type="multiple" defaultValue={['element', 'layout', 'spacing', 'style']} className="w-full">
+      {/* Element Section */}
+      <AccordionItem value="element">
+        <AccordionTrigger className="text-sm">Element</AccordionTrigger>
+        <AccordionContent className="space-y-4">
+          {/* HTML Tag */}
+          <TagSelector
+            value={(props.htmlTag as HtmlTag) || 'div'}
+            onChange={(value: HtmlTag) => setProp((p: ContainerProps) => (p.htmlTag = value))}
+            label="HTML Tag"
+          />
+        </AccordionContent>
+      </AccordionItem>
+
       {/* Layout Section */}
       <AccordionItem value="layout">
         <AccordionTrigger className="text-sm">Layout</AccordionTrigger>

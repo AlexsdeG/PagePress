@@ -19,6 +19,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { ColorInput } from '../inspector/inputs/ColorInput';
+import { IconPicker } from '../inspector/inputs/IconPicker';
 import type { ButtonProps } from '../types';
 
 /**
@@ -33,7 +34,7 @@ export function ButtonSettings() {
   }));
 
   return (
-    <Accordion type="multiple" defaultValue={['content', 'appearance', 'link', 'style']} className="w-full">
+    <Accordion type="multiple" defaultValue={['content', 'appearance', 'icons', 'link', 'style']} className="w-full">
       {/* Content Section */}
       <AccordionItem value="content">
         <AccordionTrigger className="text-sm">Content</AccordionTrigger>
@@ -102,6 +103,44 @@ export function ButtonSettings() {
             />
             <Label htmlFor="fullWidth" className="text-xs">Full Width</Label>
           </div>
+        </AccordionContent>
+      </AccordionItem>
+
+      {/* Icons Section */}
+      <AccordionItem value="icons">
+        <AccordionTrigger className="text-sm">Icons</AccordionTrigger>
+        <AccordionContent className="space-y-4">
+          {/* Icon Before */}
+          <div className="space-y-2">
+            <Label className="text-xs">Icon Before Text</Label>
+            <IconPicker
+              value={props.iconBefore || ''}
+              onChange={(value) => setProp((p: ButtonProps) => (p.iconBefore = value))}
+            />
+          </div>
+
+          {/* Icon After */}
+          <div className="space-y-2">
+            <Label className="text-xs">Icon After Text</Label>
+            <IconPicker
+              value={props.iconAfter || ''}
+              onChange={(value) => setProp((p: ButtonProps) => (p.iconAfter = value))}
+            />
+          </div>
+
+          {/* Icon Size */}
+          {(props.iconBefore || props.iconAfter) && (
+            <div className="space-y-2">
+              <Label className="text-xs">Icon Size ({props.iconSize ?? 16}px)</Label>
+              <Slider
+                value={[props.iconSize ?? 16]}
+                onValueChange={([value]) => setProp((p: ButtonProps) => (p.iconSize = value))}
+                min={12}
+                max={32}
+                step={2}
+              />
+            </div>
+          )}
         </AccordionContent>
       </AccordionItem>
 

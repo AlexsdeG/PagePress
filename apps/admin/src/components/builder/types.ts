@@ -15,6 +15,7 @@ export interface BaseComponentProps {
  * Container component props
  */
 export interface ContainerProps extends BaseComponentProps {
+  htmlTag?: 'div' | 'section' | 'article' | 'aside' | 'nav' | 'header' | 'footer' | 'main';
   display?: 'block' | 'flex' | 'grid';
   flexDirection?: 'row' | 'column' | 'row-reverse' | 'column-reverse';
   justifyContent?: 'start' | 'center' | 'end' | 'between' | 'around' | 'evenly';
@@ -61,6 +62,8 @@ export interface HeadingProps extends BaseComponentProps {
   fontWeight?: 'normal' | 'medium' | 'semibold' | 'bold';
   textAlign?: 'left' | 'center' | 'right';
   color?: string;
+  linkUrl?: string;
+  linkTarget?: '_self' | '_blank';
 }
 
 /**
@@ -88,6 +91,9 @@ export interface ButtonProps extends BaseComponentProps {
   textColor?: string;
   borderRadius?: number;
   fullWidth?: boolean;
+  iconBefore?: string;
+  iconAfter?: string;
+  iconSize?: number;
 }
 
 /**

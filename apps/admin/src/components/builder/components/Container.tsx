@@ -1,6 +1,7 @@
 // PagePress v0.0.6 - 2025-12-03
 // Container component for the page builder
 
+import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
 import { cn } from '@/lib/utils';
 import { useBuilderStore } from '@/stores/builder';
@@ -12,6 +13,7 @@ import { ContainerSettings } from './Container.settings';
  * Container component - A flexible wrapper component
  */
 export const Container: FC<ContainerProps> & { craft?: Record<string, unknown> } = ({
+  htmlTag = 'div',
   display = 'flex',
   flexDirection = 'column',
   justifyContent = 'start',
@@ -119,9 +121,12 @@ export const Container: FC<ContainerProps> & { craft?: Record<string, unknown> }
     };
   };
 
-  return (
-    <div
-      ref={(ref) => {
+  const Tag = htmlTag;
+
+  return React.createElement(
+    Tag,
+    {
+      ref: (ref: HTMLElement | null) => {
         if (ref) {
           // Canvas containers only need connect (for dropping)
           // Non-canvas containers need both connect and drag
@@ -131,8 +136,8 @@ export const Container: FC<ContainerProps> & { craft?: Record<string, unknown> }
             connect(drag(ref));
           }
         }
-      }}
-      className={cn(
+      },
+      className: cn(
         'relative',
         display === 'flex' && 'flex',
         display === 'grid' && 'grid',
@@ -142,8 +147,8 @@ export const Container: FC<ContainerProps> & { craft?: Record<string, unknown> }
         widthClass,
         !isPreviewMode && 'transition-all duration-150',
         className
-      )}
-      style={{
+      ),
+      style: {
         gap: `${gap}px`,
         ...paddingStyle,
         ...marginStyle,
@@ -154,16 +159,17 @@ export const Container: FC<ContainerProps> & { craft?: Record<string, unknown> }
         borderStyle: borderWidth > 0 ? 'solid' : 'none',
         minHeight: `${minHeight}px`,
         ...getOutlineStyles(),
-      }}
-    >
+      },
+    },
+    <>
       {/* Selection label */}
       {isSelected && !isPreviewMode && (
-        <span className="absolute -top-5 left-0 text-xs text-white bg-blue-600 px-1.5 py-0.5 rounded-t font-medium z-10">
+        <span className="absolute -top-5 left-0 text-xs text-white bg-blue-600 px-1.5 py-0.5 rounded-t-lg font-medium z-10">
           Container
         </span>
       )}
       {children}
-    </div>
+    </>
   );
 };
 
@@ -173,6 +179,7 @@ export const Container: FC<ContainerProps> & { craft?: Record<string, unknown> }
 Container.craft = {
   displayName: 'Container',
   props: {
+    htmlTag: 'div',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'start',

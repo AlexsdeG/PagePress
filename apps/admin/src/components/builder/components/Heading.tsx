@@ -1,6 +1,7 @@
 // PagePress v0.0.6 - 2025-12-03
 // Heading component for the page builder
 
+import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
 import { cn } from '@/lib/utils';
 import { useBuilderStore } from '@/stores/builder';
@@ -30,6 +31,8 @@ export const Heading: FC<HeadingProps> & { craft?: Record<string, unknown> } = (
   fontWeight = 'bold',
   textAlign = 'left',
   color = '#000000',
+  linkUrl = '',
+  linkTarget = '_self',
   className = '',
 }) => {
   const { isPreviewMode } = useBuilderStore();
@@ -59,7 +62,7 @@ export const Heading: FC<HeadingProps> & { craft?: Record<string, unknown> } = (
     right: 'text-right',
   };
 
-  const HeadingTag = `h${level}` as keyof JSX.IntrinsicElements;
+  const HeadingTag = `h${level}` as 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
   const actualFontSize = fontSize ?? defaultFontSizes[level];
 
   // Get outline styles based on selection/hover state
@@ -83,30 +86,60 @@ export const Heading: FC<HeadingProps> & { craft?: Record<string, unknown> } = (
     return {};
   };
 
-  return (
-    <HeadingTag
-      ref={(ref) => ref && connect(drag(ref))}
-      className={cn(
+  // Handle link click in editor mode
+  const handleLinkClick = (e: React.MouseEvent) => {
+    if (!isPreviewMode) {
+      e.preventDefault();
+    }
+  };
+
+  // Render content with optional link
+  const renderContent = () => {
+    if (linkUrl) {
+      return (
+        <a
+          href={linkUrl}
+          target={linkTarget}
+          rel={linkTarget === '_blank' ? 'noopener noreferrer' : undefined}
+          onClick={handleLinkClick}
+          className="hover:opacity-80 transition-opacity"
+          style={{ color: 'inherit', textDecoration: 'none' }}
+        >
+          {text}
+        </a>
+      );
+    }
+    return text;
+  };
+
+  return React.createElement(
+    HeadingTag,
+    {
+      ref: (ref: HTMLHeadingElement | null) => {
+        if (ref) connect(drag(ref));
+      },
+      className: cn(
         'relative',
         fontWeightClass[fontWeight],
         textAlignClass[textAlign],
         !isPreviewMode && 'transition-all duration-150',
         className
-      )}
-      style={{
+      ),
+      style: {
         fontSize: `${actualFontSize}px`,
         color,
         ...getOutlineStyles(),
-      }}
-    >
+      },
+    },
+    <>
       {/* Selection label */}
       {isSelected && !isPreviewMode && (
-        <span className="absolute -top-5 left-0 text-xs text-white bg-blue-600 px-1.5 py-0.5 rounded-t font-medium z-10">
+        <span className="absolute -top-5 left-0 text-xs text-white bg-blue-600 px-1.5 py-0.5 rounded-t-lg font-medium z-10">
           Heading
         </span>
       )}
-      {text}
-    </HeadingTag>
+      {renderContent()}
+    </>
   );
 };
 
@@ -121,6 +154,8 @@ Heading.craft = {
     fontWeight: 'bold',
     textAlign: 'left',
     color: '#000000',
+    linkUrl: '',
+    linkTarget: '_self',
     className: '',
   },
   related: {
