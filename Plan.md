@@ -69,11 +69,11 @@
 - [ ] **Missing:**
     - [ ] Users management page
     - [ ] Role-based permission display
-    - [ ] invite url, first time setup you can create account, after first time setup, var in a created config file or .env file, for admin backend page "/admin". login page remove create account option.
+    - [ ] invite url, first time setup you can create account, after first time setup, var in a created config file or .env file, for admin backend page "/pp-admin". login page remove create account option.
     - [ ] users dispaly eg who created which pages, tempalte, logs of all actions
     - [ ] email and username login, emial code when changing email or for admin first account setup
     - [ ] forgot pw and jwt token login when saved otherwise username/email and password
-    - [ ] update all backend admin routes to /admin/... (eg /admin/dashboard)
+    - [ ] update all backend admin routes to /pp-admin/... (eg /pp-admin/dashboard)
     - [ ] seperate pages from tempaltes and other, only pages can be dispalyed on the forntend, everything else has to be part or dispalyed on a page
 
 ---
