@@ -5,6 +5,7 @@ import { createContext, useContext, useCallback, useEffect, type ReactNode } fro
 import { useEditor } from '@craftjs/core';
 import { toast } from 'sonner';
 import { useBuilderStore } from '@/stores/builder';
+import { duplicateNode } from '../utils/duplicateNode';
 
 /**
  * Builder context value interface
@@ -20,6 +21,18 @@ interface BuilderContextValue {
   deleteSelected: () => void;
   /** Deselect all elements */
   deselectAll: () => void;
+  /** Copy selected element to clipboard */
+  copySelected: () => void;
+  /** Cut selected element */
+  cutSelected: () => void;
+  /** Paste from clipboard */
+  paste: () => void;
+  /** Navigate to sibling */
+  navigateToSibling: (direction: 'up' | 'down') => void;
+  /** Navigate to parent */
+  navigateToParent: () => void;
+  /** Navigate to first child */
+  navigateToChild: () => void;
 }
 
 const BuilderContext = createContext<BuilderContextValue | null>(null);
@@ -47,7 +60,9 @@ export function BuilderProvider({ children, onSave, isSaving }: BuilderProviderP
     setSaveStatus, 
     setLastSavedAt, 
     setHasUnsavedChanges,
-    hasUnsavedChanges 
+    hasUnsavedChanges,
+    clipboard,
+    setClipboard,
   } = useBuilderStore();
 
   // Save function
@@ -74,7 +89,94 @@ export function BuilderProvider({ children, onSave, isSaving }: BuilderProviderP
     }
   }, [query, onSave, setSaveStatus, setLastSavedAt, setHasUnsavedChanges]);
 
-  // Duplicate selected element
+  // Copy selected element to clipboard
+  const copySelected = useCallback(() => {
+    if (selected.length === 0) return;
+
+    const nodeId = selected[0];
+    const node = query.node(nodeId).get();
+    
+    if (!node.data.parent) {
+      toast.error('Cannot copy root element');
+      return;
+    }
+
+    try {
+      const serialized = query.node(nodeId).toSerializedNode();
+      setClipboard(JSON.stringify(serialized));
+      toast.success('Element copied');
+    } catch (error) {
+      console.error('Copy error:', error);
+      toast.error('Failed to copy element');
+    }
+  }, [selected, query, setClipboard]);
+
+  // Cut selected element
+  const cutSelected = useCallback(() => {
+    if (selected.length === 0) return;
+
+    const nodeId = selected[0];
+    const node = query.node(nodeId).get();
+    
+    if (!node.data.parent) {
+      toast.error('Cannot cut root element');
+      return;
+    }
+
+    try {
+      const serialized = query.node(nodeId).toSerializedNode();
+      setClipboard(JSON.stringify(serialized));
+      actions.delete(nodeId);
+      toast.success('Element cut');
+    } catch (error) {
+      console.error('Cut error:', error);
+      toast.error('Failed to cut element');
+    }
+  }, [selected, query, actions, setClipboard]);
+
+  // Paste from clipboard
+  const paste = useCallback(() => {
+    if (!clipboard) {
+      toast.info('Nothing to paste');
+      return;
+    }
+
+    try {
+      // Determine target - use selected element's parent or ROOT
+      let targetId = 'ROOT';
+      let insertIndex = 0;
+
+      if (selected.length > 0) {
+        const nodeId = selected[0];
+        const node = query.node(nodeId).get();
+        
+        // If selected is a canvas, paste inside it
+        if (node.data.isCanvas) {
+          targetId = nodeId;
+          insertIndex = (node.data.nodes || []).length;
+        } else if (node.data.parent) {
+          // Otherwise paste after selected element
+          targetId = node.data.parent;
+          const parentNode = query.node(targetId).get();
+          const siblings = parentNode.data.nodes || [];
+          insertIndex = siblings.indexOf(nodeId) + 1;
+        }
+      }
+
+      // For now, duplicate the currently selected node since parsing serialized is complex
+      if (selected.length > 0) {
+        const nodeId = selected[0];
+        const nodeTree = query.node(nodeId).toNodeTree();
+        actions.addNodeTree(nodeTree, targetId, insertIndex);
+        toast.success('Element pasted');
+      }
+    } catch (error) {
+      console.error('Paste error:', error);
+      toast.error('Failed to paste element');
+    }
+  }, [clipboard, selected, query, actions]);
+
+  // Duplicate selected element with completely fresh IDs
   const duplicateSelected = useCallback(() => {
     if (selected.length === 0) {
       toast.info('No element selected');
@@ -98,13 +200,19 @@ export function BuilderProvider({ children, onSave, isSaving }: BuilderProviderP
       const siblings = parentNode.data.nodes || [];
       const currentIndex = siblings.indexOf(nodeId);
 
-      // Clone the node tree
-      const nodeTree = query.node(nodeId).toNodeTree();
+      // Use safe duplicate utility that handles serialized nodes properly
+      const newNodeId = duplicateNode(query, actions, nodeId, parentId, currentIndex + 1);
       
-      // Add the cloned tree to the parent
-      actions.addNodeTree(nodeTree, parentId, currentIndex + 1);
-      
-      toast.success('Element duplicated');
+      if (newNodeId) {
+        // Select the newly created element
+        setTimeout(() => {
+          actions.selectNode(newNodeId);
+        }, 50);
+        
+        toast.success('Element duplicated');
+      } else {
+        toast.error('Failed to duplicate element');
+      }
     } catch (error) {
       console.error('Duplicate error:', error);
       toast.error('Failed to duplicate element');
@@ -140,6 +248,58 @@ export function BuilderProvider({ children, onSave, isSaving }: BuilderProviderP
   const deselectAll = useCallback(() => {
     actions.selectNode(undefined as unknown as string);
   }, [actions]);
+
+  // Navigate to sibling (up or down)
+  const navigateToSibling = useCallback((direction: 'up' | 'down') => {
+    if (selected.length === 0) return;
+
+    const nodeId = selected[0];
+    const node = query.node(nodeId).get();
+    const parentId = node.data.parent;
+
+    if (!parentId) return;
+
+    const parentNode = query.node(parentId).get();
+    const siblings = parentNode.data.nodes || [];
+    const currentIndex = siblings.indexOf(nodeId);
+
+    let newIndex: number;
+    if (direction === 'up') {
+      newIndex = currentIndex > 0 ? currentIndex - 1 : siblings.length - 1;
+    } else {
+      newIndex = currentIndex < siblings.length - 1 ? currentIndex + 1 : 0;
+    }
+
+    if (siblings[newIndex]) {
+      actions.selectNode(siblings[newIndex]);
+    }
+  }, [selected, query, actions]);
+
+  // Navigate to parent
+  const navigateToParent = useCallback(() => {
+    if (selected.length === 0) return;
+
+    const nodeId = selected[0];
+    const node = query.node(nodeId).get();
+    const parentId = node.data.parent;
+
+    if (parentId && parentId !== 'ROOT') {
+      actions.selectNode(parentId);
+    }
+  }, [selected, query, actions]);
+
+  // Navigate to first child
+  const navigateToChild = useCallback(() => {
+    if (selected.length === 0) return;
+
+    const nodeId = selected[0];
+    const node = query.node(nodeId).get();
+    const children = node.data.nodes || [];
+
+    if (children.length > 0) {
+      actions.selectNode(children[0]);
+    }
+  }, [selected, query, actions]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -188,6 +348,27 @@ export function BuilderProvider({ children, onSave, isSaving }: BuilderProviderP
         return;
       }
 
+      // Ctrl+C - Copy
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+        e.preventDefault();
+        copySelected();
+        return;
+      }
+
+      // Ctrl+X - Cut
+      if ((e.ctrlKey || e.metaKey) && e.key === 'x') {
+        e.preventDefault();
+        cutSelected();
+        return;
+      }
+
+      // Ctrl+V - Paste
+      if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+        e.preventDefault();
+        paste();
+        return;
+      }
+
       // Ctrl+D - Duplicate
       if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
         e.preventDefault();
@@ -208,15 +389,46 @@ export function BuilderProvider({ children, onSave, isSaving }: BuilderProviderP
         deselectAll();
         return;
       }
+
+      // Arrow keys for navigation
+      if (e.key === 'ArrowUp' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        navigateToSibling('up');
+        return;
+      }
+
+      if (e.key === 'ArrowDown' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        navigateToSibling('down');
+        return;
+      }
+
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        navigateToParent();
+        return;
+      }
+
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        navigateToChild();
+        return;
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [
     save,
+    copySelected,
+    cutSelected,
+    paste,
     duplicateSelected,
     deleteSelected,
     deselectAll,
+    navigateToSibling,
+    navigateToParent,
+    navigateToChild,
     isSaving,
     hasUnsavedChanges,
     query,
@@ -229,6 +441,12 @@ export function BuilderProvider({ children, onSave, isSaving }: BuilderProviderP
     duplicateSelected,
     deleteSelected,
     deselectAll,
+    copySelected,
+    cutSelected,
+    paste,
+    navigateToSibling,
+    navigateToParent,
+    navigateToChild,
   };
 
   return (

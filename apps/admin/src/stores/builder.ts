@@ -1,4 +1,4 @@
-// PagePress v0.0.5 - 2025-11-30
+// PagePress v0.0.6 - 2025-12-03
 // Zustand store for builder state management
 
 import { create } from 'zustand';
@@ -40,6 +40,16 @@ interface BuilderState {
   setPreviewMode: (isPreview: boolean) => void;
   togglePreviewMode: () => void;
   
+  // Debug/Wireframe mode - shows all container boundaries
+  isWireframeMode: boolean;
+  setWireframeMode: (enabled: boolean) => void;
+  toggleWireframeMode: () => void;
+  
+  // Spacing visualizer - shows margin (orange) and padding (green)
+  showSpacingVisualizer: boolean;
+  setShowSpacingVisualizer: (show: boolean) => void;
+  toggleSpacingVisualizer: () => void;
+  
   // Sidebar
   leftSidebarOpen: boolean;
   rightSidebarOpen: boolean;
@@ -66,6 +76,18 @@ interface BuilderState {
   selectedNodeId: string | null;
   setSelectedNodeId: (id: string | null) => void;
   
+  // Hovered element in structure tree
+  hoveredNodeId: string | null;
+  setHoveredNodeId: (id: string | null) => void;
+  
+  // Drag state
+  isDragging: boolean;
+  setIsDragging: (dragging: boolean) => void;
+  
+  // Clipboard for copy/paste
+  clipboard: string | null;
+  setClipboard: (nodeJson: string | null) => void;
+  
   // Reset
   reset: () => void;
 }
@@ -76,6 +98,8 @@ interface BuilderState {
 const defaultState = {
   viewport: 'desktop' as ViewportMode,
   isPreviewMode: false,
+  isWireframeMode: false,
+  showSpacingVisualizer: false,
   leftSidebarOpen: true,
   rightSidebarOpen: true,
   activeLeftPanel: 'components' as SidebarPanel,
@@ -85,6 +109,9 @@ const defaultState = {
   autoSaveEnabled: true,
   autoSaveInterval: 30000, // 30 seconds
   selectedNodeId: null,
+  hoveredNodeId: null,
+  isDragging: false,
+  clipboard: null,
 };
 
 /**
@@ -98,6 +125,12 @@ export const useBuilderStore = create<BuilderState>((set) => ({
   setPreviewMode: (isPreviewMode) => set({ isPreviewMode }),
   togglePreviewMode: () => set((state) => ({ isPreviewMode: !state.isPreviewMode })),
   
+  setWireframeMode: (isWireframeMode) => set({ isWireframeMode }),
+  toggleWireframeMode: () => set((state) => ({ isWireframeMode: !state.isWireframeMode })),
+  
+  setShowSpacingVisualizer: (showSpacingVisualizer) => set({ showSpacingVisualizer }),
+  toggleSpacingVisualizer: () => set((state) => ({ showSpacingVisualizer: !state.showSpacingVisualizer })),
+  
   setLeftSidebarOpen: (leftSidebarOpen) => set({ leftSidebarOpen }),
   setRightSidebarOpen: (rightSidebarOpen) => set({ rightSidebarOpen }),
   setActiveLeftPanel: (activeLeftPanel) => set({ activeLeftPanel }),
@@ -110,6 +143,11 @@ export const useBuilderStore = create<BuilderState>((set) => ({
   setAutoSaveInterval: (autoSaveInterval) => set({ autoSaveInterval }),
   
   setSelectedNodeId: (selectedNodeId) => set({ selectedNodeId }),
+  setHoveredNodeId: (hoveredNodeId) => set({ hoveredNodeId }),
+  
+  setIsDragging: (isDragging) => set({ isDragging }),
+  
+  setClipboard: (clipboard) => set({ clipboard }),
   
   reset: () => set(defaultState),
 }));

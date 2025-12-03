@@ -23,6 +23,18 @@ interface MediaPickerDialogProps {
 }
 
 /**
+ * Convert absolute URLs to relative for Vite proxy
+ */
+function getProxiedUrl(url: string): string {
+  if (!url) return '';
+  // If the URL is from localhost:3000, convert to relative /uploads path
+  if (url.includes('localhost:3000/uploads/')) {
+    return url.replace(/http:\/\/localhost:3000/, '');
+  }
+  return url;
+}
+
+/**
  * Media picker dialog component
  */
 export function MediaPickerDialog({
@@ -129,7 +141,7 @@ export function MediaPickerDialog({
                 >
                   {item.mimeType.startsWith('image/') ? (
                     <img
-                      src={item.url}
+                      src={getProxiedUrl(item.url)}
                       alt={item.altText || item.originalName}
                       className="w-full h-full object-cover"
                     />

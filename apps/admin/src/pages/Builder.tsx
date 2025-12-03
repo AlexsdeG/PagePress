@@ -1,7 +1,7 @@
 // PagePress v0.0.6 - 2025-12-03
 // Visual page builder with Craft.js
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useBlocker } from 'react-router-dom';
 import { Editor, useEditor } from '@craftjs/core';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -39,6 +39,10 @@ export function BuilderPage() {
 
   const { reset, setHasUnsavedChanges, isPreviewMode, hasUnsavedChanges } = useBuilderStore();
 
+  // Local state for page title (can be updated via rename)
+  // IMPORTANT: Must be before any conditional returns to follow Rules of Hooks
+  const [currentTitle, setCurrentTitle] = useState(page?.title || '');
+
   // Navigation blocker for unsaved changes
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
@@ -59,6 +63,13 @@ export function BuilderPage() {
       navigate('/pages');
     }
   }, [id, navigate]);
+
+  // Update title if page changes
+  useEffect(() => {
+    if (page?.title) {
+      setCurrentTitle(page.title);
+    }
+  }, [page?.title]);
 
   // Warn before browser close with unsaved changes
   useEffect(() => {
@@ -142,10 +153,12 @@ export function BuilderPage() {
       >
         <BuilderProvider onSave={save} isSaving={isSaving}>
           <BuilderLayout
-            pageTitle={page.title}
+            pageId={page.id}
+            pageTitle={currentTitle}
             initialContent={initialContent}
             isSaving={isSaving}
             queueAutoSave={queueAutoSave}
+            onTitleChange={setCurrentTitle}
           />
         </BuilderProvider>
       </Editor>
@@ -177,19 +190,23 @@ export function BuilderPage() {
  * Internal builder layout that has access to Editor context
  */
 interface BuilderLayoutProps {
+  pageId: string;
   pageTitle: string;
   initialContent?: string;
   isSaving: boolean;
   queueAutoSave: (content: Record<string, unknown>) => void;
+  onTitleChange: (newTitle: string) => void;
 }
 
-function BuilderLayout({ pageTitle, initialContent, isSaving, queueAutoSave }: BuilderLayoutProps) {
+function BuilderLayout({ pageId, pageTitle, initialContent, isSaving, queueAutoSave, onTitleChange }: BuilderLayoutProps) {
   return (
     <div className="h-screen flex flex-col bg-background">
       <AutoSaveHandler queueAutoSave={queueAutoSave} />
       <TopBar
+        pageId={pageId}
         pageTitle={pageTitle}
         isSaving={isSaving}
+        onTitleChange={onTitleChange}
       />
       <div className="flex-1 flex overflow-hidden">
         <LeftSidebar />

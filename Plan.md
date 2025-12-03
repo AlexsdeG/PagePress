@@ -106,14 +106,14 @@
 
 ## Phase 4B: Builder Core UX (Bricks-Inspired)
 **Goal:** Visual feedback and interaction polish.
-**Status:** ❌ Not Started
+**Status:** ✅ Complete
 
 ### Element Visual States (HIGH PRIORITY)
 - [ ] **Hover Outline:** Light dashed border on element hover
 - [ ] **Selection Highlight:** Solid border with corner handles on selected
 - [ ] **Parent Highlight:** Subtle outline on parent when child selected
-- [ ] **Debug/Wireframe Mode:** Toggle to show all container boundaries
-- [ ] **Spacing Visualizer:** Color-coded margin (orange) / padding (green)
+- [x] **Debug/Wireframe Mode:** Toggle to show all container boundaries
+- [x] **Spacing Visualizer:** Color-coded margin (orange) / padding (green)
 
 ### Drag & Drop Feedback
 - [ ] **Drop Zones:** Blue highlighted areas when dragging
@@ -123,22 +123,22 @@
 - [ ] **Cannot Drop:** Red indicator for invalid drop targets
 
 ### Selection & Navigation
-- [ ] **Breadcrumb Bar:** Show hierarchy (Section > Container > Heading), click to select parent
-- [ ] **Floating Toolbar:** Quick actions on selected element (duplicate, delete, move up/down)
-- [ ] **Right-click Context Menu:** Copy, Paste, Duplicate, Delete, Move, Wrap in Container
-- [ ] **Arrow Key Navigation:** Navigate between siblings with arrow keys
+- [x] **Breadcrumb Bar:** Show hierarchy (Section > Container > Heading), click to select parent
+- [x] **Floating Toolbar:** Quick actions on selected element (duplicate, delete, move up/down)
+- [x] **Right-click Context Menu:** Copy, Paste, Duplicate, Delete, Move, Wrap in Container
+- [x] **Arrow Key Navigation:** Navigate between siblings with arrow keys
 
 ### Left Sidebar Improvements
-- [ ] **Component Grid:** 2-column grid with icons (like Bricks)
-- [ ] **Component Categories:** Collapsible: Layout, Basic, General, Media
-- [ ] **Search Filter:** Filter components by name
-- [ ] **Component Tooltips:** Show description on hover
+- [x] **Component Grid:** 2-column grid with icons (like Bricks)
+- [x] **Component Categories:** Collapsible: Layout, Basic, General, Media
+- [x] **Search Filter:** Filter components by name
+- [x] **Component Tooltips:** Show description on hover
 
 ### Right Sidebar Improvements
-- [ ] **Structure Panel:** Styled tree view with icons per component type
+- [x] **Structure Panel:** Styled tree view with icons per component type
 - [ ] **Drag Reorder:** Reorder elements via drag in structure panel
-- [ ] **Quick Actions:** Rename, hide, delete, duplicate buttons
-- [ ] **Collapse/Expand:** Collapse container children in tree
+- [x] **Quick Actions:** Rename, hide, delete, duplicate buttons
+- [x] **Collapse/Expand:** Collapse container children in tree
 
 ---
 
@@ -179,6 +179,10 @@
 ## Phase 6: Advanced Styling System
 **Goal:** Bricks-level style controls.
 **Status:** ❌ Not Started
+
+### General
+- [ ] edit name of element in settings and in strucutre
+- [ ] better input with eg autocompelte or just input, so you can always also add a own value eg height or margin and more
 
 ### Layout Settings (Add to all components)
 - [ ] **Position:** Static, Relative, Absolute, Fixed, Sticky

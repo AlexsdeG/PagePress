@@ -91,10 +91,13 @@ export interface ButtonProps extends BaseComponentProps {
 }
 
 /**
- * HTML Block component props
+ * HTML Block component props (now CodeBlock)
  */
 export interface HTMLBlockProps extends BaseComponentProps {
   html?: string;
+  css?: string;
+  javascript?: string;
+  minHeight?: number;
 }
 
 /**

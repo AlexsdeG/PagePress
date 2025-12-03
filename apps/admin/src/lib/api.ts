@@ -30,13 +30,15 @@ async function fetchApi<T>(
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
   
+  // Only set Content-Type for requests with a body
+  const headers: HeadersInit = options.body
+    ? { 'Content-Type': 'application/json', ...options.headers }
+    : { ...options.headers };
+  
   const response = await fetch(url, {
     ...options,
     credentials: 'include', // Include cookies for session auth
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
+    headers,
   });
   
   const data = await response.json().catch(() => ({}));

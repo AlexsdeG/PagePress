@@ -44,6 +44,18 @@ export const BuilderImage: FC<ImageProps> & { craft?: Record<string, unknown> } 
   const widthValue = typeof width === 'number' ? `${width}px` : width === 'full' ? '100%' : 'auto';
   const heightValue = typeof height === 'number' ? `${height}px` : 'auto';
 
+  // Convert absolute URLs to relative for proxy
+  const getProxiedSrc = (url: string) => {
+    if (!url) return '';
+    // If the URL is from localhost:3000, convert to relative /uploads path
+    if (url.includes('localhost:3000/uploads/')) {
+      return url.replace(/http:\/\/localhost:3000/, '');
+    }
+    return url;
+  };
+
+  const proxiedSrc = getProxiedSrc(src);
+
   // Get outline styles based on selection/hover state
   const getOutlineStyles = (): React.CSSProperties => {
     if (isPreviewMode) return {};
@@ -67,12 +79,32 @@ export const BuilderImage: FC<ImageProps> & { craft?: Record<string, unknown> } 
 
   // Placeholder when no image source
   if (!src) {
+    // In preview mode, show alt text or nothing
+    if (isPreviewMode) {
+      return alt ? (
+        <div
+          className={cn(
+            'bg-muted/50 flex items-center justify-center text-muted-foreground text-sm p-4',
+            className
+          )}
+          style={{
+            width: widthValue,
+            height: heightValue === 'auto' ? '100px' : heightValue,
+            borderRadius: `${borderRadius}px`,
+          }}
+        >
+          {alt}
+        </div>
+      ) : null;
+    }
+
+    // In edit mode, show placeholder
     return (
       <div
         ref={(ref) => ref && connect(drag(ref))}
         className={cn(
           'relative bg-muted flex items-center justify-center border-2 border-dashed border-muted-foreground/25',
-          !isPreviewMode && 'transition-all duration-150',
+          'transition-all duration-150',
           className
         )}
         style={{
@@ -83,7 +115,7 @@ export const BuilderImage: FC<ImageProps> & { craft?: Record<string, unknown> } 
         }}
       >
         {/* Selection label */}
-        {isSelected && !isPreviewMode && (
+        {isSelected && (
           <span className="absolute -top-5 left-0 text-xs text-white bg-blue-600 px-1.5 py-0.5 rounded-t font-medium z-10">
             Image
           </span>
@@ -106,7 +138,7 @@ export const BuilderImage: FC<ImageProps> & { craft?: Record<string, unknown> } 
       )}
       <img
         ref={(ref) => ref && connect(drag(ref))}
-        src={src}
+        src={proxiedSrc}
         alt={alt}
         className={cn(
           objectFitClass[objectFit],

@@ -1,7 +1,11 @@
-// PagePress v0.0.5 - 2025-11-30
+// PagePress v0.0.6 - 2025-12-03
 // Editor layout exports
 
 export { TopBar } from './TopBar';
 export { LeftSidebar } from './LeftSidebar';
 export { RightSidebar } from './RightSidebar';
 export { Canvas } from './Canvas';
+export { BreadcrumbBar } from './BreadcrumbBar';
+export { FloatingToolbar } from './FloatingToolbar';
+export { BuilderContextMenu } from './ContextMenu';
+export { StructureTree } from './StructureTree';

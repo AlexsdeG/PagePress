@@ -1,4 +1,4 @@
-// PagePress v0.0.5 - 2025-11-30
+// PagePress v0.0.6 - 2025-12-03
 // Pages management page with CRUD operations
 
 import { useState, useEffect, useCallback } from 'react';
@@ -51,6 +51,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { toast } from 'sonner';
 
 // Page form schema
 const pageSchema = z.object({
@@ -65,7 +66,13 @@ const pageSchema = z.object({
   contentJson: z.string().optional(),
 });
 
+// Rename form schema (simpler)
+const renameSchema = z.object({
+  title: z.string().min(1, 'Title is required').max(255, 'Title is too long'),
+});
+
 type PageFormData = z.infer<typeof pageSchema>;
+type RenameFormData = z.infer<typeof renameSchema>;
 
 export function Pages() {
   const navigate = useNavigate();
@@ -88,6 +95,7 @@ export function Pages() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [selectedPage, setSelectedPage] = useState<Page | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -111,6 +119,13 @@ export function Pages() {
       type: 'page',
       published: false,
       contentJson: '',
+    },
+  });
+
+  const renameForm = useForm<RenameFormData>({
+    resolver: zodResolver(renameSchema),
+    defaultValues: {
+      title: '',
     },
   });
 
@@ -253,6 +268,34 @@ export function Pages() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update page');
     }
+  };
+
+  // Rename page
+  const handleRename = async (data: RenameFormData) => {
+    if (!selectedPage) return;
+    
+    try {
+      setSubmitting(true);
+      await api.pages.update(selectedPage.id, { title: data.title });
+      setRenameDialogOpen(false);
+      setSelectedPage(null);
+      renameForm.reset();
+      toast.success('Page renamed');
+      loadPages();
+    } catch (err) {
+      renameForm.setError('root', {
+        message: err instanceof Error ? err.message : 'Failed to rename page',
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Open rename dialog
+  const openRenameDialog = (page: Page) => {
+    setSelectedPage(page);
+    renameForm.reset({ title: page.title });
+    setRenameDialogOpen(true);
   };
 
   // Open edit dialog
@@ -416,6 +459,9 @@ export function Pages() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => navigate(`/pages/${page.id}/edit`)}>
                               Edit in Builder
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openRenameDialog(page)}>
+                              Rename
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => openEditDialog(page)}>
                               Edit Details
@@ -715,6 +761,52 @@ export function Pages() {
               {submitting ? 'Deleting...' : 'Delete'}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Rename Dialog */}
+      <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Rename Page</DialogTitle>
+            <DialogDescription>
+              Enter a new title for the page.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...renameForm}>
+            <form onSubmit={renameForm.handleSubmit(handleRename)} className="space-y-4">
+              <FormField
+                control={renameForm.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Title</FormLabel>
+                    <FormControl>
+                      <Input {...field} autoFocus />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {renameForm.formState.errors.root && (
+                <p className="text-sm text-destructive">
+                  {renameForm.formState.errors.root.message}
+                </p>
+              )}
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setRenameDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={submitting}>
+                  {submitting ? 'Renaming...' : 'Rename'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
     </div>

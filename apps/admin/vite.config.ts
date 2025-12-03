@@ -18,6 +18,11 @@ export default defineConfig({
         // Forward cookies properly
         cookieDomainRewrite: 'localhost',
         secure: false,
+      },
+      '/uploads': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false,
       }
     }
   }
