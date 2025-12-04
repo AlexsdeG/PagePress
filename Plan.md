@@ -147,71 +147,79 @@
 **Status:** ❌ Not Started
 
 ### Layout Components
-- [ ] **Section:** Full-width wrapper with semantic `<section>` tag
+- [x] **Section:** Full-width wrapper with semantic `<section>` tag
     - Content width control (boxed/full)
     - Vertical alignment
     - Min-height (vh/px)
-- [ ] **Row:** Horizontal flex container for columns
-- [ ] **Column:** Flex item with responsive width controls
+- [x] **Row:** Horizontal flex container for columns
+- [x] **Column:** Flex item with responsive width controls
     - Width: auto, %, px, fr (for grid)
     - Order control
-- [ ] **Div:** Generic wrapper with custom HTML tag selector
+- [x] **Div:** Generic wrapper with custom HTML tag selector
 
 ### Basic Components
-- [ ] **Divider:** Horizontal line with style, width, color
-- [ ] **Spacer:** Invisible height block (px/vh)
-- [ ] **Icon:** Lucide icon picker with size, color
-- [ ] **Icon Box:** Icon + heading + text combo
-- [ ] **Link/Text Link:** Styled anchor with hover states
-- [ ] **List:** UL/OL with bullet/number style options
+- [x] **Divider:** Horizontal line with style, width, color
+- [x] **Spacer:** Invisible height block (px/vh)
+- [x] **Icon:** Lucide icon picker with size, color
+- [x] **Icon Box:** Icon + heading + text combo
+- [x] **Link/Text Link:** Styled anchor with hover states
+- [x] **List:** UL/OL with bullet/number style options
 
 ### Media Components
-- [ ] **Video:** YouTube, Vimeo, MP4 with poster image
+- [x] **Video:** YouTube, Vimeo, MP4 with poster image
 - [ ] **Video Popup:** Lightbox video on button click
+- [x] **Video:**: in edit mode have extra layer ontop to be able to righclick with custom context menu and left click also opens element options. currently it only shows right click youtube context menu and left click starts the video but i cant access the edit element settings
 
 ### Update Existing Components
-- [ ] **Container:** Add HTML tag selector (div, section, article, aside, nav, header, footer)
-- [ ] **Heading:** Add link option
-- [ ] **Button:** Add icon before/after text
+- [x] **Container:** Add HTML tag selector (div, section, article, aside, nav, header, footer)
+- [x] **Heading:** Add link option
+- [x] **Button:** Add icon before/after text
 
 ---
 
 ## Phase 6: Advanced Styling System
 **Goal:** Bricks-level style controls.
-**Status:** ❌ Not Started
+**Status:** ✅ Complete
 
 ### General
-- [ ] edit name of element in settings and in strucutre
-- [ ] better input with eg autocompelte or just input, so you can always also add a own value eg height or margin and more
-
+- [x] edit name of element in settings and in strucutre, edit name of the element, still eg a div but you can name it eg HeaderDiv
+- [x] better input with eg autocompelte or just input, so you can always also add a own value eg height or margin and more. always use int float string input or select but eg for height or so always number input + with the unit select eg px, vh and more ...
+- [x] show readonly id for element, readonly id, ids are on all pages, tempaltes, components unique and never ever have two elements the same id
+- [x] add classes you can create from the settings you set in the settings, create new classes, add other classes to the element, here also show eg fro the     settings with blue dots if they are from a class the setting or manualy overwritten for this element. here add at top a list where you can add classes to it, create new ones or use already created ones names to add them to the element
+- [x] also add a new sidemenu in settings in edit element. here add icon sidebar for eg backgorund, layout, style, general and more. here implement like bricks for each setting its own tab with all settings in it. update all components to use the new settings components
+- [x] full impl of pseudo states like hover active and more to have a full bricks builder experience
+ 
 ### Layout Settings (Add to all components)
-- [ ] **Position:** Static, Relative, Absolute, Fixed, Sticky
-- [ ] **Z-index:** Numeric input with presets
-- [ ] **Overflow:** Visible, Hidden, Scroll, Auto
-- [ ] **Display:** Block, Flex, Grid, Inline, None
+- [x] **Position:** Static, Relative, Absolute, Fixed, Sticky
+- [x] **Z-index:** Numeric input with presets
+- [x] **Overflow:** Visible, Hidden, Scroll, Auto
+- [x] **Display:** Block, Flex, Grid, Inline, None
 
 ### Background Settings
-- [ ] **Gradient:** Linear/Radial with angle, stops
-- [ ] **Background Image:** Media picker, size, position, repeat
-- [ ] **Background Video:** MP4 with poster fallback
-- [ ] **Overlay:** Color overlay with opacity
+- [x] **Gradient:** Linear/Radial with angle, stops
+- [x] **Background Image:** Media picker, size, position, repeat
+- [x] **Background Video:** MP4 with poster fallback
+- [x] **Overlay:** Color overlay with opacity
 
 ### Border & Effects
-- [ ] **Box Shadow:** Multiple shadows with inset option
-- [ ] **Text Shadow:** X, Y, Blur, Color
-- [ ] **Filters:** Blur, Brightness, Contrast, Grayscale, Saturate
-- [ ] **Backdrop Filter:** Blur, Brightness for glass effects
+- [x] **Box Shadow:** Multiple shadows with inset option
+- [x] **Text Shadow:** X, Y, Blur, Color
+- [x] **Filters:** Blur, Brightness, Contrast, Grayscale, Saturate
+- [x] **Backdrop Filter:** Blur, Brightness for glass effects
 
 ### Transform & Transitions
-- [ ] **Transform:** Translate, Rotate, Scale, Skew (with units)
-- [ ] **Transform Origin:** 9-point selector
-- [ ] **Transition:** Property, Duration, Easing, Delay
+- [x] **Transform:** Translate, Rotate, Scale, Skew (with units)
+- [x] **Transform Origin:** 9-point selector
+- [x] **Transition:** Property, Duration, Easing, Delay
 
 ### Typography Expansion
-- [ ] **Font Family:** Google Fonts picker or custom stack
-- [ ] **Text Transform:** Uppercase, Lowercase, Capitalize
-- [ ] **Text Decoration:** Underline, Overline, Line-through
-- [ ] **Word/Letter Spacing:** Fine-tune controls
+- [x] **Font Family:** Google Fonts picker or custom stack
+- [x] **Text Transform:** Uppercase, Lowercase, Capitalize
+- [x] **Text Decoration:** Underline, Overline, Line-through
+- [x] **Word/Letter Spacing:** Fine-tune controls
+
+### Fully Functional 
+- [ ] **Apply Set Settings:** All settings fully read/write to element styles, using style or tailwind classes
 
 ---
 
@@ -235,6 +243,9 @@
 - [ ] **Device Frames:** Visual phone/tablet frame around canvas
 - [ ] **Orientation Toggle:** Portrait/Landscape for mobile
 - [ ] **Accurate Dimensions:** Match real device sizes
+
+### Global Settings in Builder
+- [ ] **Global color and var settings:** full global settings menu, icon button top right, opens new right sidebar with global settings like colors, defualt margins paddings, spacings, vars and more, manage exported classes, ...
 
 ---
 

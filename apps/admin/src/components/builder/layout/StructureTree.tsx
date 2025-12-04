@@ -1,7 +1,7 @@
-// PagePress v0.0.6 - 2025-12-03
+// PagePress v0.0.8 - 2025-12-04
 // Structure tree panel showing element hierarchy with icons
 
-import { useState } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useEditor } from '@craftjs/core';
 import { 
   Box, 
@@ -14,23 +14,49 @@ import {
   ChevronDown,
   Trash2,
   CopyPlus,
+  LayoutGrid,
+  Columns,
+  Minus,
+  Space,
+  Link as LinkIcon,
+  Play,
+  LayoutPanelTop,
+  Rows,
+  Pencil,
+  Check,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useBuilderStore } from '@/stores/builder';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { duplicateNode } from '../utils/duplicateNode';
+import type { ElementMetadata } from '../inspector/sidebar/types';
 
 // Component type to icon mapping
 const componentIcons: Record<string, React.ElementType> = {
   Container: Box,
+  Div: Box,
+  Section: LayoutPanelTop,
+  Row: Rows,
+  Column: Columns,
   Text: Type,
+  Paragraph: Type,
   Heading: Heading1,
   Image: Image,
+  Video: Play,
   Button: MousePointer2,
+  Link: LinkIcon,
+  TextLink: LinkIcon,
   'Code Block': Code2,
   'HTML Block': Code2,
   HTMLBlock: Code2,
+  Divider: Minus,
+  Spacer: Space,
+  Icon: LayoutGrid,
+  IconBox: LayoutGrid,
+  List: Type,
 };
 
 interface TreeNodeProps {
@@ -43,6 +69,9 @@ interface TreeNodeProps {
  */
 function TreeNode({ nodeId, depth }: TreeNodeProps) {
   const [isOpen, setIsOpen] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
   const { hoveredNodeId, setHoveredNodeId } = useBuilderStore();
 
   const { node, isSelected, childNodes, actions, query } = useEditor((state) => {
@@ -57,10 +86,22 @@ function TreeNode({ nodeId, depth }: TreeNodeProps) {
     };
   });
 
+  // Focus input when editing starts
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
   if (!node) return null;
 
-  const displayName = node.data.displayName || node.data.name || 'Element';
-  const Icon = componentIcons[displayName] || Box;
+  // Get custom name from element metadata or fall back to display name
+  const metadata = node.data.props?.elementMetadata as ElementMetadata | undefined;
+  const customName = metadata?.customName;
+  const componentName = node.data.displayName || node.data.name || 'Element';
+  const displayName = customName || componentName;
+  const Icon = componentIcons[componentName] || Box;
   const hasChildren = childNodes.length > 0;
   const isRoot = nodeId === 'ROOT';
   const isHovered = hoveredNodeId === nodeId;
@@ -68,6 +109,43 @@ function TreeNode({ nodeId, depth }: TreeNodeProps) {
   const handleSelect = (e: React.MouseEvent) => {
     e.stopPropagation();
     actions.selectNode(nodeId);
+  };
+
+  // Start editing the name
+  const handleStartEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isRoot) return;
+    setEditValue(customName || '');
+    setIsEditing(true);
+  };
+
+  // Save the edited name
+  const handleSaveEdit = useCallback(() => {
+    actions.setProp(nodeId, (props: Record<string, unknown>) => {
+      const currentMetadata = (props.elementMetadata || {}) as ElementMetadata;
+      props.elementMetadata = {
+        ...currentMetadata,
+        customName: editValue.trim() || undefined,
+      };
+    });
+    setIsEditing(false);
+    toast.success('Element renamed');
+  }, [actions, nodeId, editValue]);
+
+  // Cancel editing
+  const handleCancelEdit = useCallback(() => {
+    setIsEditing(false);
+    setEditValue('');
+  }, []);
+
+  // Handle keyboard events in edit mode
+  const handleEditKeyDown = (e: React.KeyboardEvent) => {
+    e.stopPropagation();
+    if (e.key === 'Enter') {
+      handleSaveEdit();
+    } else if (e.key === 'Escape') {
+      handleCancelEdit();
+    }
   };
 
   const handleDuplicate = (e: React.MouseEvent) => {
@@ -154,17 +232,65 @@ function TreeNode({ nodeId, depth }: TreeNodeProps) {
           isSelected ? 'text-blue-600' : 'text-muted-foreground'
         )} />
 
-        {/* Name */}
-        <span className={cn(
-          'flex-1 text-xs truncate',
-          isSelected && 'font-medium'
-        )}>
-          {isRoot ? 'Page' : displayName}
-        </span>
+        {/* Name (editable) */}
+        {isEditing ? (
+          <div className="flex-1 flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+            <Input
+              ref={inputRef}
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onKeyDown={handleEditKeyDown}
+              onBlur={handleSaveEdit}
+              placeholder={componentName}
+              className="h-5 text-xs py-0 px-1"
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-5 w-5 shrink-0"
+              onClick={handleSaveEdit}
+            >
+              <Check className="h-3 w-3 text-green-600" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-5 w-5 shrink-0"
+              onClick={handleCancelEdit}
+            >
+              <X className="h-3 w-3 text-red-600" />
+            </Button>
+          </div>
+        ) : (
+          <>
+            <span className={cn(
+              'flex-1 text-xs truncate',
+              isSelected && 'font-medium',
+              customName && 'text-foreground'
+            )}>
+              {isRoot ? 'Page' : displayName}
+            </span>
+            {/* Show component type as badge when custom name is set */}
+            {customName && !isRoot && (
+              <span className="text-[10px] px-1 py-0.5 rounded bg-muted text-muted-foreground shrink-0">
+                {componentName}
+              </span>
+            )}
+          </>
+        )}
 
         {/* Quick actions (visible on hover) */}
-        {!isRoot && (
+        {!isRoot && !isEditing && (
           <div className="hidden group-hover:flex items-center gap-0.5">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-5 w-5"
+              onClick={handleStartEdit}
+              title="Rename"
+            >
+              <Pencil className="h-3 w-3" />
+            </Button>
             <Button
               variant="ghost"
               size="icon"

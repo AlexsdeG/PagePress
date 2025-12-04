@@ -2,6 +2,60 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.0.8] - 2025-12-04
+
+### Added
+- **Element Settings Sidebar:** Bricks-style icon sidebar navigation with tabs for Content, General, Layout, Typography, Background, Border, Effects, Transform
+- **GeneralSettingsTab:** Element metadata management including:
+  - Custom element name (editable, displayed in structure tree)
+  - Unique element ID (readonly, with copy button)
+  - Component type badge with color coding
+  - CSS class management (create, add, remove classes)
+- **CSS Class System:** 
+  - Zustand store for global class management with persistence
+  - Create classes from current element styling
+  - Apply multiple classes to elements
+  - Class search and category organization
+- **UnitInput Component:** Number input with unit selector (px, %, em, rem, vh, vw, auto) for dimensions and spacing
+- **PseudoStateSelector:** Visual selector for default, hover, active, focus states in style tabs
+- **Structure Tree Enhancements:**
+  - Inline element renaming with pencil icon
+  - Custom names displayed with component type badge
+  - More component icons (Section, Row, Column, Divider, Spacer, Video, etc.)
+
+### Changed
+- **RightSidebar:** Simplified to delegate layout to settings components
+- **Container.settings.tsx:** Migrated to new ElementSettingsSidebar with icon tabs
+- **Div.settings.tsx:** Migrated to new ElementSettingsSidebar with icon tabs
+- **StructureTree:** Enhanced with inline editing, custom names, and more icons
+
+---
+
+## [v0.0.7] - 2025-12-04
+
+### Added
+- **Advanced Styling System:** Complete Bricks-level style controls infrastructure
+- **Style Types:** Comprehensive TypeScript interfaces for all styling options
+- **GradientInput:** Linear/radial gradient picker with angle and color stops
+- **BoxShadowInput:** Multiple shadows with inset, offset, blur, spread controls
+- **BorderInput:** Per-side border control with width, style, color, radius
+- **TransformInput:** Translate, Rotate, Scale, Skew with units and origin selector
+- **FilterInput:** CSS filters (blur, brightness, contrast, grayscale, saturate, hue-rotate, invert, sepia)
+- **BackdropFilterInput:** Glass effect controls (blur, brightness, contrast)
+- **TransitionInput:** Property, duration, timing function, delay with live preview
+- **LayoutSettingsTab:** Position, display, flex, dimensions, margin/padding, overflow
+- **BackgroundSettingsTab:** Color, gradient, image, video, overlay with full controls
+- **TypographySettingsTab:** Font family, size, weight, style, spacing, alignment, decoration, text shadows
+- **SettingsTabsWrapper:** Master container with Content/Style tabs and pseudo state selector
+- **useAdvancedStyling Hook:** Read/write advanced styling props with CSS conversion
+- **styleToCSS Utility:** Convert styling objects to CSSProperties
+- **Pseudo State Support:** Default, hover, active, focus states in style editor
+
+### Fixed
+- **Video Edit Mode:** Added overlay layer to intercept clicks for element selection in edit mode
+
+---
+
 ## [v0.0.5] - 2025-11-30
 
 ### Added

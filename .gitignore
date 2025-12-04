@@ -1,6 +1,7 @@
 # Custom PagePress
 apps/api/data/
 *.db
+data/
 
 # Logs
 logs

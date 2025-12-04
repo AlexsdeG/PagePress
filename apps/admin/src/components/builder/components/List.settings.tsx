@@ -1,5 +1,5 @@
-// PagePress v0.0.6 - 2025-12-03
-// List component settings panel
+// PagePress v0.0.9 - 2025-12-04
+// List component settings panel with ElementSettingsSidebar
 
 import { useNode } from '@craftjs/core';
 import { Label } from '@/components/ui/label';
@@ -12,27 +12,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
-import { ColorInput } from '../inspector/inputs/ColorInput';
 import { WidthInput } from '../inspector/inputs/WidthInput';
+import { ElementSettingsSidebar } from '../inspector/sidebar';
 import type { ListProps } from './List';
 
 /**
- * Settings panel for List component
+ * Content-specific settings for List
  */
-export function ListSettings() {
-  const {
-    actions: { setProp },
-    props,
-  } = useNode((node) => ({
-    props: node.data.props as ListProps,
-  }));
-
+function ListContentSettings({
+  props,
+  setProp,
+}: {
+  props: ListProps;
+  setProp: (cb: (props: ListProps) => void) => void;
+}) {
   // Convert items array to text for editing
   const itemsText = (props.items || []).join('\n');
 
@@ -61,138 +54,106 @@ export function ListSettings() {
   };
 
   return (
-    <Accordion type="multiple" defaultValue={['content', 'style', 'typography']} className="w-full">
-      {/* Content Section */}
-      <AccordionItem value="content">
-        <AccordionTrigger className="text-sm">Content</AccordionTrigger>
-        <AccordionContent className="space-y-4">
-          {/* List Type */}
-          <div className="space-y-2">
-            <Label className="text-xs">List Type</Label>
-            <Select
-              value={props.listType || 'ul'}
-              onValueChange={(value) => {
-                setProp((p: ListProps) => {
-                  p.listType = value as ListProps['listType'];
-                  // Reset bullet style when changing list type
-                  if (value === 'ol') {
-                    p.bulletStyle = 'decimal';
-                  } else {
-                    p.bulletStyle = 'disc';
-                  }
-                });
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ul">Unordered (Bullets)</SelectItem>
-                <SelectItem value="ol">Ordered (Numbers)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+    <div className="space-y-4">
+      {/* List Type */}
+      <div className="space-y-2">
+        <Label className="text-xs">List Type</Label>
+        <Select
+          value={props.listType || 'ul'}
+          onValueChange={(value) => {
+            setProp((p: ListProps) => {
+              p.listType = value as ListProps['listType'];
+              // Reset bullet style when changing list type
+              if (value === 'ol') {
+                p.bulletStyle = 'decimal';
+              } else {
+                p.bulletStyle = 'disc';
+              }
+            });
+          }}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ul">Unordered (Bullets)</SelectItem>
+            <SelectItem value="ol">Ordered (Numbers)</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-          {/* Bullet Style */}
-          <div className="space-y-2">
-            <Label className="text-xs">Bullet Style</Label>
-            <Select
-              value={props.bulletStyle || 'disc'}
-              onValueChange={(value) => setProp((p: ListProps) => (p.bulletStyle = value as ListProps['bulletStyle']))}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {getBulletStyles().map((style) => (
-                  <SelectItem key={style.value} value={style.value}>
-                    {style.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+      {/* Bullet Style */}
+      <div className="space-y-2">
+        <Label className="text-xs">Bullet Style</Label>
+        <Select
+          value={props.bulletStyle || 'disc'}
+          onValueChange={(value) => setProp((p: ListProps) => (p.bulletStyle = value as ListProps['bulletStyle']))}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {getBulletStyles().map((style) => (
+              <SelectItem key={style.value} value={style.value}>
+                {style.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
-          {/* Items */}
-          <div className="space-y-2">
-            <Label className="text-xs">Items (one per line)</Label>
-            <Textarea
-              value={itemsText}
-              onChange={(e) => handleItemsChange(e.target.value)}
-              placeholder="Enter list items..."
-              rows={5}
-            />
-          </div>
-        </AccordionContent>
-      </AccordionItem>
+      {/* Items */}
+      <div className="space-y-2">
+        <Label className="text-xs">Items (one per line)</Label>
+        <Textarea
+          value={itemsText}
+          onChange={(e) => handleItemsChange(e.target.value)}
+          placeholder="Enter list items..."
+          rows={5}
+        />
+      </div>
 
-      {/* Typography Section */}
-      <AccordionItem value="typography">
-        <AccordionTrigger className="text-sm">Typography</AccordionTrigger>
-        <AccordionContent className="space-y-4">
-          {/* Color */}
-          <div className="space-y-2">
-            <Label className="text-xs">Color</Label>
-            <ColorInput
-              value={props.color || '#000000'}
-              onChange={(value) => setProp((p: ListProps) => (p.color = value))}
-            />
-          </div>
+      {/* Gap */}
+      <WidthInput
+        label="Item Gap"
+        value={props.gap || '8px'}
+        onChange={(value) => setProp((p: ListProps) => (p.gap = value))}
+        allowedUnits={['px', 'rem']}
+      />
 
-          {/* Font Size */}
-          <WidthInput
-            label="Font Size"
-            value={props.fontSize || '16px'}
-            onChange={(value) => setProp((p: ListProps) => (p.fontSize = value))}
-            allowedUnits={['px', 'rem']}
-          />
+      {/* Custom Classes */}
+      <div className="space-y-2">
+        <Label className="text-xs">Custom Classes</Label>
+        <Input
+          value={props.className || ''}
+          onChange={(e) => setProp((p: ListProps) => (p.className = e.target.value))}
+          placeholder="Enter Tailwind classes..."
+        />
+      </div>
+    </div>
+  );
+}
 
-          {/* Line Height */}
-          <div className="space-y-2">
-            <Label className="text-xs">Line Height</Label>
-            <Input
-              type="number"
-              value={parseFloat(props.lineHeight || '1.6')}
-              onChange={(e) => setProp((p: ListProps) => (p.lineHeight = e.target.value))}
-              min={1}
-              max={3}
-              step={0.1}
-            />
-          </div>
-        </AccordionContent>
-      </AccordionItem>
+/**
+ * Settings panel for List component
+ * All style tabs are available by default
+ */
+export function ListSettings() {
+  const {
+    actions: { setProp },
+    props,
+  } = useNode((node) => ({
+    props: node.data.props as ListProps,
+  }));
 
-      {/* Style Section */}
-      <AccordionItem value="style">
-        <AccordionTrigger className="text-sm">Style</AccordionTrigger>
-        <AccordionContent className="space-y-4">
-          {/* Gap */}
-          <WidthInput
-            label="Item Gap"
-            value={props.gap || '8px'}
-            onChange={(value) => setProp((p: ListProps) => (p.gap = value))}
-            allowedUnits={['px', 'rem']}
-          />
-
-          {/* Padding */}
-          <WidthInput
-            label="Padding"
-            value={props.padding || '0px'}
-            onChange={(value) => setProp((p: ListProps) => (p.padding = value))}
-            allowedUnits={['px', 'rem']}
-          />
-
-          {/* Custom Classes */}
-          <div className="space-y-2">
-            <Label className="text-xs">Custom Classes</Label>
-            <Input
-              value={props.className || ''}
-              onChange={(e) => setProp((p: ListProps) => (p.className = e.target.value))}
-              placeholder="Enter Tailwind classes..."
-            />
-          </div>
-        </AccordionContent>
-      </AccordionItem>
-    </Accordion>
+  return (
+    <ElementSettingsSidebar
+      contentSettings={
+        <ListContentSettings
+          props={props}
+          setProp={setProp}
+        />
+      }
+    />
   );
 }

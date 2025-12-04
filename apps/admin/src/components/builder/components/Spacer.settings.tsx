@@ -1,20 +1,49 @@
-// PagePress v0.0.6 - 2025-12-03
-// Spacer component settings panel
+// PagePress v0.0.9 - 2025-12-04
+// Spacer component settings panel with ElementSettingsSidebar
 
 import { useNode } from '@craftjs/core';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
 import { WidthInput } from '../inspector/inputs/WidthInput';
+import { ElementSettingsSidebar } from '../inspector/sidebar';
 import type { SpacerProps } from './Spacer';
 
 /**
+ * Content-specific settings for Spacer
+ */
+function SpacerContentSettings({
+  props,
+  setProp,
+}: {
+  props: SpacerProps;
+  setProp: (cb: (props: SpacerProps) => void) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      {/* Height */}
+      <WidthInput
+        label="Height"
+        value={props.height || '40px'}
+        onChange={(value) => setProp((p: SpacerProps) => (p.height = value))}
+        allowedUnits={['px', 'vh', 'rem']}
+      />
+
+      {/* Custom Classes */}
+      <div className="space-y-2">
+        <Label className="text-xs">Custom Classes</Label>
+        <Input
+          value={props.className || ''}
+          onChange={(e) => setProp((p: SpacerProps) => (p.className = e.target.value))}
+          placeholder="Enter Tailwind classes..."
+        />
+      </div>
+    </div>
+  );
+}
+
+/**
  * Settings panel for Spacer component
+ * All style tabs are available by default
  */
 export function SpacerSettings() {
   const {
@@ -25,30 +54,13 @@ export function SpacerSettings() {
   }));
 
   return (
-    <Accordion type="multiple" defaultValue={['size']} className="w-full">
-      {/* Size Section */}
-      <AccordionItem value="size">
-        <AccordionTrigger className="text-sm">Size</AccordionTrigger>
-        <AccordionContent className="space-y-4">
-          {/* Height */}
-          <WidthInput
-            label="Height"
-            value={props.height || '40px'}
-            onChange={(value) => setProp((p: SpacerProps) => (p.height = value))}
-            allowedUnits={['px', 'vh', 'rem']}
-          />
-
-          {/* Custom Classes */}
-          <div className="space-y-2">
-            <Label className="text-xs">Custom Classes</Label>
-            <Input
-              value={props.className || ''}
-              onChange={(e) => setProp((p: SpacerProps) => (p.className = e.target.value))}
-              placeholder="Enter Tailwind classes..."
-            />
-          </div>
-        </AccordionContent>
-      </AccordionItem>
-    </Accordion>
+    <ElementSettingsSidebar
+      contentSettings={
+        <SpacerContentSettings
+          props={props}
+          setProp={setProp}
+        />
+      }
+    />
   );
 }

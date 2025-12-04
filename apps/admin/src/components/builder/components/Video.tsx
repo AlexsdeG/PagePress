@@ -212,6 +212,17 @@ export const Video: FC<VideoProps> & { craft?: Record<string, unknown> } = ({
         }}
       >
         {renderVideo()}
+        
+        {/* Edit mode overlay - intercepts clicks for element selection */}
+        {!isPreviewMode && (
+          <div
+            className="absolute inset-0 z-10 cursor-pointer"
+            style={{
+              background: isSelected ? 'rgba(37, 99, 235, 0.05)' : 'transparent',
+            }}
+            title="Click to select, right-click for options"
+          />
+        )}
       </div>
     </div>
   );

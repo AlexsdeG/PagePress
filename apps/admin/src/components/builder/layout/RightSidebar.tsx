@@ -1,4 +1,4 @@
-// PagePress v0.0.6 - 2025-12-03
+// PagePress v0.0.8 - 2025-12-04
 // Right sidebar with settings inspector and structure panel
 
 import { useEditor } from '@craftjs/core';
@@ -9,13 +9,10 @@ import {
   PanelRightClose,
   PanelRight,
   CopyPlus,
-  ChevronUp,
-  ChevronDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useBuilderStore } from '@/stores/builder';
 import { StructureTree } from './StructureTree';
@@ -28,28 +25,18 @@ import { duplicateNode } from '../utils/duplicateNode';
 export function RightSidebar() {
   const { rightSidebarOpen, setRightSidebarOpen } = useBuilderStore();
 
-  const { selected, selectedNodeName, parentId, siblings, actions } = useEditor((state) => {
+  const { selected, parentId, actions } = useEditor((state) => {
     const [currentNodeId] = state.events.selected;
-    let selectedNodeName = '';
     let parentId: string | undefined;
-    let siblings: string[] = [];
 
     if (currentNodeId) {
       const node = state.nodes[currentNodeId];
-      selectedNodeName = node.data.displayName || node.data.name || 'Unknown';
       parentId = node.data.parent;
-      
-      if (parentId) {
-        const parent = state.nodes[parentId];
-        siblings = parent?.data?.nodes || [];
-      }
     }
 
     return {
       selected: currentNodeId,
-      selectedNodeName,
       parentId,
-      siblings,
     };
   });
 
@@ -70,20 +57,7 @@ export function RightSidebar() {
     return { SettingsComponent: null };
   });
 
-  const currentIndex = siblings.indexOf(selected || '');
-  const canMoveUp = currentIndex > 0;
-  const canMoveDown = currentIndex < siblings.length - 1;
   const isRoot = selected === 'ROOT';
-
-  const handleMoveUp = () => {
-    if (!selected || !canMoveUp || !parentId) return;
-    actions.move(selected, parentId, currentIndex - 1);
-  };
-
-  const handleMoveDown = () => {
-    if (!selected || !canMoveDown || !parentId) return;
-    actions.move(selected, parentId, currentIndex + 2);
-  };
 
   const handleDuplicate = () => {
     if (!selected || isRoot || !parentId) return;
@@ -137,7 +111,7 @@ export function RightSidebar() {
   }
 
   return (
-    <div className="w-72 border-l bg-background flex flex-col">
+    <div className="w-92 border-l bg-background flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b">
         <h2 className="font-semibold text-sm">Inspector</h2>
@@ -166,65 +140,23 @@ export function RightSidebar() {
 
         {/* Settings Tab */}
         <TabsContent value="settings" className="flex-1 flex flex-col m-0 overflow-hidden">
-          <ScrollArea className="flex-1">
-            <div className="p-4">
-              {selected && SettingsComponent ? (
-                <>
-                  {/* Element info header */}
-                  <div className="mb-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-medium">{selectedNodeName}</h3>
-                      {!isRoot && (
-                        <div className="flex items-center gap-0.5">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6"
-                                onClick={handleMoveUp}
-                                disabled={!canMoveUp}
-                              >
-                                <ChevronUp className="h-3.5 w-3.5" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Move Up</TooltipContent>
-                          </Tooltip>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6"
-                                onClick={handleMoveDown}
-                                disabled={!canMoveDown}
-                              >
-                                <ChevronDown className="h-3.5 w-3.5" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Move Down</TooltipContent>
-                          </Tooltip>
-                        </div>
-                      )}
-                    </div>
-                    <Separator className="mt-3" />
-                  </div>
-
-                  {/* Settings component */}
-                  <SettingsComponent />
-                </>
-              ) : (
-                <div className="text-center text-muted-foreground py-8">
-                  <Settings className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">Select an element to edit its properties</p>
-                </div>
-              )}
+          {selected && SettingsComponent ? (
+            <div className="flex-1 overflow-hidden">
+              {/* Settings component - takes full control of layout */}
+              <SettingsComponent />
             </div>
-          </ScrollArea>
+          ) : (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center text-muted-foreground py-8">
+                <Settings className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Select an element to edit its properties</p>
+              </div>
+            </div>
+          )}
 
           {/* Actions footer */}
           {selected && !isRoot && (
-            <div className="p-3 border-t flex gap-2">
+            <div className="p-3 border-t flex gap-2 shrink-0">
               <Button
                 variant="outline"
                 size="sm"

@@ -1,5 +1,5 @@
-// PagePress v0.0.6 - 2025-12-03
-// Divider component settings panel
+// PagePress v0.0.9 - 2025-12-04
+// Divider component settings panel with ElementSettingsSidebar
 
 import { useNode } from '@craftjs/core';
 import { Label } from '@/components/ui/label';
@@ -11,18 +11,93 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
-import { ColorInput } from '../inspector/inputs/ColorInput';
 import { WidthInput } from '../inspector/inputs/WidthInput';
+import { ElementSettingsSidebar } from '../inspector/sidebar';
 import type { DividerProps } from './Divider';
 
 /**
+ * Content-specific settings for Divider
+ */
+function DividerContentSettings({
+  props,
+  setProp,
+}: {
+  props: DividerProps;
+  setProp: (cb: (props: DividerProps) => void) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      {/* Style */}
+      <div className="space-y-2">
+        <Label className="text-xs">Style</Label>
+        <Select
+          value={props.style || 'solid'}
+          onValueChange={(value) => setProp((p: DividerProps) => (p.style = value as DividerProps['style']))}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="solid">Solid</SelectItem>
+            <SelectItem value="dashed">Dashed</SelectItem>
+            <SelectItem value="dotted">Dotted</SelectItem>
+            <SelectItem value="double">Double</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Width */}
+      <WidthInput
+        label="Width"
+        value={props.width || '100%'}
+        onChange={(value) => setProp((p: DividerProps) => (p.width = value))}
+        allowedUnits={['%', 'px', 'rem']}
+      />
+
+      {/* Thickness */}
+      <div className="space-y-2">
+        <Label className="text-xs">Thickness</Label>
+        <Select
+          value={props.thickness || '1px'}
+          onValueChange={(value) => setProp((p: DividerProps) => (p.thickness = value))}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="1px">1px</SelectItem>
+            <SelectItem value="2px">2px</SelectItem>
+            <SelectItem value="3px">3px</SelectItem>
+            <SelectItem value="4px">4px</SelectItem>
+            <SelectItem value="5px">5px</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Vertical Margin */}
+      <WidthInput
+        label="Vertical Margin"
+        value={props.margin || '16px'}
+        onChange={(value) => setProp((p: DividerProps) => (p.margin = value))}
+        allowedUnits={['px', 'rem', '%']}
+      />
+
+      {/* Custom Classes */}
+      <div className="space-y-2">
+        <Label className="text-xs">Custom Classes</Label>
+        <Input
+          value={props.className || ''}
+          onChange={(e) => setProp((p: DividerProps) => (p.className = e.target.value))}
+          placeholder="Enter Tailwind classes..."
+        />
+      </div>
+    </div>
+  );
+}
+
+/**
  * Settings panel for Divider component
+ * All style tabs are available by default
  */
 export function DividerSettings() {
   const {
@@ -33,92 +108,13 @@ export function DividerSettings() {
   }));
 
   return (
-    <Accordion type="multiple" defaultValue={['appearance', 'spacing']} className="w-full">
-      {/* Appearance Section */}
-      <AccordionItem value="appearance">
-        <AccordionTrigger className="text-sm">Appearance</AccordionTrigger>
-        <AccordionContent className="space-y-4">
-          {/* Style */}
-          <div className="space-y-2">
-            <Label className="text-xs">Style</Label>
-            <Select
-              value={props.style || 'solid'}
-              onValueChange={(value) => setProp((p: DividerProps) => (p.style = value as DividerProps['style']))}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="solid">Solid</SelectItem>
-                <SelectItem value="dashed">Dashed</SelectItem>
-                <SelectItem value="dotted">Dotted</SelectItem>
-                <SelectItem value="double">Double</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Width */}
-          <WidthInput
-            label="Width"
-            value={props.width || '100%'}
-            onChange={(value) => setProp((p: DividerProps) => (p.width = value))}
-            allowedUnits={['%', 'px', 'rem']}
-          />
-
-          {/* Thickness */}
-          <div className="space-y-2">
-            <Label className="text-xs">Thickness</Label>
-            <Select
-              value={props.thickness || '1px'}
-              onValueChange={(value) => setProp((p: DividerProps) => (p.thickness = value))}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1px">1px</SelectItem>
-                <SelectItem value="2px">2px</SelectItem>
-                <SelectItem value="3px">3px</SelectItem>
-                <SelectItem value="4px">4px</SelectItem>
-                <SelectItem value="5px">5px</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Color */}
-          <div className="space-y-2">
-            <Label className="text-xs">Color</Label>
-            <ColorInput
-              value={props.color || '#e5e7eb'}
-              onChange={(value) => setProp((p: DividerProps) => (p.color = value))}
-            />
-          </div>
-        </AccordionContent>
-      </AccordionItem>
-
-      {/* Spacing Section */}
-      <AccordionItem value="spacing">
-        <AccordionTrigger className="text-sm">Spacing</AccordionTrigger>
-        <AccordionContent className="space-y-4">
-          {/* Margin */}
-          <WidthInput
-            label="Vertical Margin"
-            value={props.margin || '16px'}
-            onChange={(value) => setProp((p: DividerProps) => (p.margin = value))}
-            allowedUnits={['px', 'rem', '%']}
-          />
-
-          {/* Custom Classes */}
-          <div className="space-y-2">
-            <Label className="text-xs">Custom Classes</Label>
-            <Input
-              value={props.className || ''}
-              onChange={(e) => setProp((p: DividerProps) => (p.className = e.target.value))}
-              placeholder="Enter Tailwind classes..."
-            />
-          </div>
-        </AccordionContent>
-      </AccordionItem>
-    </Accordion>
+    <ElementSettingsSidebar
+      contentSettings={
+        <DividerContentSettings
+          props={props}
+          setProp={setProp}
+        />
+      }
+    />
   );
 }
