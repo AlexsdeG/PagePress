@@ -1,4 +1,4 @@
-// PagePress v0.0.4 - 2025-11-30
+// PagePress v0.0.10 - 2025-12-04
 
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
@@ -15,6 +15,7 @@ import { authRoutes } from './routes/auth.js';
 import { pagesRoutes } from './routes/pages.js';
 import { mediaRoutes } from './routes/media.js';
 import { settingsRoutes } from './routes/settings.js';
+import { themeRoutes } from './routes/theme.js';
 
 /**
  * Create and configure Fastify server
@@ -101,12 +102,15 @@ async function registerRoutes(): Promise<void> {
   // Settings routes
   await server.register(settingsRoutes, { prefix: '/settings' });
 
+  // Theme routes
+  await server.register(themeRoutes, { prefix: '/theme' });
+
   // Root route
   server.get('/', async (_request, _reply) => {
     return {
       status: 'ok',
       message: 'PagePress API Running',
-      version: '0.0.4',
+      version: '0.0.10',
       documentation: '/docs',
     };
   });
@@ -149,7 +153,7 @@ async function start(): Promise<void> {
       host: '0.0.0.0',
     });
 
-    server.log.info(`🚀 PagePress API v0.0.4 running on port ${env.PORT}`);
+    server.log.info(`🚀 PagePress API v0.0.10 running on port ${env.PORT}`);
     server.log.info(`📊 Environment: ${env.NODE_ENV}`);
 
   } catch (err) {

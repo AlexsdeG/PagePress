@@ -2,6 +2,54 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.0.10] - 2025-12-04
+
+### Added
+- **Responsive Design System:** Complete per-breakpoint styling infrastructure inspired by Bricks Builder
+- **Breakpoint Store:** Zustand store with persist for current breakpoint, orientation, and device frame state
+- **Breakpoint Types:** BreakpointId type, Breakpoint interface, ResponsiveValue<T> generic
+- **BreakpointSelector:** TopBar component with Monitor/Tablet/Smartphone icons, orientation toggle
+- **DeviceFrame:** Visual phone/tablet bezel around canvas with accurate dimensions
+- **ResponsiveWrapper:** HOC making any input responsive-aware with inheritance support
+- **ResponsiveIndicator:** Blue dot indicator showing breakpoint overrides with reset functionality
+- **Global Settings Panel:** Slide-out panel for site-wide design settings with 5 tabs:
+  - ColorsTab: Color palette management by category with HexColorPicker
+  - TypographyTab: Font families, base size, heading sizes with responsive values
+  - ElementsTab: Default styles for buttons, links, containers, forms
+  - BreakpointsTab: Editable min/max width with visual indicator bars
+  - SpacingTab: Base unit slider, spacing scale preview, CSS custom properties
+- **Page Settings Panel:** Slide-out panel for page-specific settings with 4 tabs:
+  - GeneralTab: Header/footer toggles, full width, background color
+  - SeoTab: Meta title/description with character counters, noIndex/noFollow, canonical URL, Google preview
+  - SocialTab: Open Graph and Twitter Card settings with image upload
+  - CustomCodeTab: Custom CSS, JS (head/body), external resources
+- **Theme API Routes:** `/theme` GET/PUT for global settings, `/theme/page/:pageId` GET/PUT for page settings
+- **Theme Database Tables:** `theme_settings` and `page_settings` tables with JSON storage
+- **Global Settings Store:** Zustand store for theme and page settings with API integration
+- **Switch UI Component:** Radix UI switch component for toggle controls
+- **Default Theme Auto-Creation:** Backend automatically creates default theme settings on first access
+
+### Fixed
+- **Margin/Padding Styling:** Added `ensureUnit()` helper to properly handle numeric values without units (e.g., "10" → "10px")
+- **Zero Value Handling:** Added `isZeroValue()` helper to skip zero values in margin/padding to avoid unnecessary CSS
+- **Landscape Orientation:** Updated `getCanvasWidth()` and added `getCanvasHeight()` to properly swap dimensions in landscape mode
+- **Theme Settings Loading:** Theme settings now auto-create defaults if none exist (returns 200 instead of 404)
+- **Builder Initialization:** Theme settings now load on Builder mount for early access to global defaults
+
+### Changed
+- **TopBar:** Replaced viewport selector with BreakpointSelector, added gear icon for Global Settings, document icon for Page Settings
+- **Canvas:** Integrated DeviceFrame component, uses breakpointStore instead of builder store viewport, dynamic height based on orientation
+- **API Client:** Added theme endpoints (get, update, getPageSettings, updatePageSettings)
+
+### Technical
+- All package.json versions updated from 0.0.5 to 0.0.10
+- Added @radix-ui/react-switch dependency
+- New responsive system helpers: isResponsiveValue, getBreakpointValue, setBreakpointValue, removeBreakpointValue, hasBreakpointOverride
+- Deep merge utility for nested settings updates in theme routes
+- Default theme settings with colors, typography, elements, breakpoints, and spacing
+
+---
+
 ## [v0.0.8] - 2025-12-04
 
 ### Added

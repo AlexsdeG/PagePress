@@ -1,6 +1,6 @@
 {
   "name": "pagepress",
-  "version": "0.0.5",
+  "version": "0.0.10",
   "description": "High-performance, self-hosted static site builder",
   "homepage": "https://github.com/AlexsdeG/PagePress#readme",
   "bugs": {

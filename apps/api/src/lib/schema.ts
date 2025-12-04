@@ -1,4 +1,4 @@
-// PagePress v0.0.5 - 2025-11-30
+// PagePress v0.0.10 - 2025-12-04
 
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
@@ -90,3 +90,31 @@ export type Media = typeof media.$inferSelect;
 export type NewMedia = typeof media.$inferInsert;
 export type SiteSetting = typeof siteSettings.$inferSelect;
 export type NewSiteSetting = typeof siteSettings.$inferInsert;
+
+/**
+ * Theme Settings table - Global theme configuration (colors, typography, etc.)
+ */
+export const themeSettings = sqliteTable('theme_settings', {
+  id: text('id').primaryKey().default('default'),
+  settings: text('settings', { mode: 'json' }).$type<Record<string, unknown>>(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .default(sql`(unixepoch())`)
+    .notNull(),
+});
+
+/**
+ * Page Settings table - Per-page SEO, social, and custom code settings
+ */
+export const pageSettings = sqliteTable('page_settings', {
+  pageId: text('page_id').primaryKey().references(() => pages.id, { onDelete: 'cascade' }),
+  settings: text('settings', { mode: 'json' }).$type<Record<string, unknown>>(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .default(sql`(unixepoch())`)
+    .notNull(),
+});
+
+// Additional type exports
+export type ThemeSetting = typeof themeSettings.$inferSelect;
+export type NewThemeSetting = typeof themeSettings.$inferInsert;
+export type PageSetting = typeof pageSettings.$inferSelect;
+export type NewPageSetting = typeof pageSettings.$inferInsert;

@@ -225,27 +225,30 @@
 
 ## Phase 7: Responsive Design System
 **Goal:** Per-breakpoint styling like Bricks.
-**Status:** ❌ Not Started
+**Status:** 🔄 Partial
 
 ### Breakpoint Architecture
-- [ ] **Store styles per breakpoint:** Desktop (base), Tablet (<992px), Mobile (<768px), Mobile Portrait (<479px)
+- [x] **Store styles per breakpoint:** Desktop (base), Tablet (<992px), Mobile (<768px), Mobile Portrait (<479px)
 - [ ] **Visual Indicator:** Icon showing if value differs from desktop
 - [ ] **Inheritance:** Values cascade down from larger breakpoints
 - [ ] **Reset to Desktop:** Button to remove breakpoint-specific value
 
 ### Responsive Controls
+- [x] **Device breakpoint toggle:** Toolbar buttons to switch between breakpoints
 - [ ] **Per-property breakpoint toggle:** Click to set mobile-specific value
 - [ ] **Hide on breakpoint:** Toggle visibility per device
 - [ ] **Responsive spacing:** Different padding/margin per breakpoint
 - [ ] **Responsive typography:** Different font sizes per breakpoint
 
 ### Preview Enhancements
-- [ ] **Device Frames:** Visual phone/tablet frame around canvas
-- [ ] **Orientation Toggle:** Portrait/Landscape for mobile
-- [ ] **Accurate Dimensions:** Match real device sizes
+- [x] **Device Frames:** Visual phone/tablet frame around canvas
+- [x] **Orientation Toggle:** Portrait/Landscape for mobile/tablet
+- [x] **Accurate Dimensions:** Match real device sizes
 
 ### Global Settings in Builder
-- [ ] **Global color and var settings:** full global settings menu, icon button top right, opens new right sidebar with global settings like colors, defualt margins paddings, spacings, vars and more, manage exported classes, ...
+- [x] **Global Theme Settings Panel:** Colors, typography, elements, breakpoints, spacing
+- [x] **Page Settings Panel:** SEO, social sharing, custom code per page
+- [x] **Auto-create defaults:** Backend creates default theme on first access
 
 ---
 

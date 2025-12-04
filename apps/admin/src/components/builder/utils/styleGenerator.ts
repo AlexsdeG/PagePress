@@ -1,4 +1,4 @@
-// PagePress v0.0.9 - 2025-12-04
+// PagePress v0.0.10 - 2025-12-04
 // Style Generator - Converts AdvancedStyling to CSS styles and Tailwind classes
 
 import type {
@@ -16,6 +16,31 @@ import type {
 } from '../inspector/styles/types';
 
 import type { PseudoClass, CustomAttribute } from '../inspector/sidebar/types';
+
+/**
+ * Check if a value represents zero (handles '0', '0px', '0%', etc.)
+ */
+function isZeroValue(value: string): boolean {
+  if (!value) return true;
+  const trimmed = value.trim();
+  if (trimmed === '' || trimmed === '0') return true;
+  // Match 0 followed by any unit
+  return /^0(px|%|em|rem|vh|vw|pt|cm|mm|in)?$/i.test(trimmed);
+}
+
+/**
+ * Ensure a numeric value has a unit (defaults to px)
+ */
+function ensureUnit(value: string): string {
+  if (!value) return value;
+  const trimmed = value.trim();
+  // If it's just a number, add px
+  if (/^-?\d+(\.\d+)?$/.test(trimmed)) {
+    return `${trimmed}px`;
+  }
+  // If it already has a unit or is a CSS value like 'auto', return as is
+  return trimmed;
+}
 
 /**
  * Generated styles result
@@ -169,30 +194,30 @@ function generateLayoutStyles(layout: Partial<LayoutSettings>): React.CSSPropert
   // Dimensions
   if (layout.dimensions) {
     const dim = layout.dimensions;
-    if (dim.width && dim.width !== 'auto') style.width = dim.width;
-    if (dim.height && dim.height !== 'auto') style.height = dim.height;
-    if (dim.minWidth) style.minWidth = dim.minWidth;
-    if (dim.maxWidth) style.maxWidth = dim.maxWidth;
-    if (dim.minHeight) style.minHeight = dim.minHeight;
-    if (dim.maxHeight) style.maxHeight = dim.maxHeight;
+    if (dim.width && dim.width !== 'auto') style.width = ensureUnit(dim.width);
+    if (dim.height && dim.height !== 'auto') style.height = ensureUnit(dim.height);
+    if (dim.minWidth) style.minWidth = ensureUnit(dim.minWidth);
+    if (dim.maxWidth) style.maxWidth = ensureUnit(dim.maxWidth);
+    if (dim.minHeight) style.minHeight = ensureUnit(dim.minHeight);
+    if (dim.maxHeight) style.maxHeight = ensureUnit(dim.maxHeight);
   }
 
   // Margin
   if (layout.margin) {
     const m = layout.margin;
-    if (m.top && m.top !== '0') style.marginTop = m.top;
-    if (m.right && m.right !== '0') style.marginRight = m.right;
-    if (m.bottom && m.bottom !== '0') style.marginBottom = m.bottom;
-    if (m.left && m.left !== '0') style.marginLeft = m.left;
+    if (m.top && !isZeroValue(m.top)) style.marginTop = ensureUnit(m.top);
+    if (m.right && !isZeroValue(m.right)) style.marginRight = ensureUnit(m.right);
+    if (m.bottom && !isZeroValue(m.bottom)) style.marginBottom = ensureUnit(m.bottom);
+    if (m.left && !isZeroValue(m.left)) style.marginLeft = ensureUnit(m.left);
   }
 
   // Padding
   if (layout.padding) {
     const p = layout.padding;
-    if (p.top && p.top !== '0') style.paddingTop = p.top;
-    if (p.right && p.right !== '0') style.paddingRight = p.right;
-    if (p.bottom && p.bottom !== '0') style.paddingBottom = p.bottom;
-    if (p.left && p.left !== '0') style.paddingLeft = p.left;
+    if (p.top && !isZeroValue(p.top)) style.paddingTop = ensureUnit(p.top);
+    if (p.right && !isZeroValue(p.right)) style.paddingRight = ensureUnit(p.right);
+    if (p.bottom && !isZeroValue(p.bottom)) style.paddingBottom = ensureUnit(p.bottom);
+    if (p.left && !isZeroValue(p.left)) style.paddingLeft = ensureUnit(p.left);
   }
 
   // Overflow

@@ -1,8 +1,10 @@
-// PagePress v0.0.6 - 2025-12-03
+// PagePress v0.0.10 - 2025-12-04
 // Canvas component for the page builder
 
 import { Frame, Element } from '@craftjs/core';
-import { useBuilderStore, VIEWPORT_DIMENSIONS } from '@/stores/builder';
+import { useBuilderStore } from '@/stores/builder';
+import { useBreakpointStore } from '../responsive/breakpointStore';
+import { DeviceFrame, getCanvasWidth, getCanvasHeight } from '../responsive/DeviceFrame';
 import { Container } from '../components/Container';
 import { BreadcrumbBar } from './BreadcrumbBar';
 import { FloatingToolbar } from './FloatingToolbar';
@@ -17,8 +19,16 @@ interface CanvasProps {
  * Canvas component - The editable area where components are rendered
  */
 export function Canvas({ initialContent }: CanvasProps) {
-  const { viewport, isPreviewMode, isWireframeMode, showSpacingVisualizer } = useBuilderStore();
-  const { width } = VIEWPORT_DIMENSIONS[viewport];
+  const { isPreviewMode, isWireframeMode, showSpacingVisualizer } = useBuilderStore();
+  const { 
+    currentBreakpoint, 
+    previewOrientation, 
+    showDeviceFrame 
+  } = useBreakpointStore();
+  
+  // Get dimensions based on breakpoint AND orientation
+  const canvasWidth = getCanvasWidth(currentBreakpoint, previewOrientation);
+  const canvasHeight = getCanvasHeight(currentBreakpoint, previewOrientation);
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -28,35 +38,45 @@ export function Canvas({ initialContent }: CanvasProps) {
       {/* Main canvas area */}
       <div className="flex-1 bg-muted/50 overflow-auto p-8 relative">
         <BuilderContextMenu>
-          <div
-            data-builder-canvas
-            className={cn(
-              'mx-auto bg-background shadow-lg transition-all duration-300 relative',
-              isWireframeMode && 'builder-wireframe-mode',
-              showSpacingVisualizer && 'builder-spacing-mode'
-            )}
-            style={{
-              width: `${width}px`,
-              maxWidth: '100%',
-              minHeight: 'calc(100vh - 200px)',
-              // Allow pointer events in preview mode for hover effects to work
-            }}
-          >
-            {/* Floating toolbar */}
-            <FloatingToolbar />
-            
-            <Frame {...(initialContent ? { data: initialContent } : {})}>
-              <Element
-                is={Container}
-                canvas
-                display="flex"
-                flexDirection="column"
-                padding={24}
-                minHeight={400}
-                backgroundColor="#ffffff"
-              />
-            </Frame>
-          </div>
+          <DeviceFrame>
+            <div
+              data-builder-canvas
+              className={cn(
+                'mx-auto bg-background shadow-lg transition-all duration-300 relative',
+                isWireframeMode && 'builder-wireframe-mode',
+                showSpacingVisualizer && 'builder-spacing-mode',
+                // Remove shadow when device frame is shown
+                showDeviceFrame && currentBreakpoint !== 'desktop' && 'shadow-none'
+              )}
+              style={{
+                width: `${canvasWidth}px`,
+                maxWidth: '100%',
+                minHeight: currentBreakpoint === 'desktop' 
+                  ? 'calc(100vh - 200px)' 
+                  : undefined,
+                // Set height for mobile/tablet based on orientation
+                height: currentBreakpoint !== 'desktop' && showDeviceFrame
+                  ? `${canvasHeight}px`
+                  : undefined,
+                overflow: currentBreakpoint !== 'desktop' ? 'auto' : undefined,
+              }}
+            >
+              {/* Floating toolbar */}
+              <FloatingToolbar />
+              
+              <Frame {...(initialContent ? { data: initialContent } : {})}>
+                <Element
+                  is={Container}
+                  canvas
+                  display="flex"
+                  flexDirection="column"
+                  padding={24}
+                  minHeight={400}
+                  backgroundColor="#ffffff"
+                />
+              </Frame>
+            </div>
+          </DeviceFrame>
         </BuilderContextMenu>
       </div>
 

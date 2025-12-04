@@ -7,6 +7,7 @@ import { Editor, useEditor } from '@craftjs/core';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { usePageBuilder } from '@/hooks/usePageBuilder';
 import { useBuilderStore } from '@/stores/builder';
+import { useGlobalSettingsStore } from '@/components/builder/global/globalSettingsStore';
 import { componentResolver } from '@/components/builder/resolver';
 import { TopBar, LeftSidebar, RightSidebar, Canvas } from '@/components/builder/layout';
 import { BuilderProvider } from '@/components/builder/context';
@@ -199,6 +200,13 @@ interface BuilderLayoutProps {
 }
 
 function BuilderLayout({ pageId, pageTitle, initialContent, isSaving, queueAutoSave, onTitleChange }: BuilderLayoutProps) {
+  const { loadThemeSettings } = useGlobalSettingsStore();
+
+  // Load global theme settings on mount
+  useEffect(() => {
+    loadThemeSettings();
+  }, [loadThemeSettings]);
+
   return (
     <div className="h-screen flex flex-col bg-background">
       <AutoSaveHandler queueAutoSave={queueAutoSave} />

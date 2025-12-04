@@ -1,4 +1,4 @@
-// PagePress v0.0.4 - 2025-11-30
+// PagePress v0.0.10 - 2025-12-04
 
 import { createClient, type Client } from '@libsql/client';
 import { drizzle, type LibSQLDatabase } from 'drizzle-orm/libsql';
@@ -137,6 +137,75 @@ export async function initializeDatabase(): Promise<void> {
       updated_at INTEGER DEFAULT (unixepoch()) NOT NULL
     )
   `);
+
+  // Create theme_settings table for global theme configuration
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS theme_settings (
+      id TEXT PRIMARY KEY DEFAULT 'default',
+      settings TEXT,
+      updated_at INTEGER DEFAULT (unixepoch()) NOT NULL
+    )
+  `);
+
+  // Create page_settings table for per-page SEO and custom settings
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS page_settings (
+      page_id TEXT PRIMARY KEY REFERENCES pages(id) ON DELETE CASCADE,
+      settings TEXT,
+      updated_at INTEGER DEFAULT (unixepoch()) NOT NULL
+    )
+  `);
+
+  // Insert default theme settings if not exists
+  await client.execute(`
+    INSERT OR IGNORE INTO theme_settings (id, settings) 
+    VALUES ('default', '${JSON.stringify(getDefaultThemeSettings())}')
+  `);
+}
+
+/**
+ * Get default theme settings structure
+ */
+function getDefaultThemeSettings(): Record<string, unknown> {
+  return {
+    colors: [
+      { id: 'primary', name: 'Primary', value: '#3b82f6', category: 'primary' },
+      { id: 'secondary', name: 'Secondary', value: '#64748b', category: 'secondary' },
+      { id: 'accent', name: 'Accent', value: '#8b5cf6', category: 'accent' },
+      { id: 'background', name: 'Background', value: '#ffffff', category: 'neutral' },
+      { id: 'foreground', name: 'Foreground', value: '#0f172a', category: 'neutral' },
+    ],
+    typography: {
+      fontFamily: { heading: 'system-ui', body: 'system-ui' },
+      baseFontSize: 16,
+      headingSizes: {
+        h1: { desktop: '3rem' },
+        h2: { desktop: '2.25rem' },
+        h3: { desktop: '1.875rem' },
+        h4: { desktop: '1.5rem' },
+        h5: { desktop: '1.25rem' },
+        h6: { desktop: '1rem' },
+      },
+      bodyLineHeight: 1.6,
+      headingLineHeight: 1.2,
+    },
+    elements: {
+      button: { padding: '12px 24px', borderRadius: '6px', fontSize: '14px' },
+      link: { color: '#3b82f6', hoverColor: '#2563eb', textDecoration: 'none' },
+      container: { maxWidth: '1280px', padding: '16px' },
+      form: { inputPadding: '8px 12px', inputBorderRadius: '4px', inputBorderColor: '#e5e7eb' },
+    },
+    breakpoints: [
+      { id: 'desktop', label: 'Desktop', maxWidth: null, minWidth: 993 },
+      { id: 'tablet', label: 'Tablet', maxWidth: 992, minWidth: 769 },
+      { id: 'mobile', label: 'Mobile', maxWidth: 768, minWidth: 480 },
+      { id: 'mobilePortrait', label: 'Mobile Portrait', maxWidth: 479, minWidth: 0 },
+    ],
+    spacing: {
+      base: 4,
+      scale: [0.25, 0.5, 1, 1.5, 2, 3, 4, 6, 8, 12, 16],
+    },
+  };
 }
 
 /**

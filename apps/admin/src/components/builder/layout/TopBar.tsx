@@ -1,4 +1,4 @@
-// PagePress v0.0.6 - 2025-12-03
+// PagePress v0.0.10 - 2025-12-04
 // Top bar for the page builder
 
 import { useState } from 'react';
@@ -13,9 +13,8 @@ import {
   Grid3X3,
   Maximize2,
   ArrowLeft,
-  Monitor,
-  Tablet,
-  Smartphone,
+  Settings,
+  FileText,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,11 +39,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { useBuilderStore, VIEWPORT_DIMENSIONS, type ViewportMode } from '@/stores/builder';
+import { useBuilderStore } from '@/stores/builder';
 import { useBuilderContext } from '../context';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
+import { BreakpointSelector } from '../responsive/BreakpointSelector';
+import { GlobalSettingsPanel } from '../global/GlobalSettingsPanel';
+import { PageSettingsPanel } from '../page/PageSettingsPanel';
 
 interface TopBarProps {
   pageId: string;
@@ -52,12 +54,6 @@ interface TopBarProps {
   isSaving: boolean;
   onTitleChange?: (newTitle: string) => void;
 }
-
-const viewportIcons: Record<ViewportMode, React.ElementType> = {
-  desktop: Monitor,
-  tablet: Tablet,
-  mobile: Smartphone,
-};
 
 /**
  * Top bar with save, undo/redo, viewport, and preview controls
@@ -68,10 +64,10 @@ export function TopBar({ pageId, pageTitle, isSaving, onTitleChange }: TopBarPro
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [newTitle, setNewTitle] = useState(pageTitle);
   const [isRenaming, setIsRenaming] = useState(false);
+  const [globalSettingsOpen, setGlobalSettingsOpen] = useState(false);
+  const [pageSettingsOpen, setPageSettingsOpen] = useState(false);
   
   const {
-    viewport,
-    setViewport,
     isPreviewMode,
     setPreviewMode,
     isWireframeMode,
@@ -219,26 +215,40 @@ export function TopBar({ pageId, pageTitle, isSaving, onTitleChange }: TopBarPro
           </Tooltip>
         </div>
 
-        {/* Viewport selector */}
+        {/* Viewport selector - Breakpoint Selector */}
         <div className="flex items-center gap-0.5 border-r pr-2 mr-2">
-          {Object.entries(VIEWPORT_DIMENSIONS).map(([key, { label }]) => {
-            const Icon = viewportIcons[key as ViewportMode];
-            return (
-              <Tooltip key={key}>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant={viewport === key ? 'secondary' : 'ghost'}
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => setViewport(key as ViewportMode)}
-                  >
-                    <Icon className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{label}</TooltipContent>
-              </Tooltip>
-            );
-          })}
+          <BreakpointSelector />
+        </div>
+
+        {/* Page & Global Settings */}
+        <div className="flex items-center gap-0.5 border-r pr-2 mr-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant={pageSettingsOpen ? 'secondary' : 'ghost'}
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setPageSettingsOpen(true)}
+              >
+                <FileText className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Page Settings</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant={globalSettingsOpen ? 'secondary' : 'ghost'}
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setGlobalSettingsOpen(true)}
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Global Settings</TooltipContent>
+          </Tooltip>
         </div>
 
         {/* View options dropdown */}
@@ -376,6 +386,19 @@ export function TopBar({ pageId, pageTitle, isSaving, onTitleChange }: TopBarPro
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Global Settings Panel */}
+      <GlobalSettingsPanel
+        isOpen={globalSettingsOpen}
+        onClose={() => setGlobalSettingsOpen(false)}
+      />
+
+      {/* Page Settings Panel */}
+      <PageSettingsPanel
+        isOpen={pageSettingsOpen}
+        onClose={() => setPageSettingsOpen(false)}
+        pageId={pageId}
+      />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-// PagePress v0.0.5 - 2025-11-30
+// PagePress v0.0.10 - 2025-12-04
 // API client for communicating with the backend
 
 /**
@@ -186,7 +186,7 @@ export interface MediaListResponse {
 }
 
 /**
- * Settings types
+ * Settings endpoints
  */
 export interface SiteSettings {
   siteName: string;
@@ -215,6 +215,91 @@ export interface SiteSettings {
 
 export interface SettingsResponse {
   settings: SiteSettings;
+}
+
+/**
+ * Theme settings types
+ */
+export interface GlobalColor {
+  id: string;
+  name: string;
+  value: string;
+  category: 'primary' | 'secondary' | 'accent' | 'neutral' | 'custom';
+}
+
+export interface GlobalTypography {
+  headingFont: string;
+  bodyFont: string;
+  baseFontSize: number;
+  headingSizes: {
+    h1: number;
+    h2: number;
+    h3: number;
+    h4: number;
+    h5: number;
+    h6: number;
+  };
+  lineHeights: {
+    heading: number;
+    body: number;
+  };
+}
+
+export interface ThemeBreakpoint {
+  id: string;
+  name: string;
+  minWidth: number;
+  maxWidth: number | null;
+}
+
+export interface SpacingConfig {
+  baseUnit: number;
+  scale: number[];
+}
+
+export interface GlobalThemeSettings {
+  colors: GlobalColor[];
+  typography: GlobalTypography;
+  elements: {
+    button: Record<string, unknown>;
+    link: Record<string, unknown>;
+    container: Record<string, unknown>;
+    form: Record<string, unknown>;
+  };
+  breakpoints: ThemeBreakpoint[];
+  spacing: SpacingConfig;
+}
+
+export interface ThemeSettingsResponse {
+  settings: GlobalThemeSettings;
+}
+
+export interface PageSettings {
+  disableHeader: boolean;
+  disableFooter: boolean;
+  fullWidth?: boolean;
+  transparentHeader?: boolean;
+  backgroundColor?: string;
+  metaTitle?: string;
+  metaDescription?: string;
+  canonicalUrl?: string;
+  noIndex: boolean;
+  noFollow: boolean;
+  ogTitle?: string;
+  ogDescription?: string;
+  ogImage?: string;
+  twitterTitle?: string;
+  twitterDescription?: string;
+  twitterImage?: string;
+  customCss?: string;
+  jsHead?: string;
+  jsBody?: string;
+  externalCss?: string;
+  externalJs?: string;
+}
+
+export interface PageSettingsResponse {
+  settings: PageSettings;
 }
 
 /**
@@ -389,6 +474,40 @@ export const api = {
      */
     update: (data: Partial<SiteSettings>) =>
       fetchApi<SettingsResponse>('/settings', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+  },
+
+  /**
+   * Theme endpoints - global styling and page settings
+   */
+  theme: {
+    /**
+     * Get global theme settings
+     */
+    get: () => fetchApi<ThemeSettingsResponse>('/theme'),
+
+    /**
+     * Update global theme settings
+     */
+    update: (data: Partial<GlobalThemeSettings>) =>
+      fetchApi<ThemeSettingsResponse>('/theme', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+
+    /**
+     * Get page-specific settings
+     */
+    getPageSettings: (pageId: string) =>
+      fetchApi<PageSettingsResponse>(`/theme/page/${pageId}`),
+
+    /**
+     * Update page-specific settings
+     */
+    updatePageSettings: (pageId: string, data: Partial<PageSettings>) =>
+      fetchApi<PageSettingsResponse>(`/theme/page/${pageId}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
