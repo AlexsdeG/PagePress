@@ -1,11 +1,12 @@
-// PagePress v0.0.7 - 2025-12-04
+// PagePress v0.0.9 - 2025-12-04
 // CSS Filter Input Component
 
-import { useCallback } from 'react';
+import { useCallback, useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { RotateCcw } from 'lucide-react';
 import type { FilterSettings, BackdropFilterSettings } from '../styles/types';
 
@@ -86,6 +87,92 @@ const filterSliders: {
 ];
 
 /**
+ * Clickable slider value component for filter sliders
+ */
+interface ClickableFilterSliderProps {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  unit: string;
+  onChange: (value: number) => void;
+}
+
+function ClickableFilterSlider({ label, value, min, max, step, unit, onChange }: ClickableFilterSliderProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [inputValue, setInputValue] = useState(String(value));
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
+  const handleValueClick = () => {
+    setIsEditing(true);
+    setInputValue(String(value));
+  };
+
+  const handleInputBlur = () => {
+    setIsEditing(false);
+    const parsed = parseFloat(inputValue);
+    if (!isNaN(parsed)) {
+      const clamped = Math.min(Math.max(parsed, min), max);
+      onChange(clamped);
+    }
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleInputBlur();
+    } else if (e.key === 'Escape') {
+      setIsEditing(false);
+      setInputValue(String(value));
+    }
+  };
+
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between">
+        <Label className="text-xs text-muted-foreground">{label}</Label>
+        {isEditing ? (
+          <Input
+            ref={inputRef}
+            type="number"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onBlur={handleInputBlur}
+            onKeyDown={handleInputKeyDown}
+            min={min}
+            max={max}
+            step={step}
+            className="h-5 w-16 px-1.5 text-xs text-right"
+          />
+        ) : (
+          <button
+            onClick={handleValueClick}
+            className="text-xs text-muted-foreground hover:text-foreground hover:bg-muted px-1.5 py-0.5 rounded transition-colors cursor-text"
+            title="Click to edit value"
+          >
+            {value}{unit}
+          </button>
+        )}
+      </div>
+      <Slider
+        value={[value]}
+        min={min}
+        max={max}
+        step={step}
+        onValueChange={([val]) => onChange(val)}
+      />
+    </div>
+  );
+}
+
+/**
  * Filter Input - CSS filter controls
  */
 export function FilterInput({ value, onChange, className }: FilterInputProps) {
@@ -151,22 +238,16 @@ export function FilterInput({ value, onChange, className }: FilterInputProps) {
       {/* Filter sliders */}
       <div className="space-y-3">
         {filterSliders.map((slider) => (
-          <div key={slider.key} className="space-y-1">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs text-muted-foreground">{slider.label}</Label>
-              <span className="text-xs text-muted-foreground">
-                {value[slider.key]}
-                {slider.unit}
-              </span>
-            </div>
-            <Slider
-              value={[value[slider.key]]}
-              min={slider.min}
-              max={slider.max}
-              step={slider.step}
-              onValueChange={([val]) => handleChange(slider.key, val)}
-            />
-          </div>
+          <ClickableFilterSlider
+            key={slider.key}
+            label={slider.label}
+            value={value[slider.key]}
+            min={slider.min}
+            max={slider.max}
+            step={slider.step}
+            unit={slider.unit}
+            onChange={(val) => handleChange(slider.key, val)}
+          />
         ))}
       </div>
     </div>
@@ -291,24 +372,18 @@ export function BackdropFilterInput({ value, onChange, className }: BackdropFilt
           {/* Filter sliders */}
           <div className="space-y-3">
             {backdropFilterSliders.map((slider) => (
-              <div key={slider.key} className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs text-muted-foreground">{slider.label}</Label>
-                  <span className="text-xs text-muted-foreground">
-                    {value[slider.key]}
-                    {slider.unit}
-                  </span>
-                </div>
-                <Slider
-                  value={[value[slider.key]]}
-                  min={slider.min}
-                  max={slider.max}
-                  step={slider.step}
-                  onValueChange={([val]) =>
-                    handleChange(slider.key as keyof BackdropFilterSettings, val)
-                  }
-                />
-              </div>
+              <ClickableFilterSlider
+                key={slider.key}
+                label={slider.label}
+                value={value[slider.key]}
+                min={slider.min}
+                max={slider.max}
+                step={slider.step}
+                unit={slider.unit}
+                onChange={(val) =>
+                  handleChange(slider.key as keyof BackdropFilterSettings, val)
+                }
+              />
             ))}
           </div>
         </>

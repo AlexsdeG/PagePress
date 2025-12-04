@@ -1,11 +1,14 @@
-// PagePress v0.0.6 - 2025-12-03
-// Column component for the page builder
+// PagePress v0.0.9 - 2025-12-04
+// Column component for the page builder with advanced styling support
 
 import { useNode, useEditor } from '@craftjs/core';
 import { cn } from '@/lib/utils';
 import { useBuilderStore } from '@/stores/builder';
+import { useAdvancedStyling } from '../hooks/useAdvancedStyling';
 import type { FC, ReactNode } from 'react';
 import { ColumnSettings } from './Column.settings';
+import type { AdvancedStyling } from '../inspector/styles/types';
+import type { ElementMetadata } from '../inspector/sidebar/types';
 
 /**
  * Column component props
@@ -24,6 +27,9 @@ export interface ColumnProps {
   backgroundColor?: string;
   className?: string;
   children?: ReactNode;
+  // Advanced styling
+  advancedStyling?: Partial<AdvancedStyling>;
+  metadata?: ElementMetadata;
 }
 
 /**
@@ -58,6 +64,15 @@ export const Column: FC<ColumnProps> & { craft?: Record<string, unknown> } = ({
     isHovered: state.events.hovered.has(id),
   }));
 
+  // Get advanced styling
+  const { 
+    style: advancedStyle, 
+    className: advancedClassName,
+    attributes,
+    elementId,
+    hasAdvancedStyling,
+  } = useAdvancedStyling();
+
   // Align self classes
   const alignClasses: Record<string, string> = {
     auto: 'self-auto',
@@ -73,16 +88,18 @@ export const Column: FC<ColumnProps> & { craft?: Record<string, unknown> } = ({
     return value.includes('px') || value.includes('%') || value.includes('rem') || value.includes('fr') ? value : `${value}px`;
   };
 
-  // Calculate padding styles
-  const paddingStyle = {
+  // Calculate padding styles (legacy - overridden by advanced styling)
+  const basePaddingStyle = hasAdvancedStyling ? {} : {
     paddingTop: parseValue(paddingTop ?? padding),
     paddingRight: parseValue(paddingRight ?? padding),
     paddingBottom: parseValue(paddingBottom ?? padding),
     paddingLeft: parseValue(paddingLeft ?? padding),
   };
 
-  // Calculate flex properties based on width
+  // Calculate flex properties based on width (legacy - overridden by advanced styling)
   const getFlexStyle = () => {
+    if (hasAdvancedStyling) return {};
+    
     if (width === 'auto') {
       return { flex: '1 1 0%' };
     }
@@ -120,26 +137,60 @@ export const Column: FC<ColumnProps> & { craft?: Record<string, unknown> } = ({
     };
   };
 
+  // Base styles (legacy - overridden by advanced styling)
+  const baseStyle: React.CSSProperties = hasAdvancedStyling ? {} : {
+    ...getFlexStyle(),
+    minWidth: parseValue(minWidth),
+    maxWidth: maxWidth === 'none' ? undefined : parseValue(maxWidth),
+    order,
+    backgroundColor,
+    ...basePaddingStyle,
+  };
+
+  // Ensure Column has proper flex-item defaults and minimum height
+  // When width is set (e.g., 33%), use it as flex-basis
+  const getColumnDefaults = (): React.CSSProperties => {
+    // If width is explicitly set (not 'auto'), use it for flex-basis
+    if (width && width !== 'auto') {
+      return {
+        flexGrow: 0,
+        flexShrink: 0,
+        flexBasis: parseValue(width),
+        width: parseValue(width),
+        minHeight: '50px',
+      };
+    }
+    // Auto width = equal distribution
+    return {
+      flexGrow: 1,
+      flexShrink: 1,
+      flexBasis: '0%',
+      minHeight: '50px',
+    };
+  };
+
+  const columnDefaults = getColumnDefaults();
+
   return (
     <div
       ref={(ref) => {
         if (ref) connect(ref);
       }}
+      id={elementId}
       className={cn(
         'relative',
-        alignClasses[alignSelf],
+        !hasAdvancedStyling && alignClasses[alignSelf],
         !isPreviewMode && 'transition-all duration-150',
+        advancedClassName,
         className
       )}
       style={{
-        ...getFlexStyle(),
-        minWidth: parseValue(minWidth),
-        maxWidth: maxWidth === 'none' ? undefined : parseValue(maxWidth),
-        order,
-        backgroundColor,
-        ...paddingStyle,
+        ...columnDefaults,
+        ...baseStyle,
+        ...advancedStyle,
         ...getOutlineStyles(),
       }}
+      {...attributes}
     >
       {/* Selection label */}
       {isSelected && !isPreviewMode && (
@@ -166,6 +217,10 @@ Column.craft = {
     padding: '16px',
     backgroundColor: 'transparent',
     className: '',
+    // Advanced styling props
+    advancedStyling: {},
+    pseudoStateStyling: {},
+    metadata: undefined,
   },
   related: {
     settings: ColumnSettings,

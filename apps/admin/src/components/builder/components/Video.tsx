@@ -1,17 +1,20 @@
-// PagePress v0.0.6 - 2025-12-03
-// Video component for the page builder
+// PagePress v0.0.9 - 2025-12-04
+// Video component for the page builder with advanced styling support
 
 import { useNode, useEditor } from '@craftjs/core';
 import { cn } from '@/lib/utils';
 import { useBuilderStore } from '@/stores/builder';
+import { useAdvancedStyling } from '../hooks/useAdvancedStyling';
 import type { FC } from 'react';
 import { VideoSettings } from './Video.settings';
+import type { AdvancedStyling } from '../inspector/styles/types';
+import type { ElementMetadata } from '../inspector/sidebar/types';
 
 /**
  * Video component props
  */
 export interface VideoProps {
-  source?: 'youtube' | 'vimeo' | 'mp4';
+  source?: 'youtube' | 'vimeo' | 'mp4' | 'upload';
   url?: string;
   posterImage?: string;
   autoplay?: boolean;
@@ -21,6 +24,9 @@ export interface VideoProps {
   aspectRatio?: '16:9' | '4:3' | '1:1' | '21:9';
   width?: string;
   className?: string;
+  // Advanced styling
+  advancedStyling?: Partial<AdvancedStyling>;
+  metadata?: ElementMetadata;
 }
 
 /**
@@ -83,6 +89,15 @@ export const Video: FC<VideoProps> & { craft?: Record<string, unknown> } = ({
     isHovered: state.events.hovered.has(id),
   }));
 
+  // Get advanced styling
+  const { 
+    style: advancedStyle, 
+    className: advancedClassName,
+    attributes,
+    elementId,
+    hasAdvancedStyling,
+  } = useAdvancedStyling();
+
   // Parse value helper
   const parseValue = (value: string) => {
     if (!value) return '100%';
@@ -108,6 +123,11 @@ export const Video: FC<VideoProps> & { craft?: Record<string, unknown> } = ({
     }
     
     return {};
+  };
+
+  // Base styles (legacy - overridden by advanced styling)
+  const baseStyle: React.CSSProperties = hasAdvancedStyling ? {} : {
+    width: parseValue(width),
   };
 
   // Render video based on source
@@ -188,15 +208,19 @@ export const Video: FC<VideoProps> & { craft?: Record<string, unknown> } = ({
       ref={(ref) => {
         if (ref) connect(drag(ref));
       }}
+      id={elementId}
       className={cn(
         'relative',
         !isPreviewMode && 'transition-all duration-150',
+        advancedClassName,
         className
       )}
       style={{
-        width: parseValue(width),
+        ...baseStyle,
+        ...advancedStyle,
         ...getOutlineStyles(),
       }}
+      {...attributes}
     >
       {/* Selection label */}
       {isSelected && !isPreviewMode && (
@@ -244,6 +268,10 @@ Video.craft = {
     aspectRatio: '16:9',
     width: '100%',
     className: '',
+    // Advanced styling props
+    advancedStyling: {},
+    pseudoStateStyling: {},
+    metadata: undefined,
   },
   related: {
     settings: VideoSettings,

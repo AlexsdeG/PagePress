@@ -1,20 +1,29 @@
-// PagePress v0.0.6 - 2025-12-03
-// Code Block component for the page builder - HTML, CSS, JavaScript
+// PagePress v0.0.9 - 2025-12-04
+// Code Block component for the page builder - HTML, CSS, JavaScript with advanced styling
 
 import { useNode, useEditor } from '@craftjs/core';
 import DOMPurify from 'dompurify';
 import { Code2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBuilderStore } from '@/stores/builder';
+import { useAdvancedStyling } from '../hooks/useAdvancedStyling';
 import type { FC } from 'react';
 import type { HTMLBlockProps } from '../types';
 import { HTMLBlockSettings } from './HTMLBlock.settings';
+import type { AdvancedStyling } from '../inspector/styles/types';
+import type { ElementMetadata } from '../inspector/sidebar/types';
+
+// Extend HTMLBlockProps with advanced styling
+interface ExtendedHTMLBlockProps extends HTMLBlockProps {
+  advancedStyling?: Partial<AdvancedStyling>;
+  metadata?: ElementMetadata;
+}
 
 /**
  * CodeBlock component - Renders custom HTML, CSS, and JavaScript
  * Formerly known as HTMLBlock
  */
-export const HTMLBlock: FC<HTMLBlockProps> & { craft?: Record<string, unknown> } = ({
+export const HTMLBlock: FC<ExtendedHTMLBlockProps> & { craft?: Record<string, unknown> } = ({
   html = '',
   css = '',
   javascript = '',
@@ -34,6 +43,15 @@ export const HTMLBlock: FC<HTMLBlockProps> & { craft?: Record<string, unknown> }
     isSelected: state.events.selected.has(id),
     isHovered: state.events.hovered.has(id),
   }));
+
+  // Get advanced styling
+  const { 
+    style: advancedStyle, 
+    className: advancedClassName,
+    attributes,
+    elementId,
+    hasAdvancedStyling,
+  } = useAdvancedStyling();
 
   // Sanitize HTML to prevent XSS attacks
   const sanitizedHtml = DOMPurify.sanitize(html, {
@@ -69,6 +87,11 @@ export const HTMLBlock: FC<HTMLBlockProps> & { craft?: Record<string, unknown> }
 
   const hasContent = html.trim() || css.trim() || javascript.trim();
 
+  // Base styles (legacy - overridden by advanced styling)
+  const baseStyle: React.CSSProperties = hasAdvancedStyling ? {} : {
+    minHeight: `${minHeight}px`,
+  };
+
   // In preview mode, render the content (even if empty, use minHeight)
   if (isPreviewMode) {
     if (!hasContent) {
@@ -77,8 +100,13 @@ export const HTMLBlock: FC<HTMLBlockProps> & { craft?: Record<string, unknown> }
 
     return (
       <div
-        className={cn('relative', className)}
-        style={{ minHeight: `${minHeight}px` }}
+        id={elementId}
+        className={cn('relative', advancedClassName, className)}
+        style={{
+          ...baseStyle,
+          ...advancedStyle,
+        }}
+        {...attributes}
       >
         <div dangerouslySetInnerHTML={{ __html: combinedContent }} />
         {javascript && (
@@ -91,16 +119,20 @@ export const HTMLBlock: FC<HTMLBlockProps> & { craft?: Record<string, unknown> }
   // In edit mode, always show placeholder if empty or the content with visual indicator
   return (
     <div
-      ref={(ref) => ref && connect(drag(ref))}
+      ref={(ref) => { ref && connect(drag(ref)); }}
+      id={elementId}
       className={cn(
         'relative transition-all duration-150',
         !hasContent && 'bg-muted border-2 border-dashed border-muted-foreground/25',
+        advancedClassName,
         className
       )}
       style={{
-        minHeight: `${minHeight}px`,
+        ...baseStyle,
+        ...advancedStyle,
         ...getOutlineStyles(),
       }}
+      {...attributes}
     >
       {/* Selection label */}
       {isSelected && (
@@ -141,6 +173,10 @@ HTMLBlock.craft = {
     javascript: '',
     minHeight: 60,
     className: '',
+    // Advanced styling props
+    advancedStyling: {},
+    pseudoStateStyling: {},
+    metadata: undefined,
   },
   related: {
     settings: HTMLBlockSettings,

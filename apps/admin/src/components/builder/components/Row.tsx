@@ -1,11 +1,14 @@
-// PagePress v0.0.6 - 2025-12-03
-// Row component for the page builder
+// PagePress v0.0.9 - 2025-12-04
+// Row component for the page builder with advanced styling support
 
 import { useNode, useEditor } from '@craftjs/core';
 import { cn } from '@/lib/utils';
 import { useBuilderStore } from '@/stores/builder';
+import { useAdvancedStyling } from '../hooks/useAdvancedStyling';
 import type { FC, ReactNode } from 'react';
 import { RowSettings } from './Row.settings';
+import type { AdvancedStyling } from '../inspector/styles/types';
+import type { ElementMetadata } from '../inspector/sidebar/types';
 
 /**
  * Row component props
@@ -24,6 +27,9 @@ export interface RowProps {
   backgroundColor?: string;
   className?: string;
   children?: ReactNode;
+  // Advanced styling
+  advancedStyling?: Partial<AdvancedStyling>;
+  metadata?: ElementMetadata;
 }
 
 /**
@@ -58,6 +64,15 @@ export const Row: FC<RowProps> & { craft?: Record<string, unknown> } = ({
     isHovered: state.events.hovered.has(id),
   }));
 
+  // Get advanced styling
+  const { 
+    style: advancedStyle, 
+    className: advancedClassName,
+    attributes,
+    elementId,
+    hasAdvancedStyling,
+  } = useAdvancedStyling();
+
   // Justify content classes
   const justifyClasses: Record<string, string> = {
     start: 'justify-start',
@@ -83,8 +98,8 @@ export const Row: FC<RowProps> & { craft?: Record<string, unknown> } = ({
     return value.includes('px') || value.includes('%') || value.includes('rem') ? value : `${value}px`;
   };
 
-  // Calculate padding styles
-  const paddingStyle = {
+  // Calculate padding styles (legacy - overridden by advanced styling)
+  const basePaddingStyle = hasAdvancedStyling ? {} : {
     paddingTop: parseValue(paddingTop ?? padding),
     paddingRight: parseValue(paddingRight ?? padding),
     paddingBottom: parseValue(paddingBottom ?? padding),
@@ -115,26 +130,44 @@ export const Row: FC<RowProps> & { craft?: Record<string, unknown> } = ({
     };
   };
 
+  // Base styles (legacy - overridden by advanced styling)
+  const baseStyle: React.CSSProperties = hasAdvancedStyling ? {} : {
+    gap: parseValue(gap),
+    margin: parseValue(margin),
+    backgroundColor,
+    ...basePaddingStyle,
+  };
+
+  // Ensure Row always has flex-row behavior
+  // Even with advanced styling, maintain baseline flex-row unless explicitly changed
+  const flexDefaults: React.CSSProperties = {
+    display: 'flex',
+    flexDirection: 'row',
+    minHeight: '50px', // Ensure selectable when empty
+  };
+
   return (
     <div
       ref={(ref) => {
         if (ref) connect(ref);
       }}
+      id={elementId}
       className={cn(
-        'relative flex flex-row w-full',
-        justifyClasses[justifyContent],
-        alignClasses[alignItems],
-        wrap && 'flex-wrap',
+        'relative w-full',
+        !hasAdvancedStyling && justifyClasses[justifyContent],
+        !hasAdvancedStyling && alignClasses[alignItems],
+        !hasAdvancedStyling && wrap && 'flex-wrap',
         !isPreviewMode && 'transition-all duration-150',
+        advancedClassName,
         className
       )}
       style={{
-        gap: parseValue(gap),
-        margin: parseValue(margin),
-        backgroundColor,
-        ...paddingStyle,
+        ...flexDefaults,
+        ...baseStyle,
+        ...advancedStyle,
         ...getOutlineStyles(),
       }}
+      {...attributes}
     >
       {/* Selection label */}
       {isSelected && !isPreviewMode && (
@@ -161,6 +194,10 @@ Row.craft = {
     margin: '0px',
     backgroundColor: 'transparent',
     className: '',
+    // Advanced styling props
+    advancedStyling: {},
+    pseudoStateStyling: {},
+    metadata: undefined,
   },
   related: {
     settings: RowSettings,

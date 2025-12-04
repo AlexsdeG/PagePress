@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { FolderOpen, Image as ImageIcon } from 'lucide-react';
 import { WidthInput } from '../inspector/inputs/WidthInput';
 import { MediaPickerDialog } from '../inspector/MediaPickerDialog';
 import { ElementSettingsSidebar } from '../inspector/sidebar';
@@ -29,9 +30,14 @@ function VideoContentSettings({
   props: VideoProps;
   setProp: (cb: (props: VideoProps) => void) => void;
 }) {
-  const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
+  const [videoPickerOpen, setVideoPickerOpen] = useState(false);
+  const [posterPickerOpen, setPosterPickerOpen] = useState(false);
 
-  const handleMediaSelect = (media: Media) => {
+  const handleVideoSelect = (media: Media) => {
+    setProp((p: VideoProps) => (p.url = media.url));
+  };
+
+  const handlePosterSelect = (media: Media) => {
     setProp((p: VideoProps) => (p.posterImage = media.url));
   };
 
@@ -51,46 +57,71 @@ function VideoContentSettings({
             <SelectContent>
               <SelectItem value="youtube">YouTube</SelectItem>
               <SelectItem value="vimeo">Vimeo</SelectItem>
-              <SelectItem value="mp4">MP4 File</SelectItem>
+              <SelectItem value="mp4">MP4 URL</SelectItem>
+              <SelectItem value="upload">Uploaded Video</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
-        {/* URL */}
-        <div className="space-y-2">
-          <Label className="text-xs">
-            {props.source === 'youtube' ? 'YouTube URL' :
-             props.source === 'vimeo' ? 'Vimeo URL' :
-             'MP4 URL'}
-          </Label>
-          <Input
-            value={props.url || ''}
-            onChange={(e) => setProp((p: VideoProps) => (p.url = e.target.value))}
-            placeholder={
-              props.source === 'youtube' ? 'https://www.youtube.com/watch?v=...' :
-              props.source === 'vimeo' ? 'https://vimeo.com/...' :
-              'https://example.com/video.mp4'
-            }
-          />
-        </div>
+        {/* URL / Upload */}
+        {props.source === 'upload' ? (
+          <div className="space-y-2">
+            <Label className="text-xs">Video File</Label>
+            <div className="flex gap-2">
+              <Input
+                value={props.url || ''}
+                onChange={(e) => setProp((p: VideoProps) => (p.url = e.target.value))}
+                placeholder="Select from media library..."
+                className="flex-1"
+                readOnly
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setVideoPickerOpen(true)}
+                title="Browse media library"
+              >
+                <FolderOpen className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <Label className="text-xs">
+              {props.source === 'youtube' ? 'YouTube URL' :
+               props.source === 'vimeo' ? 'Vimeo URL' :
+               'MP4 URL'}
+            </Label>
+            <Input
+              value={props.url || ''}
+              onChange={(e) => setProp((p: VideoProps) => (p.url = e.target.value))}
+              placeholder={
+                props.source === 'youtube' ? 'https://www.youtube.com/watch?v=...' :
+                props.source === 'vimeo' ? 'https://vimeo.com/...' :
+                'https://example.com/video.mp4'
+              }
+            />
+          </div>
+        )}
 
-        {/* Poster Image (only for MP4) */}
-        {props.source === 'mp4' && (
+        {/* Poster Image (for MP4 and upload) */}
+        {(props.source === 'mp4' || props.source === 'upload') && (
           <div className="space-y-2">
             <Label className="text-xs">Poster Image</Label>
             <div className="flex gap-2">
               <Input
                 value={props.posterImage || ''}
                 onChange={(e) => setProp((p: VideoProps) => (p.posterImage = e.target.value))}
-                placeholder="Image URL..."
+                placeholder="Select poster image..."
                 className="flex-1"
               />
               <Button
                 variant="outline"
-                size="sm"
-                onClick={() => setMediaPickerOpen(true)}
+                size="icon"
+                onClick={() => setPosterPickerOpen(true)}
+                title="Browse images"
               >
-                Browse
+                <ImageIcon className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -185,11 +216,19 @@ function VideoContentSettings({
         </div>
       </div>
 
-      {/* Media Picker Dialog */}
+      {/* Media Picker Dialog - Video */}
       <MediaPickerDialog
-        open={mediaPickerOpen}
-        onOpenChange={setMediaPickerOpen}
-        onSelect={handleMediaSelect}
+        open={videoPickerOpen}
+        onOpenChange={setVideoPickerOpen}
+        onSelect={handleVideoSelect}
+        accept="video"
+      />
+      
+      {/* Media Picker Dialog - Poster Image */}
+      <MediaPickerDialog
+        open={posterPickerOpen}
+        onOpenChange={setPosterPickerOpen}
+        onSelect={handlePosterSelect}
         accept="image"
       />
     </>

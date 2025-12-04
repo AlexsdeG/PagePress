@@ -1,5 +1,5 @@
-// PagePress v0.0.6 - 2025-12-03
-// Media picker dialog for selecting images from the media library
+// PagePress v0.0.9 - 2025-12-04
+// Media picker dialog for selecting images/videos from the media library
 
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { api, type Media } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { FileVideo } from 'lucide-react';
 
 interface MediaPickerDialogProps {
   open: boolean;
@@ -25,7 +26,7 @@ interface MediaPickerDialogProps {
 /**
  * Convert absolute URLs to relative for Vite proxy
  */
-function getProxiedUrl(url: string): string {
+export function getProxiedUrl(url: string): string {
   if (!url) return '';
   // If the URL is from localhost:3000, convert to relative /uploads path
   if (url.includes('localhost:3000/uploads/')) {
@@ -101,7 +102,12 @@ export function MediaPickerDialog({
         <DialogHeader>
           <DialogTitle>Select Media</DialogTitle>
           <DialogDescription>
-            Choose an image from your media library
+            {accept === 'image' 
+              ? 'Choose an image from your media library'
+              : accept === 'video'
+              ? 'Choose a video from your media library'
+              : 'Choose a file from your media library'
+            }
           </DialogDescription>
         </DialogHeader>
 
@@ -145,9 +151,14 @@ export function MediaPickerDialog({
                       alt={item.altText || item.originalName}
                       className="w-full h-full object-cover"
                     />
+                  ) : item.mimeType.startsWith('video/') ? (
+                    <div className="w-full h-full bg-muted flex flex-col items-center justify-center gap-1">
+                      <FileVideo className="h-8 w-8 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">Video</span>
+                    </div>
                   ) : (
                     <div className="w-full h-full bg-muted flex items-center justify-center">
-                      <span className="text-4xl">🎬</span>
+                      <span className="text-4xl">📄</span>
                     </div>
                   )}
                   

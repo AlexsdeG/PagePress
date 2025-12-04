@@ -1,7 +1,7 @@
-// PagePress v0.0.7 - 2025-12-04
+// PagePress v0.0.9 - 2025-12-04
 // Transition Input Component
 
-import { useCallback } from 'react';
+import { useCallback, useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -69,6 +69,92 @@ const durationPresets = [
   { value: 500, label: 'Slow' },
   { value: 1000, label: '1s' },
 ];
+
+/**
+ * Clickable slider value component
+ */
+interface ClickableSliderProps {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  unit: string;
+  onChange: (value: number) => void;
+}
+
+function ClickableSlider({ label, value, min, max, step, unit, onChange }: ClickableSliderProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [inputValue, setInputValue] = useState(String(value));
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
+  const handleValueClick = () => {
+    setIsEditing(true);
+    setInputValue(String(value));
+  };
+
+  const handleInputBlur = () => {
+    setIsEditing(false);
+    const parsed = parseFloat(inputValue);
+    if (!isNaN(parsed)) {
+      const clamped = Math.min(Math.max(parsed, min), max);
+      onChange(clamped);
+    }
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleInputBlur();
+    } else if (e.key === 'Escape') {
+      setIsEditing(false);
+      setInputValue(String(value));
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <Label className="text-xs text-muted-foreground">{label}</Label>
+        {isEditing ? (
+          <Input
+            ref={inputRef}
+            type="number"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onBlur={handleInputBlur}
+            onKeyDown={handleInputKeyDown}
+            min={min}
+            max={max}
+            step={step}
+            className="h-5 w-20 px-1.5 text-xs text-right"
+          />
+        ) : (
+          <button
+            onClick={handleValueClick}
+            className="text-xs text-muted-foreground hover:text-foreground hover:bg-muted px-1.5 py-0.5 rounded transition-colors cursor-text"
+            title="Click to edit value"
+          >
+            {value}{unit}
+          </button>
+        )}
+      </div>
+      <Slider
+        value={[value]}
+        min={min}
+        max={max}
+        step={step}
+        onValueChange={([val]) => onChange(val)}
+      />
+    </div>
+  );
+}
 
 /**
  * Transition Input - CSS transition controls
@@ -166,16 +252,14 @@ export function TransitionInput({ value, onChange, className }: TransitionInputP
 
           {/* Duration */}
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs text-muted-foreground">Duration</Label>
-              <span className="text-xs text-muted-foreground">{value.duration}ms</span>
-            </div>
-            <Slider
-              value={[value.duration]}
+            <ClickableSlider
+              label="Duration"
+              value={value.duration}
               min={0}
               max={2000}
               step={50}
-              onValueChange={([val]) => handleChange('duration', val)}
+              unit="ms"
+              onChange={(val) => handleChange('duration', val)}
             />
             <div className="flex gap-1">
               {durationPresets.map((preset) => (
@@ -243,19 +327,15 @@ export function TransitionInput({ value, onChange, className }: TransitionInputP
           </div>
 
           {/* Delay */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs text-muted-foreground">Delay</Label>
-              <span className="text-xs text-muted-foreground">{value.delay}ms</span>
-            </div>
-            <Slider
-              value={[value.delay]}
-              min={0}
-              max={1000}
-              step={50}
-              onValueChange={([val]) => handleChange('delay', val)}
-            />
-          </div>
+          <ClickableSlider
+            label="Delay"
+            value={value.delay}
+            min={0}
+            max={1000}
+            step={50}
+            unit="ms"
+            onChange={(val) => handleChange('delay', val)}
+          />
 
           {/* Preview */}
           <div className="space-y-2">

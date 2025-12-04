@@ -1,11 +1,14 @@
-// PagePress v0.0.6 - 2025-12-03
-// List component for the page builder
+// PagePress v0.0.9 - 2025-12-04
+// List component for the page builder with advanced styling support
 
 import { useNode, useEditor } from '@craftjs/core';
 import { cn } from '@/lib/utils';
 import { useBuilderStore } from '@/stores/builder';
+import { useAdvancedStyling } from '../hooks/useAdvancedStyling';
 import type { FC } from 'react';
 import { ListSettings } from './List.settings';
+import type { AdvancedStyling } from '../inspector/styles/types';
+import type { ElementMetadata } from '../inspector/sidebar/types';
 
 /**
  * List component props
@@ -20,6 +23,9 @@ export interface ListProps {
   gap?: string;
   padding?: string;
   className?: string;
+  // Advanced styling
+  advancedStyling?: Partial<AdvancedStyling>;
+  metadata?: ElementMetadata;
 }
 
 /**
@@ -49,6 +55,15 @@ export const List: FC<ListProps> & { craft?: Record<string, unknown> } = ({
     isSelected: state.events.selected.has(id),
     isHovered: state.events.hovered.has(id),
   }));
+
+  // Get advanced styling
+  const { 
+    style: advancedStyle, 
+    className: advancedClassName,
+    attributes,
+    elementId,
+    hasAdvancedStyling,
+  } = useAdvancedStyling();
 
   // Map bullet style to CSS list-style-type
   const listStyleMap: Record<string, string> = {
@@ -88,6 +103,19 @@ export const List: FC<ListProps> & { craft?: Record<string, unknown> } = ({
     return {};
   };
 
+  // Base list styles (legacy - overridden by advanced styling)
+  const baseListStyle: React.CSSProperties = hasAdvancedStyling ? {} : {
+    listStyleType: listStyleMap[bulletStyle],
+    color,
+    fontSize: parseValue(fontSize),
+    lineHeight,
+    padding: parseValue(padding),
+    paddingLeft: bulletStyle !== 'none' ? '1.5em' : parseValue(padding),
+    display: 'flex',
+    flexDirection: 'column',
+    gap: parseValue(gap),
+  };
+
   const ListTag = listType;
 
   return (
@@ -95,13 +123,17 @@ export const List: FC<ListProps> & { craft?: Record<string, unknown> } = ({
       ref={(ref) => {
         if (ref) connect(drag(ref));
       }}
+      id={elementId}
       className={cn(
         'relative',
         !isPreviewMode && 'transition-all duration-150',
+        advancedClassName,
       )}
       style={{
+        ...advancedStyle,
         ...getOutlineStyles(),
       }}
+      {...attributes}
     >
       {/* Selection label */}
       {isSelected && !isPreviewMode && (
@@ -111,17 +143,7 @@ export const List: FC<ListProps> & { craft?: Record<string, unknown> } = ({
       )}
       <ListTag
         className={cn('m-0', className)}
-        style={{
-          listStyleType: listStyleMap[bulletStyle],
-          color,
-          fontSize: parseValue(fontSize),
-          lineHeight,
-          padding: parseValue(padding),
-          paddingLeft: bulletStyle !== 'none' ? '1.5em' : parseValue(padding),
-          display: 'flex',
-          flexDirection: 'column',
-          gap: parseValue(gap),
-        }}
+        style={baseListStyle}
       >
         {items.map((item, index) => (
           <li key={index}>{item}</li>
@@ -146,6 +168,10 @@ List.craft = {
     gap: '8px',
     padding: '0px',
     className: '',
+    // Advanced styling props
+    advancedStyling: {},
+    pseudoStateStyling: {},
+    metadata: undefined,
   },
   related: {
     settings: ListSettings,

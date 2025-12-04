@@ -4,6 +4,7 @@
 import { useNode } from '@craftjs/core';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -17,6 +18,19 @@ import { ElementSettingsSidebar } from '../inspector/sidebar';
 import type { ColumnProps } from './Column';
 
 /**
+ * Width preset configurations
+ */
+const WIDTH_PRESETS = [
+  { label: 'Auto', value: 'auto' },
+  { label: '1/4', value: '25%' },
+  { label: '1/3', value: '33.33%' },
+  { label: '1/2', value: '50%' },
+  { label: '2/3', value: '66.66%' },
+  { label: '3/4', value: '75%' },
+  { label: 'Full', value: '100%' },
+];
+
+/**
  * Content-specific settings for Column
  */
 function ColumnContentSettings({
@@ -28,7 +42,25 @@ function ColumnContentSettings({
 }) {
   return (
     <div className="space-y-4">
-      {/* Width */}
+      {/* Width Presets */}
+      <div className="space-y-2">
+        <Label className="text-xs font-medium">Width Presets</Label>
+        <div className="flex flex-wrap gap-1">
+          {WIDTH_PRESETS.map((preset) => (
+            <Button
+              key={preset.value}
+              variant={props.width === preset.value ? 'secondary' : 'outline'}
+              size="sm"
+              className="h-7 px-2 text-xs"
+              onClick={() => setProp((p: ColumnProps) => (p.width = preset.value))}
+            >
+              {preset.label}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {/* Custom Width */}
       <WidthInput
         label="Width"
         value={props.width || 'auto'}

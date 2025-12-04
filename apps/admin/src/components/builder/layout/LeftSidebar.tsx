@@ -79,7 +79,7 @@ const COMPONENTS: ComponentDef[] = [
   },
   {
     id: 'row',
-    icon: Rows,
+    icon: Columns,
     label: 'Row',
     description: 'Horizontal flex container',
     category: 'layout',
@@ -87,7 +87,7 @@ const COMPONENTS: ComponentDef[] = [
   },
   {
     id: 'column',
-    icon: Columns,
+    icon: Rows,
     label: 'Column',
     description: 'Flex column item',
     category: 'layout',
@@ -336,6 +336,13 @@ function Toolbox() {
     );
   }, [searchQuery]);
 
+  // Prevent drops when dragging elements back over the toolbox
+  const handlePreventDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'none';
+  };
+
   // Group by category
   const componentsByCategory = useMemo(() => {
     const grouped: Record<string, ComponentDef[]> = {};
@@ -346,7 +353,11 @@ function Toolbox() {
   }, [filteredComponents]);
 
   return (
-    <div className="flex flex-col h-full">
+    <div 
+      className="flex flex-col h-full"
+      onDragOver={handlePreventDrop}
+      onDrop={handlePreventDrop}
+    >
       {/* Search and view toggle */}
       <div className="p-3 border-b space-y-2">
         <div className="relative">

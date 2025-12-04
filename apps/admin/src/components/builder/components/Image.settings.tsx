@@ -13,7 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { MediaPickerDialog } from '../inspector/MediaPickerDialog';
+import { FolderOpen } from 'lucide-react';
+import { MediaPickerDialog, getProxiedUrl } from '../inspector/MediaPickerDialog';
 import { ElementSettingsSidebar } from '../inspector/sidebar';
 import type { ImageProps } from '../types';
 
@@ -28,6 +29,9 @@ function ImageContentSettings({
   setProp: (cb: (props: ImageProps) => void) => void;
 }) {
   const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
+
+  // Get proxied URL for preview
+  const previewUrl = props.src ? getProxiedUrl(props.src) : '';
 
   return (
     <>
@@ -44,24 +48,32 @@ function ImageContentSettings({
             />
             <Button 
               variant="outline" 
-              size="sm"
+              size="icon"
               onClick={() => setMediaPickerOpen(true)}
+              title="Browse media library"
             >
-              📁
+              <FolderOpen className="h-4 w-4" />
             </Button>
           </div>
           
-          {/* Image preview */}
+          {/* Image preview - constrained size */}
           {props.src && (
-            <div className="mt-2 rounded-md overflow-hidden border bg-muted">
-              <img 
-                src={props.src} 
-                alt="Preview" 
-                className="w-full h-24 object-cover"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect fill="%23ccc" width="100%" height="100%"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="%23666">Invalid URL</text></svg>';
-                }}
-              />
+            <div className="mt-2 rounded-md overflow-hidden border bg-muted w-full max-w-full">
+              <div className="w-full h-24 relative">
+                <img 
+                  src={previewUrl} 
+                  alt="Preview" 
+                  className="w-full h-full object-contain"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    const parent = target.parentElement;
+                    if (parent) {
+                      parent.innerHTML = '<div class="flex items-center justify-center h-full text-xs text-muted-foreground">Invalid URL or image failed to load</div>';
+                    }
+                  }}
+                />
+              </div>
             </div>
           )}
         </div>
@@ -74,60 +86,9 @@ function ImageContentSettings({
             onChange={(e) => setProp((p: ImageProps) => (p.alt = e.target.value))}
             placeholder="Describe the image..."
           />
-        </div>
-
-        {/* Width */}
-        <div className="space-y-2">
-          <Label className="text-xs">Width</Label>
-          <Select
-            value={String(props.width || 'full')}
-            onValueChange={(value) => {
-              if (value === 'auto' || value === 'full') {
-                setProp((p: ImageProps) => (p.width = value));
-              } else {
-                setProp((p: ImageProps) => (p.width = Number(value)));
-              }
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="auto">Auto</SelectItem>
-              <SelectItem value="full">Full Width</SelectItem>
-              <SelectItem value="200">200px</SelectItem>
-              <SelectItem value="300">300px</SelectItem>
-              <SelectItem value="400">400px</SelectItem>
-              <SelectItem value="500">500px</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Height */}
-        <div className="space-y-2">
-          <Label className="text-xs">Height</Label>
-          <Select
-            value={String(props.height || 'auto')}
-            onValueChange={(value) => {
-              if (value === 'auto') {
-                setProp((p: ImageProps) => (p.height = value));
-              } else {
-                setProp((p: ImageProps) => (p.height = Number(value)));
-              }
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="auto">Auto</SelectItem>
-              <SelectItem value="100">100px</SelectItem>
-              <SelectItem value="200">200px</SelectItem>
-              <SelectItem value="300">300px</SelectItem>
-              <SelectItem value="400">400px</SelectItem>
-              <SelectItem value="500">500px</SelectItem>
-            </SelectContent>
-          </Select>
+          <p className="text-xs text-muted-foreground">
+            Important for accessibility and SEO
+          </p>
         </div>
 
         {/* Object Fit */}
@@ -147,6 +108,9 @@ function ImageContentSettings({
               <SelectItem value="none">None</SelectItem>
             </SelectContent>
           </Select>
+          <p className="text-xs text-muted-foreground">
+            How the image fits within its container
+          </p>
         </div>
 
         {/* Custom Classes */}

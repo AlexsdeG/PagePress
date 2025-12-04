@@ -1,9 +1,10 @@
 // PagePress v0.0.9 - 2025-12-04
 // Row component settings panel with ElementSettingsSidebar
 
-import { useNode } from '@craftjs/core';
+import { useNode, useEditor } from '@craftjs/core';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -13,7 +14,21 @@ import {
 } from '@/components/ui/select';
 import { WidthInput } from '../inspector/inputs/WidthInput';
 import { ElementSettingsSidebar } from '../inspector/sidebar';
+import { Column } from './Column';
 import type { RowProps } from './Row';
+
+/**
+ * Column preset configurations
+ */
+const COLUMN_PRESETS = [
+  { label: '2 Equal', icon: '▌▐', columns: [{ width: '50%' }, { width: '50%' }] },
+  { label: '3 Equal', icon: '▌▐▐', columns: [{ width: '33.33%' }, { width: '33.33%' }, { width: '33.33%' }] },
+  { label: '4 Equal', icon: '▌▐▐▐', columns: [{ width: '25%' }, { width: '25%' }, { width: '25%' }, { width: '25%' }] },
+  { label: '1/3 + 2/3', icon: '▌▐▐', columns: [{ width: '33.33%' }, { width: '66.66%' }] },
+  { label: '2/3 + 1/3', icon: '▐▐▌', columns: [{ width: '66.66%' }, { width: '33.33%' }] },
+  { label: '1/4 + 3/4', icon: '▌▐▐▐', columns: [{ width: '25%' }, { width: '75%' }] },
+  { label: '1/4 + 1/2 + 1/4', icon: '▌▐▐▌', columns: [{ width: '25%' }, { width: '50%' }, { width: '25%' }] },
+];
 
 /**
  * Content-specific settings for Row
@@ -21,12 +36,63 @@ import type { RowProps } from './Row';
 function RowContentSettings({
   props,
   setProp,
+  nodeId,
 }: {
   props: RowProps;
   setProp: (cb: (props: RowProps) => void) => void;
+  nodeId: string;
 }) {
+  const { actions, query } = useEditor();
+
+  // Apply column preset - clears existing columns and adds new ones
+  const applyPreset = (columns: Array<{ width: string }>) => {
+    // Get current children
+    const node = query.node(nodeId).get();
+    const existingChildren = node.data.nodes || [];
+    
+    // Delete existing children
+    existingChildren.forEach((childId: string) => {
+      try {
+        actions.delete(childId);
+      } catch {
+        // Ignore deletion errors - child might already be gone
+      }
+    });
+
+    // Add new columns
+    columns.forEach((col) => {
+      const nodeTree = query.parseReactElement(
+        <Column width={col.width} padding="16px" backgroundColor="transparent" />
+      ).toNodeTree();
+      
+      actions.addNodeTree(nodeTree, nodeId);
+    });
+  };
+
   return (
     <div className="space-y-4">
+      {/* Column Presets */}
+      <div className="space-y-2">
+        <Label className="text-xs font-medium">Column Presets</Label>
+        <div className="grid grid-cols-2 gap-2">
+          {COLUMN_PRESETS.map((preset) => (
+            <Button
+              key={preset.label}
+              variant="outline"
+              size="sm"
+              className="h-auto py-2 flex flex-col gap-1"
+              onClick={() => applyPreset(preset.columns)}
+            >
+              <span className="text-lg font-mono tracking-tight">{preset.icon}</span>
+              <span className="text-[10px] text-muted-foreground">{preset.label}</span>
+            </Button>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Click a preset to create columns. Existing columns will be replaced.
+        </p>
+      </div>
+
       {/* Gap */}
       <WidthInput
         label="Gap"
@@ -109,8 +175,10 @@ export function RowSettings() {
   const {
     actions: { setProp },
     props,
+    nodeId,
   } = useNode((node) => ({
     props: node.data.props as RowProps,
+    nodeId: node.id,
   }));
 
   return (
@@ -119,6 +187,7 @@ export function RowSettings() {
         <RowContentSettings
           props={props}
           setProp={setProp}
+          nodeId={nodeId}
         />
       }
     />

@@ -322,8 +322,8 @@ export function transitionToCSS(transition: Partial<TransitionSettings>): CSSPro
   
   const duration = `${transition.duration || 300}ms`;
   
-  let timing = transition.timingFunction || 'ease';
-  if (timing === 'cubic-bezier' && transition.cubicBezier) {
+  let timing: string = transition.timingFunction || 'ease';
+  if (transition.timingFunction === 'cubic-bezier' && transition.cubicBezier) {
     timing = `cubic-bezier(${transition.cubicBezier.join(', ')})`;
   }
   

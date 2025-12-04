@@ -1,11 +1,14 @@
-// PagePress v0.0.6 - 2025-12-03
-// Link component for the page builder
+// PagePress v0.0.9 - 2025-12-04
+// Link component for the page builder with advanced styling support
 
 import { useNode, useEditor } from '@craftjs/core';
 import { cn } from '@/lib/utils';
 import { useBuilderStore } from '@/stores/builder';
+import { useAdvancedStyling } from '../hooks/useAdvancedStyling';
 import type { FC } from 'react';
 import { LinkSettings } from './Link.settings';
+import type { AdvancedStyling } from '../inspector/styles/types';
+import type { ElementMetadata } from '../inspector/sidebar/types';
 
 /**
  * Link component props
@@ -20,6 +23,9 @@ export interface LinkProps {
   fontSize?: string;
   fontWeight?: 'normal' | 'medium' | 'semibold' | 'bold';
   className?: string;
+  // Advanced styling
+  advancedStyling?: Partial<AdvancedStyling>;
+  metadata?: ElementMetadata;
 }
 
 /**
@@ -49,6 +55,15 @@ export const Link: FC<LinkProps> & { craft?: Record<string, unknown> } = ({
     isSelected: state.events.selected.has(id),
     isHovered: state.events.hovered.has(id),
   }));
+
+  // Get advanced styling
+  const { 
+    style: advancedStyle, 
+    className: advancedClassName,
+    attributes,
+    elementId,
+    hasAdvancedStyling,
+  } = useAdvancedStyling();
 
   // Font weight classes
   const fontWeightClasses: Record<string, string> = {
@@ -93,8 +108,15 @@ export const Link: FC<LinkProps> & { craft?: Record<string, unknown> } = ({
     }
   };
 
+  // Base styles (legacy - overridden by advanced styling)
+  const baseStyle: React.CSSProperties = hasAdvancedStyling ? {} : {
+    color,
+    fontSize,
+    ['--hover-color' as string]: hoverColor,
+  };
+
   return (
-    <span className="relative inline-block">
+    <span className="relative inline-block" id={elementId}>
       {/* Selection label */}
       {isSelected && !isPreviewMode && (
         <span className="absolute -top-5 left-0 text-xs text-white bg-blue-600 px-1.5 py-0.5 rounded-t-lg font-medium z-10">
@@ -111,27 +133,28 @@ export const Link: FC<LinkProps> & { craft?: Record<string, unknown> } = ({
         onClick={handleClick}
         className={cn(
           'inline-block cursor-pointer transition-colors',
-          fontWeightClasses[fontWeight],
-          underlineClasses[underline],
+          !hasAdvancedStyling && fontWeightClasses[fontWeight],
+          !hasAdvancedStyling && underlineClasses[underline],
           !isPreviewMode && 'transition-all duration-150',
+          advancedClassName,
           className
         )}
         style={{
-          color,
-          fontSize,
-          ['--hover-color' as string]: hoverColor,
+          ...baseStyle,
+          ...advancedStyle,
           ...getOutlineStyles(),
         }}
         onMouseEnter={(e) => {
-          if (isPreviewMode) {
+          if (isPreviewMode && !hasAdvancedStyling) {
             (e.target as HTMLAnchorElement).style.color = hoverColor;
           }
         }}
         onMouseLeave={(e) => {
-          if (isPreviewMode) {
+          if (isPreviewMode && !hasAdvancedStyling) {
             (e.target as HTMLAnchorElement).style.color = color;
           }
         }}
+        {...attributes}
       >
         {text}
       </a>
@@ -154,6 +177,10 @@ Link.craft = {
     fontSize: '16px',
     fontWeight: 'normal',
     className: '',
+    // Advanced styling props
+    advancedStyling: {},
+    pseudoStateStyling: {},
+    metadata: undefined,
   },
   related: {
     settings: LinkSettings,

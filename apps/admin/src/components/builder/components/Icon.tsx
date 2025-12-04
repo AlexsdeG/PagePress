@@ -1,12 +1,15 @@
-// PagePress v0.0.6 - 2025-12-03
-// Icon component for the page builder
+// PagePress v0.0.9 - 2025-12-04
+// Icon component for the page builder with advanced styling support
 
 import { useNode, useEditor } from '@craftjs/core';
 import { cn } from '@/lib/utils';
 import { useBuilderStore } from '@/stores/builder';
+import { useAdvancedStyling } from '../hooks/useAdvancedStyling';
 import type { FC } from 'react';
 import { IconSettings } from './Icon.settings';
 import { renderIcon } from '../inspector/inputs/IconPicker';
+import type { AdvancedStyling } from '../inspector/styles/types';
+import type { ElementMetadata } from '../inspector/sidebar/types';
 
 /**
  * Icon component props
@@ -17,6 +20,9 @@ export interface IconProps {
   color?: string;
   strokeWidth?: number;
   className?: string;
+  // Advanced styling
+  advancedStyling?: Partial<AdvancedStyling>;
+  metadata?: ElementMetadata;
 }
 
 /**
@@ -42,6 +48,14 @@ export const Icon: FC<IconProps> & { craft?: Record<string, unknown> } = ({
     isSelected: state.events.selected.has(id),
     isHovered: state.events.hovered.has(id),
   }));
+
+  // Get advanced styling
+  const { 
+    style: advancedStyle, 
+    className: advancedClassName,
+    attributes,
+    elementId,
+  } = useAdvancedStyling();
 
   // Parse size value
   const parseSize = (value: string) => {
@@ -79,14 +93,18 @@ export const Icon: FC<IconProps> & { craft?: Record<string, unknown> } = ({
       ref={(ref) => {
         if (ref) connect(drag(ref));
       }}
+      id={elementId}
       className={cn(
         'relative inline-flex items-center justify-center',
         !isPreviewMode && 'transition-all duration-150',
+        advancedClassName,
         className
       )}
       style={{
+        ...advancedStyle,
         ...getOutlineStyles(),
       }}
+      {...attributes}
     >
       {/* Selection label */}
       {isSelected && !isPreviewMode && (
@@ -112,6 +130,10 @@ Icon.craft = {
     color: '#000000',
     strokeWidth: 2,
     className: '',
+    // Advanced styling props
+    advancedStyling: {},
+    pseudoStateStyling: {},
+    metadata: undefined,
   },
   related: {
     settings: IconSettings,

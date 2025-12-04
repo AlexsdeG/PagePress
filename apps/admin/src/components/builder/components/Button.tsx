@@ -1,18 +1,27 @@
-// PagePress v0.0.6 - 2025-12-03
-// Button component for the page builder
+// PagePress v0.0.9 - 2025-12-04
+// Button component for the page builder with advanced styling support
 
 import { useNode, useEditor } from '@craftjs/core';
 import { cn } from '@/lib/utils';
 import { useBuilderStore } from '@/stores/builder';
+import { useAdvancedStyling } from '../hooks/useAdvancedStyling';
 import { renderIcon } from '../inspector/inputs/IconPicker';
 import type { FC } from 'react';
 import type { ButtonProps } from '../types';
 import { ButtonSettings } from './Button.settings';
+import type { AdvancedStyling } from '../inspector/styles/types';
+import type { ElementMetadata } from '../inspector/sidebar/types';
+
+// Extend ButtonProps with advanced styling
+interface ExtendedButtonProps extends ButtonProps {
+  advancedStyling?: Partial<AdvancedStyling>;
+  metadata?: ElementMetadata;
+}
 
 /**
  * Button component - Interactive button block
  */
-export const BuilderButton: FC<ButtonProps> & { craft?: Record<string, unknown> } = ({
+export const BuilderButton: FC<ExtendedButtonProps> & { craft?: Record<string, unknown> } = ({
   text = 'Click me',
   variant = 'primary',
   size = 'md',
@@ -41,6 +50,15 @@ export const BuilderButton: FC<ButtonProps> & { craft?: Record<string, unknown> 
     isHovered: state.events.hovered.has(id),
   }));
 
+  // Get advanced styling
+  const { 
+    style: advancedStyle, 
+    className: advancedClassName,
+    attributes,
+    elementId,
+    hasAdvancedStyling,
+  } = useAdvancedStyling();
+
   // Base styles
   const baseStyles = 'inline-flex items-center justify-center font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50';
 
@@ -51,7 +69,7 @@ export const BuilderButton: FC<ButtonProps> & { craft?: Record<string, unknown> 
     lg: 'h-12 px-6 text-base',
   };
 
-  // Variant styles (used when no custom colors)
+  // Variant styles (used when no custom colors and no advanced styling)
   const variantStyles: Record<string, string> = {
     primary: 'bg-primary text-primary-foreground hover:bg-primary/90',
     secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
@@ -84,12 +102,11 @@ export const BuilderButton: FC<ButtonProps> & { craft?: Record<string, unknown> 
     return {};
   };
 
-  // Build style object for custom colors
-  const customStyle: React.CSSProperties = {
+  // Build base style object for custom colors (legacy - overridden by advanced styling)
+  const baseStyle: React.CSSProperties = hasAdvancedStyling ? {} : {
     borderRadius: `${borderRadius}px`,
     ...(backgroundColor && { backgroundColor }),
     ...(textColor && { color: textColor }),
-    ...getOutlineStyles(),
   };
 
   const ButtonElement = href ? 'a' : 'button';
@@ -100,7 +117,7 @@ export const BuilderButton: FC<ButtonProps> & { craft?: Record<string, unknown> 
   const iconAfterElement = iconAfter ? renderIcon(iconAfter, { size: iconSize }) : null;
 
   return (
-    <span className="relative inline-block">
+    <span className="relative inline-block" id={elementId}>
       {/* Selection label */}
       {isSelected && !isPreviewMode && (
         <span className="absolute -top-5 left-0 text-xs text-white bg-blue-600 px-1.5 py-0.5 rounded-t-lg font-medium z-10">
@@ -113,15 +130,21 @@ export const BuilderButton: FC<ButtonProps> & { craft?: Record<string, unknown> 
         }}
         className={cn(
           baseStyles,
-          sizeStyles[size],
-          !hasCustomColors && variantStyles[variant],
-          fullWidth && 'w-full',
+          !hasAdvancedStyling && sizeStyles[size],
+          !hasCustomColors && !hasAdvancedStyling && variantStyles[variant],
+          !hasAdvancedStyling && fullWidth && 'w-full',
           !isPreviewMode && 'transition-all duration-150',
           (iconBefore || iconAfter) && 'gap-2',
+          advancedClassName,
           className
         )}
-        style={customStyle}
+        style={{
+          ...baseStyle,
+          ...advancedStyle,
+          ...getOutlineStyles(),
+        }}
         {...linkProps}
+        {...attributes}
       >
         {iconBeforeElement}
         {text}
@@ -148,6 +171,10 @@ BuilderButton.craft = {
     iconBefore: '',
     iconAfter: '',
     iconSize: 16,
+    // Advanced styling props
+    advancedStyling: {},
+    pseudoStateStyling: {},
+    metadata: undefined,
   },
   related: {
     settings: ButtonSettings,

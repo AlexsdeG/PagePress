@@ -39,7 +39,7 @@ export function Canvas({ initialContent }: CanvasProps) {
               width: `${width}px`,
               maxWidth: '100%',
               minHeight: 'calc(100vh - 200px)',
-              pointerEvents: isPreviewMode ? 'none' : 'auto',
+              // Allow pointer events in preview mode for hover effects to work
             }}
           >
             {/* Floating toolbar */}

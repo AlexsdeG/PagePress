@@ -22,7 +22,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { HexColorPicker } from 'react-colorful';
-import { Image, X } from 'lucide-react';
+import { Image } from 'lucide-react';
 import type { BackgroundSettings, BackgroundImageSettings, BackgroundOverlaySettings } from '../styles/types';
 import { GradientInput, defaultGradient } from '../inputs/GradientInput';
 import { gradientToCSS } from './styleToCSS';

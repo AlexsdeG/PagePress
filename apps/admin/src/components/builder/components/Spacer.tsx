@@ -1,11 +1,14 @@
-// PagePress v0.0.6 - 2025-12-03
-// Spacer component for the page builder
+// PagePress v0.0.9 - 2025-12-04
+// Spacer component for the page builder with advanced styling support
 
 import { useNode, useEditor } from '@craftjs/core';
 import { cn } from '@/lib/utils';
 import { useBuilderStore } from '@/stores/builder';
+import { useAdvancedStyling } from '../hooks/useAdvancedStyling';
 import type { FC } from 'react';
 import { SpacerSettings } from './Spacer.settings';
+import type { AdvancedStyling } from '../inspector/styles/types';
+import type { ElementMetadata } from '../inspector/sidebar/types';
 
 /**
  * Spacer component props
@@ -13,6 +16,9 @@ import { SpacerSettings } from './Spacer.settings';
 export interface SpacerProps {
   height?: string;
   className?: string;
+  // Advanced styling
+  advancedStyling?: Partial<AdvancedStyling>;
+  metadata?: ElementMetadata;
 }
 
 /**
@@ -35,6 +41,15 @@ export const Spacer: FC<SpacerProps> & { craft?: Record<string, unknown> } = ({
     isSelected: state.events.selected.has(id),
     isHovered: state.events.hovered.has(id),
   }));
+
+  // Get advanced styling
+  const { 
+    style: advancedStyle, 
+    className: advancedClassName,
+    attributes,
+    elementId,
+    hasAdvancedStyling,
+  } = useAdvancedStyling();
 
   // Parse value helper
   const parseValue = (value: string) => {
@@ -70,20 +85,29 @@ export const Spacer: FC<SpacerProps> & { craft?: Record<string, unknown> } = ({
     return baseStyles;
   };
 
+  // Base styles (legacy - overridden by advanced styling)
+  const baseStyle: React.CSSProperties = hasAdvancedStyling ? {} : {
+    height: parseValue(height),
+  };
+
   return (
     <div
       ref={(ref) => {
         if (ref) connect(drag(ref));
       }}
+      id={elementId}
       className={cn(
         'relative flex items-center justify-center',
         !isPreviewMode && 'transition-all duration-150',
+        advancedClassName,
         className
       )}
       style={{
-        height: parseValue(height),
+        ...baseStyle,
+        ...advancedStyle,
         ...getEditorStyles(),
       }}
+      {...attributes}
     >
       {/* Editor-only label */}
       {!isPreviewMode && (
@@ -109,6 +133,10 @@ Spacer.craft = {
   props: {
     height: '40px',
     className: '',
+    // Advanced styling props
+    advancedStyling: {},
+    pseudoStateStyling: {},
+    metadata: undefined,
   },
   related: {
     settings: SpacerSettings,

@@ -1,7 +1,7 @@
 // PagePress v0.0.9 - 2025-12-04
 // Element Settings Sidebar - Bricks-style icon navigation with all tabs
 
-import { useState, useCallback, type ReactNode } from 'react';
+import { useState, useCallback, useRef, useEffect, type ReactNode } from 'react';
 import { useNode } from '@craftjs/core';
 import {
   Settings,
@@ -15,10 +15,13 @@ import {
   Code,
   Braces,
   X,
+  Check,
+  Pencil,
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Tooltip,
   TooltipContent,
@@ -26,6 +29,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 import { GeneralSettingsTab } from './GeneralSettingsTab';
 import { CustomCSSTab } from './CustomCSSTab';
 import { AttributesTab } from './AttributesTab';
@@ -116,6 +120,9 @@ export function ElementSettingsSidebar({
 }: ElementSettingsSidebarProps) {
   const [activeTab, setActiveTab] = useState<SettingsTabId>('content');
   const [pseudoState, setPseudoState] = useState<PseudoClass>('default');
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editingNameValue, setEditingNameValue] = useState('');
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   const { actions: editorActions } = useEditor();
 
@@ -125,24 +132,99 @@ export function ElementSettingsSidebar({
     componentType,
     customName,
     styling,
+    pseudoStateStyling,
+    nodeId,
   } = useNode((node) => ({
+    nodeId: node.id,
     displayName: node.data.displayName || node.data.name || 'Element',
     componentType: node.data.name || 'Unknown',
     customName: (node.data.props.metadata as ElementMetadata | undefined)?.customName,
     styling: (node.data.props.advancedStyling || {}) as AdvancedStyling,
+    pseudoStateStyling: (node.data.props.pseudoStateStyling || {}) as Partial<Record<PseudoClass, Partial<AdvancedStyling>>>,
   }));
 
-  // Update a specific style category
+  // Focus input when editing starts
+  useEffect(() => {
+    if (isEditingName && nameInputRef.current) {
+      nameInputRef.current.focus();
+      nameInputRef.current.select();
+    }
+  }, [isEditingName]);
+
+  // Start editing name
+  const handleStartEditName = useCallback(() => {
+    setEditingNameValue(customName || '');
+    setIsEditingName(true);
+  }, [customName]);
+
+  // Save the name
+  const handleSaveName = useCallback(() => {
+    setProp((props: Record<string, unknown>) => {
+      const metadata = (props.metadata || { elementId: nodeId }) as ElementMetadata;
+      props.metadata = { ...metadata, customName: editingNameValue.trim() || undefined };
+    });
+    setIsEditingName(false);
+    if (editingNameValue.trim()) {
+      toast.success('Element renamed');
+    }
+  }, [setProp, nodeId, editingNameValue]);
+
+  // Cancel editing
+  const handleCancelEditName = useCallback(() => {
+    setIsEditingName(false);
+    setEditingNameValue('');
+  }, []);
+
+  // Handle keyboard in edit mode
+  const handleNameKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSaveName();
+    } else if (e.key === 'Escape') {
+      handleCancelEditName();
+    }
+  }, [handleSaveName, handleCancelEditName]);
+
+  // Get the active styling based on current pseudo state
+  const getActiveStyling = useCallback((): AdvancedStyling => {
+    if (pseudoState === 'default') {
+      return styling;
+    }
+    // For pseudo states, merge base styling with pseudo-specific overrides
+    const pseudoStyles = pseudoStateStyling[pseudoState] || {};
+    return {
+      ...styling,
+      ...pseudoStyles,
+    };
+  }, [pseudoState, styling, pseudoStateStyling]);
+
+  const activeStyling = getActiveStyling();
+
+  // Update a specific style category (handles pseudo states)
   const handleStyleChange = useCallback(
     <K extends keyof AdvancedStyling>(category: K, value: AdvancedStyling[K]) => {
-      setProp((props: Record<string, unknown>) => {
-        props.advancedStyling = {
-          ...(props.advancedStyling as AdvancedStyling || {}),
-          [category]: value,
-        };
-      });
+      if (pseudoState === 'default') {
+        // Writing to base styling
+        setProp((props: Record<string, unknown>) => {
+          props.advancedStyling = {
+            ...(props.advancedStyling as AdvancedStyling || {}),
+            [category]: value,
+          };
+        });
+      } else {
+        // Writing to pseudo state styling
+        setProp((props: Record<string, unknown>) => {
+          const currentPseudoStyles = (props.pseudoStateStyling || {}) as Partial<Record<PseudoClass, Partial<AdvancedStyling>>>;
+          props.pseudoStateStyling = {
+            ...currentPseudoStyles,
+            [pseudoState]: {
+              ...(currentPseudoStyles[pseudoState] || {}),
+              [category]: value,
+            },
+          };
+        });
+      }
     },
-    [setProp]
+    [setProp, pseudoState]
   );
 
   // Get available tabs based on sections
@@ -176,7 +258,7 @@ export function ElementSettingsSidebar({
       case 'general':
         return (
           <GeneralSettingsTab 
-            styling={styling} 
+            styling={activeStyling} 
             activePseudoState={pseudoState}
             onPseudoStateChange={setPseudoState}
           />
@@ -185,7 +267,7 @@ export function ElementSettingsSidebar({
       case 'layout':
         return (
           <LayoutSettingsTab
-            value={styling.layout || {}}
+            value={activeStyling.layout || {}}
             onChange={(layout) => handleStyleChange('layout', layout)}
           />
         );
@@ -193,7 +275,7 @@ export function ElementSettingsSidebar({
       case 'typography':
         return (
           <TypographySettingsTab
-            value={styling.typography || {}}
+            value={activeStyling.typography || {}}
             onChange={(typography) => handleStyleChange('typography', typography)}
           />
         );
@@ -201,7 +283,7 @@ export function ElementSettingsSidebar({
       case 'background':
         return (
           <BackgroundSettingsTab
-            value={styling.background || {}}
+            value={activeStyling.background || {}}
             onChange={(background) => handleStyleChange('background', background)}
           />
         );
@@ -210,7 +292,7 @@ export function ElementSettingsSidebar({
         return (
           <div className="space-y-6">
             <BorderInput
-              value={{ ...defaultBorderSettings, ...(styling.border || {}) }}
+              value={{ ...defaultBorderSettings, ...(activeStyling.border || {}) }}
               onChange={(border) => handleStyleChange('border', border)}
             />
             <Separator />
@@ -219,7 +301,7 @@ export function ElementSettingsSidebar({
                 Box Shadow
               </h4>
               <BoxShadowInput
-                value={styling.boxShadow || []}
+                value={activeStyling.boxShadow || []}
                 onChange={(boxShadow) => handleStyleChange('boxShadow', boxShadow)}
               />
             </div>
@@ -229,13 +311,26 @@ export function ElementSettingsSidebar({
       case 'effects':
         return (
           <div className="space-y-6">
+            {/* Transitions / Animations */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Transitions & Animations
+              </h4>
+              <TransitionInput
+                value={{ ...defaultTransitionSettings, ...(activeStyling.transition || {}) }}
+                onChange={(transition) => handleStyleChange('transition', transition)}
+              />
+            </div>
+
+            <Separator />
+
             {/* Filters */}
             <div className="space-y-3">
               <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Filters
               </h4>
               <FilterInput
-                value={{ ...defaultFilterSettings, ...(styling.filter || {}) }}
+                value={{ ...defaultFilterSettings, ...(activeStyling.filter || {}) }}
                 onChange={(filter) => handleStyleChange('filter', filter)}
               />
             </div>
@@ -244,7 +339,7 @@ export function ElementSettingsSidebar({
 
             {/* Backdrop Filter */}
             <BackdropFilterInput
-              value={{ ...defaultBackdropFilterSettings, ...(styling.backdropFilter || {}) }}
+              value={{ ...defaultBackdropFilterSettings, ...(activeStyling.backdropFilter || {}) }}
               onChange={(backdropFilter) => handleStyleChange('backdropFilter', backdropFilter)}
             />
           </div>
@@ -255,16 +350,8 @@ export function ElementSettingsSidebar({
           <div className="space-y-6">
             {/* Transform */}
             <TransformInput
-              value={{ ...defaultTransformSettings, ...(styling.transform || {}) }}
+              value={{ ...defaultTransformSettings, ...(activeStyling.transform || {}) }}
               onChange={(transform) => handleStyleChange('transform', transform)}
-            />
-
-            <Separator />
-
-            {/* Transition */}
-            <TransitionInput
-              value={{ ...defaultTransitionSettings, ...(styling.transition || {}) }}
-              onChange={(transition) => handleStyleChange('transition', transition)}
             />
           </div>
         );
@@ -324,18 +411,47 @@ export function ElementSettingsSidebar({
           {/* Header */}
           <div className="px-4 py-3 border-b bg-muted/10 shrink-0">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 min-w-0">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
                 <Badge className={cn('text-[10px] px-1.5 py-0.5 shrink-0 border', badgeColor)}>
                   {typeLabel}
                 </Badge>
-                <span className="text-sm font-medium truncate">{elementName}</span>
+                {isEditingName ? (
+                  <div className="flex items-center gap-1 flex-1 min-w-0">
+                    <Input
+                      ref={nameInputRef}
+                      value={editingNameValue}
+                      onChange={(e) => setEditingNameValue(e.target.value)}
+                      onBlur={handleSaveName}
+                      onKeyDown={handleNameKeyDown}
+                      placeholder={displayName}
+                      className="h-6 text-sm flex-1 min-w-0"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 shrink-0"
+                      onClick={handleSaveName}
+                    >
+                      <Check className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleStartEditName}
+                    className="flex items-center gap-1 min-w-0 group hover:text-primary transition-colors"
+                    title="Click to rename element"
+                  >
+                    <span className="text-sm font-medium truncate">{elementName}</span>
+                    <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-50 shrink-0" />
+                  </button>
+                )}
               </div>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
+                    className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground ml-2"
                     onClick={handleDeselect}
                   >
                     <X className="h-4 w-4" />

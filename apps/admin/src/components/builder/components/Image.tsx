@@ -1,17 +1,26 @@
-// PagePress v0.0.6 - 2025-12-03
-// Image component for the page builder
+// PagePress v0.0.9 - 2025-12-04
+// Image component for the page builder with advanced styling support
 
 import { useNode, useEditor } from '@craftjs/core';
 import { cn } from '@/lib/utils';
 import { useBuilderStore } from '@/stores/builder';
+import { useAdvancedStyling } from '../hooks/useAdvancedStyling';
 import type { FC } from 'react';
 import type { ImageProps } from '../types';
 import { ImageSettings } from './Image.settings';
+import type { AdvancedStyling } from '../inspector/styles/types';
+import type { ElementMetadata } from '../inspector/sidebar/types';
+
+// Extend ImageProps with advanced styling
+interface ExtendedImageProps extends ImageProps {
+  advancedStyling?: Partial<AdvancedStyling>;
+  metadata?: ElementMetadata;
+}
 
 /**
  * Image component - Image block with various display options
  */
-export const BuilderImage: FC<ImageProps> & { craft?: Record<string, unknown> } = ({
+export const BuilderImage: FC<ExtendedImageProps> & { craft?: Record<string, unknown> } = ({
   src = '',
   alt = 'Image',
   width = 'full',
@@ -33,6 +42,15 @@ export const BuilderImage: FC<ImageProps> & { craft?: Record<string, unknown> } 
     isSelected: state.events.selected.has(id),
     isHovered: state.events.hovered.has(id),
   }));
+
+  // Get advanced styling
+  const { 
+    style: advancedStyle, 
+    className: advancedClassName,
+    attributes,
+    elementId,
+    hasAdvancedStyling,
+  } = useAdvancedStyling();
 
   const objectFitClass: Record<string, string> = {
     cover: 'object-cover',
@@ -77,21 +95,31 @@ export const BuilderImage: FC<ImageProps> & { craft?: Record<string, unknown> } 
     return {};
   };
 
+  // Base styles (legacy - overridden by advanced styling)
+  const baseStyle: React.CSSProperties = hasAdvancedStyling ? {} : {
+    width: widthValue,
+    height: heightValue,
+    borderRadius: `${borderRadius}px`,
+  };
+
   // Placeholder when no image source
   if (!src) {
     // In preview mode, show alt text or nothing
     if (isPreviewMode) {
       return alt ? (
         <div
+          id={elementId}
           className={cn(
             'bg-muted/50 flex items-center justify-center text-muted-foreground text-sm p-4',
+            advancedClassName,
             className
           )}
           style={{
-            width: widthValue,
+            ...baseStyle,
             height: heightValue === 'auto' ? '100px' : heightValue,
-            borderRadius: `${borderRadius}px`,
+            ...advancedStyle,
           }}
+          {...attributes}
         >
           {alt}
         </div>
@@ -101,18 +129,21 @@ export const BuilderImage: FC<ImageProps> & { craft?: Record<string, unknown> } 
     // In edit mode, show placeholder
     return (
       <div
-        ref={(ref) => ref && connect(drag(ref))}
+        ref={(ref) => { ref && connect(drag(ref)); }}
+        id={elementId}
         className={cn(
           'relative bg-muted flex items-center justify-center border-2 border-dashed border-muted-foreground/25',
           'transition-all duration-150',
+          advancedClassName,
           className
         )}
         style={{
-          width: widthValue,
+          ...baseStyle,
           height: heightValue === 'auto' ? '200px' : heightValue,
-          borderRadius: `${borderRadius}px`,
+          ...advancedStyle,
           ...getOutlineStyles(),
         }}
+        {...attributes}
       >
         {/* Selection label */}
         {isSelected && (
@@ -129,7 +160,7 @@ export const BuilderImage: FC<ImageProps> & { craft?: Record<string, unknown> } 
   }
 
   return (
-    <div className="relative inline-block">
+    <div className="relative inline-block" id={elementId}>
       {/* Selection label */}
       {isSelected && !isPreviewMode && (
         <span className="absolute -top-5 left-0 text-xs text-white bg-blue-600 px-1.5 py-0.5 rounded-t font-medium z-10">
@@ -137,20 +168,21 @@ export const BuilderImage: FC<ImageProps> & { craft?: Record<string, unknown> } 
         </span>
       )}
       <img
-        ref={(ref) => ref && connect(drag(ref))}
+        ref={(ref) => { ref && connect(drag(ref)); }}
         src={proxiedSrc}
         alt={alt}
         className={cn(
-          objectFitClass[objectFit],
+          !hasAdvancedStyling && objectFitClass[objectFit],
           !isPreviewMode && 'transition-all duration-150',
+          advancedClassName,
           className
         )}
         style={{
-          width: widthValue,
-          height: heightValue,
-          borderRadius: `${borderRadius}px`,
+          ...baseStyle,
+          ...advancedStyle,
           ...getOutlineStyles(),
         }}
+        {...attributes}
       />
     </div>
   );
@@ -169,6 +201,10 @@ BuilderImage.craft = {
     objectFit: 'cover',
     borderRadius: 0,
     className: '',
+    // Advanced styling props
+    advancedStyling: {},
+    pseudoStateStyling: {},
+    metadata: undefined,
   },
   related: {
     settings: ImageSettings,

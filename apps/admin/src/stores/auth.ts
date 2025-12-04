@@ -118,7 +118,7 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
       });
     } catch (error) {
       const message = error instanceof ApiError
-        ? error.data.message as string || 'Login failed'
+        ? error.data?.message as string || 'Login failed'
         : 'An unexpected error occurred';
       set({
         error: message,
@@ -139,7 +139,7 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
       });
     } catch (error) {
       const message = error instanceof ApiError
-        ? error.data.message as string || 'Registration failed'
+        ? error.data?.message as string || 'Registration failed'
         : 'An unexpected error occurred';
       set({
         error: message,

@@ -1,5 +1,5 @@
-// PagePress v0.0.8 - 2025-12-04
-// Structure tree panel showing element hierarchy with icons
+// PagePress v0.0.9 - 2025-12-04
+// Structure tree panel with drag-drop reordering
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useEditor } from '@craftjs/core';
@@ -25,9 +25,22 @@ import {
   Pencil,
   Check,
   X,
+  GripVertical,
+  ArrowUp,
+  ArrowDown,
+  ChevronsUp,
+  ChevronsDown,
+  MoreVertical,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useBuilderStore } from '@/stores/builder';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -39,8 +52,8 @@ const componentIcons: Record<string, React.ElementType> = {
   Container: Box,
   Div: Box,
   Section: LayoutPanelTop,
-  Row: Rows,
-  Column: Columns,
+  Row: Columns,
+  Column: Rows,
   Text: Type,
   Paragraph: Type,
   Heading: Heading1,
@@ -59,19 +72,40 @@ const componentIcons: Record<string, React.ElementType> = {
   List: Type,
 };
 
+// Drag state for tree reordering
+interface DragState {
+  draggedId: string | null;
+  dropTargetId: string | null;
+  dropPosition: 'before' | 'after' | 'inside' | null;
+}
+
 interface TreeNodeProps {
   nodeId: string;
   depth: number;
+  dragState: DragState;
+  onDragStart: (nodeId: string) => void;
+  onDragEnd: () => void;
+  onDragOver: (nodeId: string, position: 'before' | 'after' | 'inside') => void;
+  onDrop: () => void;
 }
 
 /**
  * Single node in the structure tree
  */
-function TreeNode({ nodeId, depth }: TreeNodeProps) {
+function TreeNode({ 
+  nodeId, 
+  depth, 
+  dragState,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDrop,
+}: TreeNodeProps) {
   const [isOpen, setIsOpen] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  const nodeRef = useRef<HTMLDivElement>(null);
   const { hoveredNodeId, setHoveredNodeId } = useBuilderStore();
 
   const { node, isSelected, childNodes, actions, query } = useEditor((state) => {
@@ -94,10 +128,30 @@ function TreeNode({ nodeId, depth }: TreeNodeProps) {
     }
   }, [isEditing]);
 
+  // Save the edited name
+  const handleSaveEdit = useCallback(() => {
+    if (!node) return;
+    actions.setProp(nodeId, (props: Record<string, unknown>) => {
+      const currentMetadata = (props.metadata || {}) as ElementMetadata;
+      props.metadata = {
+        ...currentMetadata,
+        customName: editValue.trim() || undefined,
+      };
+    });
+    setIsEditing(false);
+    toast.success('Element renamed');
+  }, [actions, nodeId, editValue, node]);
+
+  // Cancel editing
+  const handleCancelEdit = useCallback(() => {
+    setIsEditing(false);
+    setEditValue('');
+  }, []);
+
   if (!node) return null;
 
   // Get custom name from element metadata or fall back to display name
-  const metadata = node.data.props?.elementMetadata as ElementMetadata | undefined;
+  const metadata = node.data.props?.metadata as ElementMetadata | undefined;
   const customName = metadata?.customName;
   const componentName = node.data.displayName || node.data.name || 'Element';
   const displayName = customName || componentName;
@@ -105,6 +159,20 @@ function TreeNode({ nodeId, depth }: TreeNodeProps) {
   const hasChildren = childNodes.length > 0;
   const isRoot = nodeId === 'ROOT';
   const isHovered = hoveredNodeId === nodeId;
+  const isCanvas = node.data.isCanvas;
+
+  // Get parent and sibling info for move actions
+  const parentId = node.data.parent;
+  const parentNode = parentId ? query.node(parentId).get() : null;
+  const siblings = parentNode?.data?.nodes || [];
+  const currentIndex = siblings.indexOf(nodeId);
+  const canMoveUp = currentIndex > 0;
+  const canMoveDown = currentIndex < siblings.length - 1;
+
+  // Drag state checks
+  const isDragging = dragState.draggedId === nodeId;
+  const isDropTarget = dragState.dropTargetId === nodeId;
+  const dropPosition = dragState.dropPosition;
 
   const handleSelect = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -119,25 +187,6 @@ function TreeNode({ nodeId, depth }: TreeNodeProps) {
     setIsEditing(true);
   };
 
-  // Save the edited name
-  const handleSaveEdit = useCallback(() => {
-    actions.setProp(nodeId, (props: Record<string, unknown>) => {
-      const currentMetadata = (props.elementMetadata || {}) as ElementMetadata;
-      props.elementMetadata = {
-        ...currentMetadata,
-        customName: editValue.trim() || undefined,
-      };
-    });
-    setIsEditing(false);
-    toast.success('Element renamed');
-  }, [actions, nodeId, editValue]);
-
-  // Cancel editing
-  const handleCancelEdit = useCallback(() => {
-    setIsEditing(false);
-    setEditValue('');
-  }, []);
-
   // Handle keyboard events in edit mode
   const handleEditKeyDown = (e: React.KeyboardEvent) => {
     e.stopPropagation();
@@ -148,11 +197,10 @@ function TreeNode({ nodeId, depth }: TreeNodeProps) {
     }
   };
 
-  const handleDuplicate = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleDuplicate = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (isRoot) return;
     
-    const parentId = node.data.parent;
     if (!parentId) return;
     
     try {
@@ -160,11 +208,9 @@ function TreeNode({ nodeId, depth }: TreeNodeProps) {
       if (parentNode && parentNode.data.nodes) {
         const currentIndex = parentNode.data.nodes.indexOf(nodeId);
         
-        // Use the safe duplicate function
         const newNodeId = duplicateNode(query, actions, nodeId, parentId, currentIndex + 1);
         
         if (newNodeId) {
-          // Select the newly created element
           setTimeout(() => {
             actions.selectNode(newNodeId);
           }, 50);
@@ -179,10 +225,35 @@ function TreeNode({ nodeId, depth }: TreeNodeProps) {
     }
   };
 
-  const handleDelete = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleDelete = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (isRoot) return;
     actions.delete(nodeId);
+  };
+
+  // Move actions
+  const handleMoveUp = () => {
+    if (!canMoveUp || !parentId) return;
+    actions.move(nodeId, parentId, currentIndex - 1);
+    toast.success('Moved up');
+  };
+
+  const handleMoveDown = () => {
+    if (!canMoveDown || !parentId) return;
+    actions.move(nodeId, parentId, currentIndex + 2);
+    toast.success('Moved down');
+  };
+
+  const handleMoveToTop = () => {
+    if (!parentId || currentIndex === 0) return;
+    actions.move(nodeId, parentId, 0);
+    toast.success('Moved to top');
+  };
+
+  const handleMoveToBottom = () => {
+    if (!parentId || currentIndex === siblings.length - 1) return;
+    actions.move(nodeId, parentId, siblings.length);
+    toast.success('Moved to bottom');
   };
 
   const handleMouseEnter = () => {
@@ -193,20 +264,78 @@ function TreeNode({ nodeId, depth }: TreeNodeProps) {
     setHoveredNodeId(null);
   };
 
+  // Drag handlers
+  const handleDragStart = (e: React.DragEvent) => {
+    if (isRoot) {
+      e.preventDefault();
+      return;
+    }
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', nodeId);
+    onDragStart(nodeId);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (dragState.draggedId === nodeId) return;
+    
+    const rect = nodeRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    
+    const y = e.clientY - rect.top;
+    const height = rect.height;
+    
+    let position: 'before' | 'after' | 'inside';
+    if (isCanvas && y > height * 0.25 && y < height * 0.75) {
+      position = 'inside';
+    } else if (y < height / 2) {
+      position = 'before';
+    } else {
+      position = 'after';
+    }
+    
+    onDragOver(nodeId, position);
+  };
+
+  const handleDragLeave = () => {
+    // Only clear if leaving the tree entirely
+  };
+
+  const handleDropEvent = (e: React.DragEvent) => {
+    e.preventDefault();
+    onDrop();
+  };
+
   return (
     <div>
       <div
+        ref={nodeRef}
+        draggable={!isRoot && !isEditing}
+        onDragStart={handleDragStart}
+        onDragEnd={onDragEnd}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDropEvent}
         className={cn(
-          'flex items-center gap-1 py-1 px-1 rounded-md cursor-pointer transition-colors group',
+          'flex items-center gap-1 py-1 px-1 rounded-md cursor-pointer transition-colors group relative',
           isSelected && 'bg-blue-500/20 text-blue-600',
           isHovered && !isSelected && 'bg-muted',
-          !isSelected && !isHovered && 'hover:bg-muted/50'
+          !isSelected && !isHovered && 'hover:bg-muted/50',
+          isDragging && 'opacity-50',
+          isDropTarget && dropPosition === 'before' && 'before:absolute before:left-0 before:right-0 before:top-0 before:h-0.5 before:bg-blue-500',
+          isDropTarget && dropPosition === 'after' && 'after:absolute after:left-0 after:right-0 after:bottom-0 after:h-0.5 after:bg-blue-500',
+          isDropTarget && dropPosition === 'inside' && 'ring-2 ring-blue-500 ring-inset'
         )}
         style={{ paddingLeft: `${depth * 12 + 4}px` }}
         onClick={handleSelect}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
+        {/* Drag handle */}
+        {!isRoot && (
+          <GripVertical className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-50 cursor-grab active:cursor-grabbing shrink-0" />
+        )}
+
         {/* Expand/Collapse button */}
         {hasChildren ? (
           <button
@@ -279,34 +408,56 @@ function TreeNode({ nodeId, depth }: TreeNodeProps) {
           </>
         )}
 
-        {/* Quick actions (visible on hover) */}
+        {/* Quick actions with dropdown */}
         {!isRoot && !isEditing && (
           <div className="hidden group-hover:flex items-center gap-0.5">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-5 w-5"
-              onClick={handleStartEdit}
-              title="Rename"
-            >
-              <Pencil className="h-3 w-3" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-5 w-5"
-              onClick={handleDuplicate}
-            >
-              <CopyPlus className="h-3 w-3" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-5 w-5 text-destructive hover:text-destructive"
-              onClick={handleDelete}
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <MoreVertical className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem onClick={handleStartEdit}>
+                  <Pencil className="h-3 w-3 mr-2" />
+                  Rename
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleDuplicate()}>
+                  <CopyPlus className="h-3 w-3 mr-2" />
+                  Duplicate
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleMoveUp} disabled={!canMoveUp}>
+                  <ArrowUp className="h-3 w-3 mr-2" />
+                  Move Up
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleMoveDown} disabled={!canMoveDown}>
+                  <ArrowDown className="h-3 w-3 mr-2" />
+                  Move Down
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleMoveToTop} disabled={currentIndex === 0}>
+                  <ChevronsUp className="h-3 w-3 mr-2" />
+                  Move to Top
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleMoveToBottom} disabled={currentIndex === siblings.length - 1}>
+                  <ChevronsDown className="h-3 w-3 mr-2" />
+                  Move to Bottom
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={() => handleDelete()}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="h-3 w-3 mr-2" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         )}
       </div>
@@ -315,7 +466,16 @@ function TreeNode({ nodeId, depth }: TreeNodeProps) {
       {hasChildren && isOpen && (
         <div>
           {childNodes.map((childId: string) => (
-            <TreeNode key={childId} nodeId={childId} depth={depth + 1} />
+            <TreeNode 
+              key={childId} 
+              nodeId={childId} 
+              depth={depth + 1}
+              dragState={dragState}
+              onDragStart={onDragStart}
+              onDragEnd={onDragEnd}
+              onDragOver={onDragOver}
+              onDrop={onDrop}
+            />
           ))}
         </div>
       )}
@@ -324,12 +484,86 @@ function TreeNode({ nodeId, depth }: TreeNodeProps) {
 }
 
 /**
- * StructureTree - Hierarchical view of all elements on the page
+ * StructureTree - Hierarchical view with drag-drop reordering
  */
 export function StructureTree() {
-  const { nodes } = useEditor((state) => ({
+  const [dragState, setDragState] = useState<DragState>({
+    draggedId: null,
+    dropTargetId: null,
+    dropPosition: null,
+  });
+
+  const { nodes, actions, query } = useEditor((state) => ({
     nodes: state.nodes,
   }));
+
+  const handleDragStart = useCallback((nodeId: string) => {
+    setDragState({
+      draggedId: nodeId,
+      dropTargetId: null,
+      dropPosition: null,
+    });
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    setDragState({
+      draggedId: null,
+      dropTargetId: null,
+      dropPosition: null,
+    });
+  }, []);
+
+  const handleDragOver = useCallback((nodeId: string, position: 'before' | 'after' | 'inside') => {
+    setDragState((prev) => ({
+      ...prev,
+      dropTargetId: nodeId,
+      dropPosition: position,
+    }));
+  }, []);
+
+  const handleDrop = useCallback(() => {
+    const { draggedId, dropTargetId, dropPosition } = dragState;
+    
+    if (!draggedId || !dropTargetId || !dropPosition) {
+      handleDragEnd();
+      return;
+    }
+
+    try {
+      const draggedNode = query.node(draggedId).get();
+      const targetNode = query.node(dropTargetId).get();
+      
+      if (!draggedNode || !targetNode) {
+        handleDragEnd();
+        return;
+      }
+
+      if (dropPosition === 'inside') {
+        // Move into the target as last child
+        if (targetNode.data.isCanvas) {
+          const targetChildren = targetNode.data.nodes || [];
+          actions.move(draggedId, dropTargetId, targetChildren.length);
+          toast.success('Element moved');
+        }
+      } else {
+        // Move before or after the target
+        const targetParentId = targetNode.data.parent;
+        if (targetParentId) {
+          const parentNode = query.node(targetParentId).get();
+          const siblings = parentNode.data.nodes || [];
+          const targetIndex = siblings.indexOf(dropTargetId);
+          const newIndex = dropPosition === 'before' ? targetIndex : targetIndex + 1;
+          actions.move(draggedId, targetParentId, newIndex);
+          toast.success('Element moved');
+        }
+      }
+    } catch (error) {
+      console.error('Drop error:', error);
+      toast.error('Failed to move element');
+    }
+    
+    handleDragEnd();
+  }, [dragState, query, actions, handleDragEnd]);
 
   // Start from ROOT
   if (!nodes.ROOT) {
@@ -342,7 +576,15 @@ export function StructureTree() {
 
   return (
     <div className="py-2">
-      <TreeNode nodeId="ROOT" depth={0} />
+      <TreeNode 
+        nodeId="ROOT" 
+        depth={0}
+        dragState={dragState}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      />
     </div>
   );
 }

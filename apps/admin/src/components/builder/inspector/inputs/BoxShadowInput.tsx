@@ -1,7 +1,7 @@
-// PagePress v0.0.7 - 2025-12-04
+// PagePress v0.0.9 - 2025-12-04
 // Box Shadow Input Component
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,91 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+
+/**
+ * Clickable slider value component for shadow sliders
+ */
+interface ClickableShadowSliderProps {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  onChange: (value: number) => void;
+}
+
+function ClickableShadowSlider({ label, value, min, max, step, onChange }: ClickableShadowSliderProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [inputValue, setInputValue] = useState(String(value));
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
+  const handleValueClick = () => {
+    setIsEditing(true);
+    setInputValue(String(value));
+  };
+
+  const handleInputBlur = () => {
+    setIsEditing(false);
+    const parsed = parseFloat(inputValue);
+    if (!isNaN(parsed)) {
+      const clamped = Math.min(Math.max(parsed, min), max);
+      onChange(clamped);
+    }
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleInputBlur();
+    } else if (e.key === 'Escape') {
+      setIsEditing(false);
+      setInputValue(String(value));
+    }
+  };
+
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between">
+        <Label className="text-xs">{label}</Label>
+        {isEditing ? (
+          <Input
+            ref={inputRef}
+            type="number"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onBlur={handleInputBlur}
+            onKeyDown={handleInputKeyDown}
+            min={min}
+            max={max}
+            step={step}
+            className="h-5 w-16 px-1.5 text-xs text-right"
+          />
+        ) : (
+          <button
+            onClick={handleValueClick}
+            className="text-xs text-muted-foreground hover:text-foreground hover:bg-muted px-1.5 py-0.5 rounded transition-colors cursor-text"
+            title="Click to edit value"
+          >
+            {value}px
+          </button>
+        )}
+      </div>
+      <Slider
+        value={[value]}
+        min={min}
+        max={max}
+        step={step}
+        onValueChange={([val]) => onChange(val)}
+      />
+    </div>
+  );
+}
 
 interface BoxShadowInputProps {
   value: BoxShadow[];
@@ -328,64 +413,44 @@ export function BoxShadowInput({ value, onChange, className }: BoxShadowInputPro
                   </div>
 
                   {/* X Offset */}
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-xs">X Offset</Label>
-                      <span className="text-xs text-muted-foreground">{shadow.x}px</span>
-                    </div>
-                    <Slider
-                      value={[shadow.x]}
-                      min={-50}
-                      max={50}
-                      step={1}
-                      onValueChange={([val]) => handleUpdateShadow(shadow.id, { x: val })}
-                    />
-                  </div>
+                  <ClickableShadowSlider
+                    label="X Offset"
+                    value={shadow.x}
+                    min={-50}
+                    max={50}
+                    step={1}
+                    onChange={(val) => handleUpdateShadow(shadow.id, { x: val })}
+                  />
 
                   {/* Y Offset */}
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-xs">Y Offset</Label>
-                      <span className="text-xs text-muted-foreground">{shadow.y}px</span>
-                    </div>
-                    <Slider
-                      value={[shadow.y]}
-                      min={-50}
-                      max={50}
-                      step={1}
-                      onValueChange={([val]) => handleUpdateShadow(shadow.id, { y: val })}
-                    />
-                  </div>
+                  <ClickableShadowSlider
+                    label="Y Offset"
+                    value={shadow.y}
+                    min={-50}
+                    max={50}
+                    step={1}
+                    onChange={(val) => handleUpdateShadow(shadow.id, { y: val })}
+                  />
 
                   {/* Blur */}
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-xs">Blur</Label>
-                      <span className="text-xs text-muted-foreground">{shadow.blur}px</span>
-                    </div>
-                    <Slider
-                      value={[shadow.blur]}
-                      min={0}
-                      max={100}
-                      step={1}
-                      onValueChange={([val]) => handleUpdateShadow(shadow.id, { blur: val })}
-                    />
-                  </div>
+                  <ClickableShadowSlider
+                    label="Blur"
+                    value={shadow.blur}
+                    min={0}
+                    max={100}
+                    step={1}
+                    onChange={(val) => handleUpdateShadow(shadow.id, { blur: val })}
+                  />
 
                   {/* Spread */}
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-xs">Spread</Label>
-                      <span className="text-xs text-muted-foreground">{shadow.spread}px</span>
-                    </div>
-                    <Slider
-                      value={[shadow.spread]}
-                      min={-50}
-                      max={50}
-                      step={1}
-                      onValueChange={([val]) => handleUpdateShadow(shadow.id, { spread: val })}
-                    />
-                  </div>
+                  <ClickableShadowSlider
+                    label="Spread"
+                    value={shadow.spread}
+                    min={-50}
+                    max={50}
+                    step={1}
+                    onChange={(val) => handleUpdateShadow(shadow.id, { spread: val })}
+                  />
                 </AccordionContent>
               </AccordionItem>
             ))}

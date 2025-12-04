@@ -1,13 +1,16 @@
-// PagePress v0.0.6 - 2025-12-03
-// Heading component for the page builder
+// PagePress v0.0.9 - 2025-12-04
+// Heading component for the page builder with advanced styling support
 
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
 import { cn } from '@/lib/utils';
 import { useBuilderStore } from '@/stores/builder';
+import { useAdvancedStyling } from '../hooks/useAdvancedStyling';
 import type { FC } from 'react';
 import type { HeadingProps } from '../types';
 import { HeadingSettings } from './Heading.settings';
+import type { AdvancedStyling } from '../inspector/styles/types';
+import type { ElementMetadata } from '../inspector/sidebar/types';
 
 /**
  * Default font sizes for each heading level
@@ -21,10 +24,16 @@ const defaultFontSizes: Record<number, number> = {
   6: 16,
 };
 
+// Extend HeadingProps with advanced styling
+interface ExtendedHeadingProps extends HeadingProps {
+  advancedStyling?: Partial<AdvancedStyling>;
+  metadata?: ElementMetadata;
+}
+
 /**
  * Heading component - H1-H6 heading block
  */
-export const Heading: FC<HeadingProps> & { craft?: Record<string, unknown> } = ({
+export const Heading: FC<ExtendedHeadingProps> & { craft?: Record<string, unknown> } = ({
   text = 'Heading',
   level = 2,
   fontSize,
@@ -48,6 +57,15 @@ export const Heading: FC<HeadingProps> & { craft?: Record<string, unknown> } = (
     isSelected: state.events.selected.has(id),
     isHovered: state.events.hovered.has(id),
   }));
+
+  // Get advanced styling
+  const { 
+    style: advancedStyle, 
+    className: advancedClassName,
+    attributes,
+    elementId,
+    hasAdvancedStyling,
+  } = useAdvancedStyling();
 
   const fontWeightClass: Record<string, string> = {
     normal: 'font-normal',
@@ -93,6 +111,12 @@ export const Heading: FC<HeadingProps> & { craft?: Record<string, unknown> } = (
     }
   };
 
+  // Base styles (legacy - overridden by advanced styling)
+  const baseStyle: React.CSSProperties = hasAdvancedStyling ? {} : {
+    fontSize: `${actualFontSize}px`,
+    color,
+  };
+
   // Render content with optional link
   const renderContent = () => {
     if (linkUrl) {
@@ -118,18 +142,21 @@ export const Heading: FC<HeadingProps> & { craft?: Record<string, unknown> } = (
       ref: (ref: HTMLHeadingElement | null) => {
         if (ref) connect(drag(ref));
       },
+      id: elementId,
       className: cn(
         'relative',
-        fontWeightClass[fontWeight],
-        textAlignClass[textAlign],
+        !hasAdvancedStyling && fontWeightClass[fontWeight],
+        !hasAdvancedStyling && textAlignClass[textAlign],
         !isPreviewMode && 'transition-all duration-150',
+        advancedClassName,
         className
       ),
       style: {
-        fontSize: `${actualFontSize}px`,
-        color,
+        ...baseStyle,
+        ...advancedStyle,
         ...getOutlineStyles(),
       },
+      ...attributes,
     },
     <>
       {/* Selection label */}
@@ -157,6 +184,10 @@ Heading.craft = {
     linkUrl: '',
     linkTarget: '_self',
     className: '',
+    // Advanced styling props
+    advancedStyling: {},
+    pseudoStateStyling: {},
+    metadata: undefined,
   },
   related: {
     settings: HeadingSettings,

@@ -136,7 +136,7 @@
 
 ### Right Sidebar Improvements
 - [x] **Structure Panel:** Styled tree view with icons per component type
-- [ ] **Drag Reorder:** Reorder elements via drag in structure panel
+- [x] **Drag Reorder:** Reorder elements via drag in structure panel
 - [x] **Quick Actions:** Rename, hide, delete, duplicate buttons
 - [x] **Collapse/Expand:** Collapse container children in tree
 
@@ -219,7 +219,7 @@
 - [x] **Word/Letter Spacing:** Fine-tune controls
 
 ### Fully Functional 
-- [ ] **Apply Set Settings:** All settings fully read/write to element styles, using style or tailwind classes
+- [x] **Apply Set Settings:** All settings fully read/write to element styles, using style or tailwind classes
 
 ---
 
@@ -286,6 +286,7 @@
 - [ ] **Toggle/Switch:** On/off with custom labels
 - [ ] **Modal/Popup:** Trigger on click, exit intent, timer
 - [ ] **Tooltip:** Hover text with position options
+- [ ] **Grid:** A flexible grid container with gap controls
 
 ### Form Components
 - [ ] **Form Container:** Action URL, method, AJAX toggle

@@ -85,7 +85,7 @@ export function TopBar({ pageId, pageTitle, isSaving, onTitleChange }: TopBarPro
     lastSavedAt,
   } = useBuilderStore();
 
-  const { canUndo, canRedo, actions } = useEditor((state, query) => ({
+  const { canUndo, canRedo, actions } = useEditor((_, query) => ({
     canUndo: query.history.canUndo(),
     canRedo: query.history.canRedo(),
   }));

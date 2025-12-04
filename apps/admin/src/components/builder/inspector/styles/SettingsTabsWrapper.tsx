@@ -207,7 +207,7 @@ export function SettingsTabsWrapper({
                     </AccordionTrigger>
                     <AccordionContent className="px-3 pb-3">
                       <BorderInput
-                        value={styling.border || defaultBorderSettings}
+                        value={{ ...defaultBorderSettings, ...styling.border }}
                         onChange={(border) => handleStyleChange('border', border)}
                       />
                     </AccordionContent>
@@ -234,7 +234,7 @@ export function SettingsTabsWrapper({
                       <div className="pt-4 border-t space-y-2">
                         <h4 className="text-xs font-medium text-muted-foreground">Filters</h4>
                         <FilterInput
-                          value={styling.filter || defaultFilterSettings}
+                          value={{ ...defaultFilterSettings, ...styling.filter }}
                           onChange={(filter) => handleStyleChange('filter', filter)}
                         />
                       </div>
@@ -242,7 +242,7 @@ export function SettingsTabsWrapper({
                       {/* Backdrop Filter */}
                       <div className="pt-4 border-t">
                         <BackdropFilterInput
-                          value={styling.backdropFilter || defaultBackdropFilterSettings}
+                          value={{ ...defaultBackdropFilterSettings, ...styling.backdropFilter }}
                           onChange={(backdropFilter) => handleStyleChange('backdropFilter', backdropFilter)}
                         />
                       </div>
@@ -259,14 +259,14 @@ export function SettingsTabsWrapper({
                     <AccordionContent className="px-3 pb-3 space-y-4">
                       {/* Transform */}
                       <TransformInput
-                        value={styling.transform || defaultTransformSettings}
+                        value={{ ...defaultTransformSettings, ...styling.transform }}
                         onChange={(transform) => handleStyleChange('transform', transform)}
                       />
 
                       {/* Transition */}
                       <div className="pt-4 border-t">
                         <TransitionInput
-                          value={styling.transition || defaultTransitionSettings}
+                          value={{ ...defaultTransitionSettings, ...styling.transition }}
                           onChange={(transition) => handleStyleChange('transition', transition)}
                         />
                       </div>

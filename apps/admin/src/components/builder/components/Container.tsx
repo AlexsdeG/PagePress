@@ -1,16 +1,17 @@
-// PagePress v0.0.6 - 2025-12-03
-// Container component for the page builder
+// PagePress v0.0.9 - 2025-12-04
+// Container component for the page builder with advanced styling support
 
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
 import { cn } from '@/lib/utils';
 import { useBuilderStore } from '@/stores/builder';
+import { useAdvancedStyling } from '../hooks/useAdvancedStyling';
 import type { FC } from 'react';
 import type { ContainerProps } from '../types';
 import { ContainerSettings } from './Container.settings';
 
 /**
- * Container component - A flexible wrapper component
+ * Container component - A flexible wrapper component with advanced styling
  */
 export const Container: FC<ContainerProps> & { craft?: Record<string, unknown> } = ({
   htmlTag = 'div',
@@ -54,6 +55,15 @@ export const Container: FC<ContainerProps> & { craft?: Record<string, unknown> }
     isHovered: state.events.hovered.has(id),
   }));
 
+  // Get advanced styling
+  const { 
+    style: advancedStyle, 
+    className: advancedClassName,
+    attributes,
+    elementId,
+    hasAdvancedStyling,
+  } = useAdvancedStyling();
+
   const flexClasses: Record<string, Record<string, string>> = {
     justifyContent: {
       start: 'justify-start',
@@ -80,23 +90,23 @@ export const Container: FC<ContainerProps> & { craft?: Record<string, unknown> }
 
   const widthClass = width === 'full' ? 'w-full' : width === 'fit' ? 'w-fit' : 'w-auto';
 
-  // Calculate padding
-  const paddingStyle = {
+  // Calculate padding from props (legacy support - will be overridden by advanced styling)
+  const basePaddingStyle = hasAdvancedStyling ? {} : {
     paddingTop: paddingTop ?? padding,
     paddingRight: paddingRight ?? padding,
     paddingBottom: paddingBottom ?? padding,
     paddingLeft: paddingLeft ?? padding,
   };
 
-  // Calculate margin
-  const marginStyle = {
+  // Calculate margin from props (legacy support - will be overridden by advanced styling)
+  const baseMarginStyle = hasAdvancedStyling ? {} : {
     marginTop: marginTop ?? margin,
     marginRight: marginRight ?? margin,
     marginBottom: marginBottom ?? margin,
     marginLeft: marginLeft ?? margin,
   };
 
-  // Determine outline styles based on selection/hover state
+  // Determine outline styles based on selection/hover state (editor only)
   const getOutlineStyles = () => {
     if (isPreviewMode) return {};
     
@@ -121,6 +131,19 @@ export const Container: FC<ContainerProps> & { craft?: Record<string, unknown> }
     };
   };
 
+  // Base styles (legacy props - will be overridden by advanced styling if present)
+  const baseStyle: React.CSSProperties = hasAdvancedStyling ? {} : {
+    gap: `${gap}px`,
+    ...basePaddingStyle,
+    ...baseMarginStyle,
+    backgroundColor,
+    borderRadius: `${borderRadius}px`,
+    borderWidth: `${borderWidth}px`,
+    borderColor,
+    borderStyle: borderWidth > 0 ? 'solid' : 'none',
+    minHeight: `${minHeight}px`,
+  };
+
   const Tag = htmlTag;
 
   return React.createElement(
@@ -128,8 +151,6 @@ export const Container: FC<ContainerProps> & { craft?: Record<string, unknown> }
     {
       ref: (ref: HTMLElement | null) => {
         if (ref) {
-          // Canvas containers only need connect (for dropping)
-          // Non-canvas containers need both connect and drag
           if (isCanvas) {
             connect(ref);
           } else {
@@ -137,29 +158,26 @@ export const Container: FC<ContainerProps> & { craft?: Record<string, unknown> }
           }
         }
       },
+      id: elementId,
       className: cn(
         'relative',
-        display === 'flex' && 'flex',
-        display === 'grid' && 'grid',
-        display === 'flex' && flexClasses.flexDirection[flexDirection],
-        display === 'flex' && flexClasses.justifyContent[justifyContent],
-        display === 'flex' && flexClasses.alignItems[alignItems],
-        widthClass,
+        // Only apply flex classes if no advanced styling display
+        !hasAdvancedStyling && display === 'flex' && 'flex',
+        !hasAdvancedStyling && display === 'grid' && 'grid',
+        !hasAdvancedStyling && display === 'flex' && flexClasses.flexDirection[flexDirection],
+        !hasAdvancedStyling && display === 'flex' && flexClasses.justifyContent[justifyContent],
+        !hasAdvancedStyling && display === 'flex' && flexClasses.alignItems[alignItems],
+        !hasAdvancedStyling && widthClass,
         !isPreviewMode && 'transition-all duration-150',
+        advancedClassName,
         className
       ),
       style: {
-        gap: `${gap}px`,
-        ...paddingStyle,
-        ...marginStyle,
-        backgroundColor,
-        borderRadius: `${borderRadius}px`,
-        borderWidth: `${borderWidth}px`,
-        borderColor,
-        borderStyle: borderWidth > 0 ? 'solid' : 'none',
-        minHeight: `${minHeight}px`,
+        ...baseStyle,
+        ...advancedStyle,
         ...getOutlineStyles(),
       },
+      ...attributes,
     },
     <>
       {/* Selection label */}
@@ -194,6 +212,10 @@ Container.craft = {
     minHeight: 60,
     width: 'full',
     className: '',
+    // Advanced styling props
+    advancedStyling: {},
+    pseudoStateStyling: {},
+    metadata: undefined,
   },
   related: {
     settings: ContainerSettings,

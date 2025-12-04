@@ -1,11 +1,14 @@
-// PagePress v0.0.6 - 2025-12-03
-// Divider component for the page builder
+// PagePress v0.0.9 - 2025-12-04
+// Divider component for the page builder with advanced styling support
 
 import { useNode, useEditor } from '@craftjs/core';
 import { cn } from '@/lib/utils';
 import { useBuilderStore } from '@/stores/builder';
+import { useAdvancedStyling } from '../hooks/useAdvancedStyling';
 import type { FC } from 'react';
 import { DividerSettings } from './Divider.settings';
+import type { AdvancedStyling } from '../inspector/styles/types';
+import type { ElementMetadata } from '../inspector/sidebar/types';
 
 /**
  * Divider component props
@@ -17,6 +20,9 @@ export interface DividerProps {
   color?: string;
   margin?: string;
   className?: string;
+  // Advanced styling
+  advancedStyling?: Partial<AdvancedStyling>;
+  metadata?: ElementMetadata;
 }
 
 /**
@@ -43,6 +49,15 @@ export const Divider: FC<DividerProps> & { craft?: Record<string, unknown> } = (
     isSelected: state.events.selected.has(id),
     isHovered: state.events.hovered.has(id),
   }));
+
+  // Get advanced styling
+  const { 
+    style: advancedStyle, 
+    className: advancedClassName,
+    attributes,
+    elementId,
+    hasAdvancedStyling,
+  } = useAdvancedStyling();
 
   // Parse value helper
   const parseValue = (value: string) => {
@@ -71,21 +86,30 @@ export const Divider: FC<DividerProps> & { craft?: Record<string, unknown> } = (
     return {};
   };
 
+  // Base styles (legacy - overridden by advanced styling)
+  const baseStyle: React.CSSProperties = hasAdvancedStyling ? {} : {
+    marginTop: parseValue(margin),
+    marginBottom: parseValue(margin),
+  };
+
   return (
     <div
       ref={(ref) => {
         if (ref) connect(drag(ref));
       }}
+      id={elementId}
       className={cn(
         'relative flex justify-center',
         !isPreviewMode && 'transition-all duration-150',
+        advancedClassName,
         className
       )}
       style={{
-        marginTop: parseValue(margin),
-        marginBottom: parseValue(margin),
+        ...baseStyle,
+        ...advancedStyle,
         ...getOutlineStyles(),
       }}
+      {...attributes}
     >
       {/* Selection label */}
       {isSelected && !isPreviewMode && (
@@ -118,6 +142,10 @@ Divider.craft = {
     color: '#e5e7eb',
     margin: '16px',
     className: '',
+    // Advanced styling props
+    advancedStyling: {},
+    pseudoStateStyling: {},
+    metadata: undefined,
   },
   related: {
     settings: DividerSettings,

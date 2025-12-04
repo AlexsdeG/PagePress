@@ -31,7 +31,7 @@ export function RightSidebar() {
 
     if (currentNodeId) {
       const node = state.nodes[currentNodeId];
-      parentId = node.data.parent;
+      parentId = node.data.parent || undefined;
     }
 
     return {
