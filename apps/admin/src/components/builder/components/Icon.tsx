@@ -55,6 +55,7 @@ export const Icon: FC<IconProps> & { craft?: Record<string, unknown> } = ({
     className: advancedClassName,
     attributes,
     elementId,
+    hasCustomTransition,
   } = useAdvancedStyling();
 
   // Parse size value
@@ -96,7 +97,7 @@ export const Icon: FC<IconProps> & { craft?: Record<string, unknown> } = ({
       id={elementId}
       className={cn(
         'relative inline-flex items-center justify-center',
-        !isPreviewMode && 'transition-all duration-150',
+        !isPreviewMode && !hasCustomTransition && 'transition-all duration-150',
         advancedClassName,
         className
       )}

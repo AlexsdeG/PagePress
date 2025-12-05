@@ -73,9 +73,15 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.90.11
         version: 5.90.11(react@19.2.0)
+      '@tiptap/extension-bubble-menu':
+        specifier: ^3.12.1
+        version: 3.12.1(@tiptap/core@3.12.1(@tiptap/pm@3.12.1))(@tiptap/pm@3.12.1)
       '@tiptap/extension-color':
         specifier: ^3.12.1
         version: 3.12.1(@tiptap/extension-text-style@3.12.1(@tiptap/core@3.12.1(@tiptap/pm@3.12.1)))
+      '@tiptap/extension-floating-menu':
+        specifier: ^3.12.1
+        version: 3.12.1(@floating-ui/dom@1.7.4)(@tiptap/core@3.12.1(@tiptap/pm@3.12.1))(@tiptap/pm@3.12.1)
       '@tiptap/extension-link':
         specifier: ^3.12.1
         version: 3.12.1(@tiptap/core@3.12.1(@tiptap/pm@3.12.1))(@tiptap/pm@3.12.1)
@@ -179,6 +185,9 @@ importers:
       globals:
         specifier: ^16.5.0
         version: 16.5.0
+      monaco-editor:
+        specifier: ^0.55.1
+        version: 0.55.1
       typescript:
         specifier: ~5.9.3
         version: 5.9.3
@@ -4706,7 +4715,6 @@ snapshots:
       '@floating-ui/dom': 1.7.4
       '@tiptap/core': 3.12.1(@tiptap/pm@3.12.1)
       '@tiptap/pm': 3.12.1
-    optional: true
 
   '@tiptap/extension-bullet-list@3.12.1(@tiptap/extension-list@3.12.1(@tiptap/core@3.12.1(@tiptap/pm@3.12.1))(@tiptap/pm@3.12.1))':
     dependencies:
@@ -4738,7 +4746,6 @@ snapshots:
       '@floating-ui/dom': 1.7.4
       '@tiptap/core': 3.12.1(@tiptap/pm@3.12.1)
       '@tiptap/pm': 3.12.1
-    optional: true
 
   '@tiptap/extension-gapcursor@3.12.1(@tiptap/extensions@3.12.1(@tiptap/core@3.12.1(@tiptap/pm@3.12.1))(@tiptap/pm@3.12.1))':
     dependencies:

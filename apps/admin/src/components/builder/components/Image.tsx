@@ -50,6 +50,7 @@ export const BuilderImage: FC<ExtendedImageProps> & { craft?: Record<string, unk
     attributes,
     elementId,
     hasAdvancedStyling,
+    hasCustomTransition,
   } = useAdvancedStyling();
 
   const objectFitClass: Record<string, string> = {
@@ -133,7 +134,7 @@ export const BuilderImage: FC<ExtendedImageProps> & { craft?: Record<string, unk
         id={elementId}
         className={cn(
           'relative bg-muted flex items-center justify-center border-2 border-dashed border-muted-foreground/25',
-          'transition-all duration-150',
+          !hasCustomTransition && 'transition-all duration-150',
           advancedClassName,
           className
         )}
@@ -173,7 +174,7 @@ export const BuilderImage: FC<ExtendedImageProps> & { craft?: Record<string, unk
         alt={alt}
         className={cn(
           !hasAdvancedStyling && objectFitClass[objectFit],
-          !isPreviewMode && 'transition-all duration-150',
+          !isPreviewMode && !hasCustomTransition && 'transition-all duration-150',
           advancedClassName,
           className
         )}

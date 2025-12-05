@@ -69,6 +69,7 @@ export const Section: FC<SectionProps> & { craft?: Record<string, unknown> } = (
     attributes,
     elementId,
     hasAdvancedStyling,
+    hasCustomTransition,
   } = useAdvancedStyling();
 
   // Vertical alignment classes
@@ -130,7 +131,7 @@ export const Section: FC<SectionProps> & { craft?: Record<string, unknown> } = (
       id={elementId}
       className={cn(
         'relative w-full',
-        !isPreviewMode && 'transition-all duration-150',
+        !isPreviewMode && !hasCustomTransition && 'transition-all duration-150',
         advancedClassName,
         className
       )}

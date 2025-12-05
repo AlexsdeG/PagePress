@@ -1,4 +1,4 @@
-// PagePress v0.0.9 - 2025-12-04
+// PagePress v0.0.12 - 2025-12-05
 // useAdvancedStyling - Hook for applying advanced styling to builder components
 
 import { useMemo, useEffect, useRef } from 'react';
@@ -25,6 +25,8 @@ interface UseAdvancedStylingResult {
   elementId: string;
   /** Whether element has advanced styling applied */
   hasAdvancedStyling: boolean;
+  /** Whether custom transition is enabled (don't apply default transition class) */
+  hasCustomTransition: boolean;
 }
 
 /**
@@ -125,12 +127,16 @@ export function useAdvancedStyling(
     return generatedStyles.attributes || {};
   }, [generatedStyles.attributes]);
 
+  // Check if custom transition is enabled
+  const hasCustomTransition = Boolean(advancedStyling?.transition?.enabled);
+
   return {
     style: combinedStyle,
     className: combinedClassName,
     attributes,
     elementId,
     hasAdvancedStyling: Boolean(advancedStyling),
+    hasCustomTransition,
   };
 }
 

@@ -1,12 +1,17 @@
 # Master Project Plan: "PagePress" Web Site Builder
 
 > **Version:** 0.2.0 (Bricks-Inspired Update)  
-> **Last Updated:** 2025-12-03  
+> **Last Updated:** 2025-12-05  
 > **Status:** ✅ Done | 🔄 Partial | 🐛 Has Bugs | ❌ Not Started
 
 ---
 
-## Phase 1: Foundation & Infrastructure
+## Research (5h)
+**Status:** ✅ Complete
+
+---
+
+## Phase 1 (1h): Foundation & Infrastructure
 **Goal:** Monorepo, Docker, Database, API health.
 **Status:** ✅ Complete
 
@@ -27,7 +32,7 @@
 
 ---
 
-## Phase 2: Authentication & Security
+## Phase 2 (1.5h): Authentication & Security
 **Goal:** Secure admin panel with modern standards.
 **Status:** ✅ Complete
 
@@ -47,7 +52,7 @@
 
 ---
 
-## Phase 3: Dashboard & CMS Logic
+## Phase 3 (2h): Dashboard & CMS Logic
 **Goal:** Manage pages, media, settings outside builder.
 **Status:** 🔄 Mostly Complete
 
@@ -78,7 +83,7 @@
 
 ---
 
-## Phase 4A: Builder Critical Fixes
+## Phase 4A (4h): Builder Critical Fixes
 **Goal:** Fix blocking bugs and core functionality.
 **Status:** ✅ Complete
 
@@ -104,7 +109,7 @@
 
 ---
 
-## Phase 4B: Builder Core UX (Bricks-Inspired)
+## Phase 4B (1h): Builder Core UX (Bricks-Inspired)
 **Goal:** Visual feedback and interaction polish.
 **Status:** ✅ Complete
 
@@ -142,7 +147,7 @@
 
 ---
 
-## Phase 5: Component Expansion
+## Phase 5 (1.5h): Component Expansion
 **Goal:** Essential Bricks-like components.
 **Status:** ❌ Not Started
 
@@ -177,7 +182,7 @@
 
 ---
 
-## Phase 6: Advanced Styling System
+## Phase 6 (1h): Advanced Styling System
 **Goal:** Bricks-level style controls.
 **Status:** ✅ Complete
 
@@ -223,7 +228,7 @@
 
 ---
 
-## Phase 7: Responsive Design System
+## Phase 7 (1.5h): Responsive Design System
 **Goal:** Per-breakpoint styling like Bricks.
 **Status:** 🔄 Partial
 
@@ -254,28 +259,36 @@
 
 ## Phase 8: Rich Text & Code Editing
 **Goal:** Professional content editing.
-**Status:** ❌ Not Started
+**Status:** ✅ Complete
 
 ### TipTap Integration (Text Component)
-- [ ] **Inline Editing:** Click text to edit directly on canvas
-- [ ] **Floating Toolbar:** Bold, Italic, Underline, Strikethrough
-- [ ] **Links:** Add/edit/remove links with URL input
-- [ ] **Lists:** Toggle bullet/numbered lists
-- [ ] **Text Align:** Left, Center, Right, Justify
-- [ ] **Headings:** Convert to H1-H6 within text
-- [ ] **Clear Formatting:** Remove all styles
+- [x] **Inline Editing:** Double-click text to edit directly on canvas
+- [x] **Fixed Toolbar:** Toolbar stays visible above text box (replaced BubbleMenu)
+- [x] **Formatting:** Bold, Italic, Underline, Strikethrough
+- [x] **Links:** Add/edit/remove links with URL input
+- [x] **Lists:** Toggle bullet/numbered lists
+- [x] **Text Align:** Left, Center, Right, Justify
+- [x] **Headings:** Convert to H1-H6 within text (Text component only)
+- [x] **Clear Formatting:** Remove all styles
+- [x] **Mouse Control:** Click to position cursor, proper event handling
+- [x] **Single Edit Mode:** Only one text/heading in edit mode at a time
 
 ### Monaco Editor (HTMLBlock & Custom CSS)
-- [ ] **Syntax Highlighting:** HTML, CSS, JavaScript
-- [ ] **Autocomplete:** Tag and property suggestions
-- [ ] **Error Highlighting:** Invalid syntax markers
-- [ ] **Format Document:** Auto-prettify code
-- [ ] **Custom CSS Input:** Per-element `<style>` block
+- [x] **Syntax Highlighting:** HTML, CSS, JavaScript with Monaco
+- [x] **Tabbed Interface:** HTML/CSS/JS tabs in HTMLBlock settings
+- [x] **Lazy Loading:** Monaco loaded on demand
 
 ### Custom Attributes (Bricks Feature)
-- [ ] **Attributes Panel:** Add custom HTML attributes
-- [ ] **Name/Value Inputs:** e.g., `role="banner"`, `data-section="hero"`
-- [ ] **Preset Attributes:** Common ARIA attributes dropdown
+- [x] **Attributes Panel:** Add custom HTML attributes
+- [x] **Name/Value Inputs:** e.g., `role="banner"`, `data-section="hero"`
+- [x] **ARIA Presets:** Common accessibility roles and states dropdown
+
+### Additional Fixes (v0.0.12)
+- [x] **Transition Fix:** Default Tailwind transitions don't override user-set CSS transitions
+- [x] **Heading Sizes:** H1-H6 level selector properly updates font size
+- [x] **Context Menu:** Canvas shows custom context menu, not browser default
+- [x] **Modified Props System:** Track which properties have been explicitly modified
+- [x] **Settings Context Menu:** Right-click to reset field to default
 
 ---
 

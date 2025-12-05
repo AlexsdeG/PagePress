@@ -57,6 +57,7 @@ export const Divider: FC<DividerProps> & { craft?: Record<string, unknown> } = (
     attributes,
     elementId,
     hasAdvancedStyling,
+    hasCustomTransition,
   } = useAdvancedStyling();
 
   // Parse value helper
@@ -100,7 +101,7 @@ export const Divider: FC<DividerProps> & { craft?: Record<string, unknown> } = (
       id={elementId}
       className={cn(
         'relative flex justify-center',
-        !isPreviewMode && 'transition-all duration-150',
+        !isPreviewMode && !hasCustomTransition && 'transition-all duration-150',
         advancedClassName,
         className
       )}

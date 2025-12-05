@@ -1,4 +1,4 @@
-// PagePress v0.0.6 - 2025-12-03
+// PagePress v0.0.12 - 2025-12-05
 // Right-click context menu for builder elements
 
 import { useCallback } from 'react';
@@ -26,7 +26,7 @@ interface BuilderContextMenuProps {
  * BuilderContextMenu - Provides right-click context menu for canvas elements
  */
 export function BuilderContextMenu({ children }: BuilderContextMenuProps) {
-  const { setClipboard, clipboard, isPreviewMode } = useBuilderStore();
+  const { setClipboard, clipboard, isPreviewMode, editingNodeId } = useBuilderStore();
   
   const { 
     selected, 
@@ -59,6 +59,7 @@ export function BuilderContextMenu({ children }: BuilderContextMenuProps) {
     if (!selected || isRoot) return;
     const nodeTree = query.node(selected).toSerializedNode();
     setClipboard(JSON.stringify(nodeTree));
+    toast.success('Element copied');
   }, [selected, query, setClipboard, isRoot]);
 
   const handleCut = useCallback(() => {
@@ -66,6 +67,7 @@ export function BuilderContextMenu({ children }: BuilderContextMenuProps) {
     const nodeTree = query.node(selected).toSerializedNode();
     setClipboard(JSON.stringify(nodeTree));
     actions.delete(selected);
+    toast.success('Element cut');
   }, [selected, query, setClipboard, actions, isRoot]);
 
   const handlePaste = useCallback(() => {
@@ -84,9 +86,11 @@ export function BuilderContextMenu({ children }: BuilderContextMenuProps) {
       if (parent && parent.data.nodes) {
         const insertIndex = parent.data.nodes.indexOf(selected) + 1;
         actions.addNodeTree(nodeTree, targetId, insertIndex);
+        toast.success('Element pasted');
       }
     } catch (error) {
       console.error('Paste failed:', error);
+      toast.error('Failed to paste element');
     }
   }, [clipboard, selected, parentId, query, actions]);
 
@@ -119,6 +123,7 @@ export function BuilderContextMenu({ children }: BuilderContextMenuProps) {
   const handleDelete = useCallback(() => {
     if (!selected || isRoot) return;
     actions.delete(selected);
+    toast.success('Element deleted');
   }, [selected, actions, isRoot]);
 
   const handleMoveUp = useCallback(() => {
@@ -147,13 +152,14 @@ export function BuilderContextMenu({ children }: BuilderContextMenuProps) {
     }
   }, [parentId, actions]);
 
-  if (isPreviewMode) {
+  // In preview mode or when editing text, allow browser default
+  if (isPreviewMode || editingNodeId) {
     return <>{children}</>;
   }
 
   return (
     <ContextMenu>
-      <ContextMenuTrigger asChild>
+      <ContextMenuTrigger asChild className="context-menu-trigger">
         {children}
       </ContextMenuTrigger>
       <ContextMenuContent className="w-56">

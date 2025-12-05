@@ -1,4 +1,4 @@
-// PagePress v0.0.9 - 2025-12-04
+// PagePress v0.0.12 - 2025-12-05
 // Container component for the page builder with advanced styling support
 
 import React from 'react';
@@ -62,6 +62,7 @@ export const Container: FC<ContainerProps> & { craft?: Record<string, unknown> }
     attributes,
     elementId,
     hasAdvancedStyling,
+    hasCustomTransition,
   } = useAdvancedStyling();
 
   const flexClasses: Record<string, Record<string, string>> = {
@@ -168,7 +169,8 @@ export const Container: FC<ContainerProps> & { craft?: Record<string, unknown> }
         !hasAdvancedStyling && display === 'flex' && flexClasses.justifyContent[justifyContent],
         !hasAdvancedStyling && display === 'flex' && flexClasses.alignItems[alignItems],
         !hasAdvancedStyling && widthClass,
-        !isPreviewMode && 'transition-all duration-150',
+        // Only apply default transition if not in preview mode AND no custom transition is set
+        !isPreviewMode && !hasCustomTransition && 'transition-all duration-150',
         advancedClassName,
         className
       ),

@@ -1,16 +1,19 @@
-// PagePress v0.0.9 - 2025-12-04
-// Code Block component settings panel (HTML, CSS, JavaScript) with ElementSettingsSidebar
+// PagePress v0.0.11 - 2025-12-04
+// Code Block component settings panel (HTML, CSS, JavaScript) with Monaco editor
 
 import { useNode } from '@craftjs/core';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ElementSettingsSidebar } from '../inspector/sidebar';
+import { CodeEditor } from '../editor';
 import type { HTMLBlockProps } from '../types';
+import { Code2, Palette, Braces } from 'lucide-react';
 
 /**
  * Content-specific settings for HTMLBlock (CodeBlock)
+ * Uses Monaco Editor for syntax highlighting and code editing
  */
 function HTMLBlockContentSettings({
   props,
@@ -21,47 +24,77 @@ function HTMLBlockContentSettings({
 }) {
   return (
     <div className="space-y-4">
-      {/* HTML Code */}
-      <div className="space-y-2">
-        <Label className="text-xs">HTML Code</Label>
-        <Textarea
-          value={props.html || ''}
-          onChange={(e) => setProp((p: HTMLBlockProps) => (p.html = e.target.value))}
-          placeholder="<div>Your custom HTML here...</div>"
-          rows={8}
-          className="font-mono text-sm"
-        />
-      </div>
+      {/* Code Tabs */}
+      <Tabs defaultValue="html" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="html" className="flex items-center gap-1 text-xs">
+            <Code2 className="h-3 w-3" />
+            HTML
+          </TabsTrigger>
+          <TabsTrigger value="css" className="flex items-center gap-1 text-xs">
+            <Palette className="h-3 w-3" />
+            CSS
+          </TabsTrigger>
+          <TabsTrigger value="js" className="flex items-center gap-1 text-xs">
+            <Braces className="h-3 w-3" />
+            JS
+          </TabsTrigger>
+        </TabsList>
 
-      {/* CSS Styles */}
-      <div className="space-y-2">
-        <Label className="text-xs">CSS Styles</Label>
-        <Textarea
-          value={props.css || ''}
-          onChange={(e) => setProp((p: HTMLBlockProps) => (p.css = e.target.value))}
-          placeholder=".my-class { color: red; }"
-          rows={6}
-          className="font-mono text-sm"
-        />
-        <p className="text-xs text-muted-foreground">
-          Styles are scoped to this code block
-        </p>
-      </div>
+        {/* HTML Code */}
+        <TabsContent value="html" className="mt-3">
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">
+              Write your custom HTML markup
+            </Label>
+            <CodeEditor
+              value={props.html || ''}
+              onChange={(value) => setProp((p: HTMLBlockProps) => (p.html = value))}
+              language="html"
+              height={250}
+              placeholder="<div>Your custom HTML here...</div>"
+            />
+          </div>
+        </TabsContent>
 
-      {/* JavaScript Code */}
-      <div className="space-y-2">
-        <Label className="text-xs">JavaScript Code</Label>
-        <Textarea
-          value={props.javascript || ''}
-          onChange={(e) => setProp((p: HTMLBlockProps) => (p.javascript = e.target.value))}
-          placeholder="console.log('Hello World');"
-          rows={6}
-          className="font-mono text-sm"
-        />
-        <p className="text-xs text-muted-foreground">
-          ⚠️ JavaScript only runs in preview mode for security
-        </p>
-      </div>
+        {/* CSS Styles */}
+        <TabsContent value="css" className="mt-3">
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">
+              Scoped styles for this block
+            </Label>
+            <CodeEditor
+              value={props.css || ''}
+              onChange={(value) => setProp((p: HTMLBlockProps) => (p.css = value))}
+              language="css"
+              height={250}
+              placeholder=".my-class { color: red; }"
+            />
+            <p className="text-xs text-muted-foreground">
+              Styles are scoped to this code block only
+            </p>
+          </div>
+        </TabsContent>
+
+        {/* JavaScript Code */}
+        <TabsContent value="js" className="mt-3">
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">
+              JavaScript code to execute
+            </Label>
+            <CodeEditor
+              value={props.javascript || ''}
+              onChange={(value) => setProp((p: HTMLBlockProps) => (p.javascript = value))}
+              language="javascript"
+              height={250}
+              placeholder="console.log('Hello World');"
+            />
+            <p className="text-xs text-amber-600 dark:text-amber-400">
+              ⚠️ JavaScript only runs in preview mode for security
+            </p>
+          </div>
+        </TabsContent>
+      </Tabs>
 
       {/* Min Height */}
       <div className="space-y-2">

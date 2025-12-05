@@ -49,6 +49,7 @@ export const Spacer: FC<SpacerProps> & { craft?: Record<string, unknown> } = ({
     attributes,
     elementId,
     hasAdvancedStyling,
+    hasCustomTransition,
   } = useAdvancedStyling();
 
   // Parse value helper
@@ -98,7 +99,7 @@ export const Spacer: FC<SpacerProps> & { craft?: Record<string, unknown> } = ({
       id={elementId}
       className={cn(
         'relative flex items-center justify-center',
-        !isPreviewMode && 'transition-all duration-150',
+        !isPreviewMode && !hasCustomTransition && 'transition-all duration-150',
         advancedClassName,
         className
       )}

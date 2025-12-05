@@ -1,20 +1,32 @@
-// PagePress v0.0.9 - 2025-12-04
-// HTML Attributes Tab - Custom name/value pairs for HTML attributes
+// PagePress v0.0.11 - 2025-12-04
+// HTML Attributes Tab - Custom name/value pairs with ARIA presets
 
 import { useState, useCallback, useRef } from 'react';
 import { useNode } from '@craftjs/core';
-import { Plus, Trash2, Code2, Info, GripVertical } from 'lucide-react';
+import { Plus, Trash2, Code2, Info, GripVertical, Accessibility, ChevronDown } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import type { ElementMetadata, CustomAttribute } from './types';
 import { generateAttributeId } from './types';
@@ -39,6 +51,76 @@ const COMMON_ATTRIBUTES = [
   { name: 'data-aos', description: 'Animate on scroll' },
 ];
 
+// ARIA role presets for common UI patterns
+const ARIA_ROLE_PRESETS = [
+  { value: '', label: 'None', description: 'No ARIA role' },
+  { value: 'button', label: 'Button', description: 'Interactive button element' },
+  { value: 'link', label: 'Link', description: 'Navigational link' },
+  { value: 'navigation', label: 'Navigation', description: 'Navigation landmark' },
+  { value: 'main', label: 'Main', description: 'Main content area' },
+  { value: 'banner', label: 'Banner', description: 'Site header' },
+  { value: 'contentinfo', label: 'Content Info', description: 'Site footer' },
+  { value: 'complementary', label: 'Complementary', description: 'Sidebar/aside' },
+  { value: 'article', label: 'Article', description: 'Self-contained content' },
+  { value: 'region', label: 'Region', description: 'Generic landmark' },
+  { value: 'search', label: 'Search', description: 'Search functionality' },
+  { value: 'form', label: 'Form', description: 'Form container' },
+  { value: 'list', label: 'List', description: 'List container' },
+  { value: 'listitem', label: 'List Item', description: 'Item in a list' },
+  { value: 'menu', label: 'Menu', description: 'Menu widget' },
+  { value: 'menuitem', label: 'Menu Item', description: 'Item in a menu' },
+  { value: 'dialog', label: 'Dialog', description: 'Modal dialog' },
+  { value: 'alert', label: 'Alert', description: 'Important message' },
+  { value: 'alertdialog', label: 'Alert Dialog', description: 'Alert requiring response' },
+  { value: 'tab', label: 'Tab', description: 'Tab control' },
+  { value: 'tabpanel', label: 'Tab Panel', description: 'Tab content' },
+  { value: 'tablist', label: 'Tab List', description: 'Tab container' },
+  { value: 'img', label: 'Image', description: 'Image content' },
+  { value: 'presentation', label: 'Presentation', description: 'Decorative only' },
+];
+
+// ARIA state presets
+const ARIA_STATE_PRESETS = {
+  'aria-expanded': [
+    { value: 'true', label: 'Expanded' },
+    { value: 'false', label: 'Collapsed' },
+  ],
+  'aria-selected': [
+    { value: 'true', label: 'Selected' },
+    { value: 'false', label: 'Not Selected' },
+  ],
+  'aria-checked': [
+    { value: 'true', label: 'Checked' },
+    { value: 'false', label: 'Unchecked' },
+    { value: 'mixed', label: 'Mixed' },
+  ],
+  'aria-disabled': [
+    { value: 'true', label: 'Disabled' },
+    { value: 'false', label: 'Enabled' },
+  ],
+  'aria-hidden': [
+    { value: 'true', label: 'Hidden' },
+    { value: 'false', label: 'Visible' },
+  ],
+  'aria-pressed': [
+    { value: 'true', label: 'Pressed' },
+    { value: 'false', label: 'Not Pressed' },
+    { value: 'mixed', label: 'Mixed' },
+  ],
+  'aria-current': [
+    { value: 'page', label: 'Current Page' },
+    { value: 'step', label: 'Current Step' },
+    { value: 'location', label: 'Current Location' },
+    { value: 'true', label: 'True' },
+    { value: 'false', label: 'False' },
+  ],
+  'aria-live': [
+    { value: 'off', label: 'Off' },
+    { value: 'polite', label: 'Polite' },
+    { value: 'assertive', label: 'Assertive' },
+  ],
+};
+
 export function AttributesTab({ className }: AttributesTabProps) {
   const { metadata, actions, id } = useNode((node) => ({
     metadata: node.data.props.metadata as ElementMetadata | undefined,
@@ -49,6 +131,7 @@ export function AttributesTab({ className }: AttributesTabProps) {
     metadata?.customAttributes || []
   );
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [ariaPresetsOpen, setAriaPresetsOpen] = useState(true);
 
   // Initialize attributes from metadata using ref-based sync
   const prevAttributesRef = useRef(metadata?.customAttributes);
@@ -120,6 +203,53 @@ export function AttributesTab({ className }: AttributesTabProps) {
     updateMetadata([]);
   }, [updateMetadata]);
 
+  // Handle ARIA role preset change
+  const handleAriaRoleChange = useCallback(
+    (role: string) => {
+      const existingRole = attributes.find((attr) => attr.name === 'role');
+      if (existingRole) {
+        if (role) {
+          handleUpdateAttribute(existingRole.id, 'value', role);
+        } else {
+          handleRemoveAttribute(existingRole.id);
+        }
+      } else if (role) {
+        const newAttribute: CustomAttribute = {
+          id: generateAttributeId(),
+          name: 'role',
+          value: role,
+        };
+        updateMetadata([...attributes, newAttribute]);
+      }
+    },
+    [attributes, handleUpdateAttribute, handleRemoveAttribute, updateMetadata]
+  );
+
+  // Handle ARIA state preset change
+  const handleAriaStateChange = useCallback(
+    (attributeName: string, value: string) => {
+      const existingAttr = attributes.find((attr) => attr.name === attributeName);
+      if (existingAttr) {
+        if (value) {
+          handleUpdateAttribute(existingAttr.id, 'value', value);
+        } else {
+          handleRemoveAttribute(existingAttr.id);
+        }
+      } else if (value) {
+        const newAttribute: CustomAttribute = {
+          id: generateAttributeId(),
+          name: attributeName,
+          value: value,
+        };
+        updateMetadata([...attributes, newAttribute]);
+      }
+    },
+    [attributes, handleUpdateAttribute, handleRemoveAttribute, updateMetadata]
+  );
+
+  // Get current ARIA role value
+  const currentRole = attributes.find((attr) => attr.name === 'role')?.value || '';
+
   // Get unused common attributes
   const unusedCommonAttributes = COMMON_ATTRIBUTES.filter(
     (common) => !attributes.some((attr) => attr.name === common.name)
@@ -159,6 +289,129 @@ export function AttributesTab({ className }: AttributesTabProps) {
             </TooltipProvider>
           </div>
         </div>
+
+        {/* ARIA Presets Section */}
+        <Collapsible open={ariaPresetsOpen} onOpenChange={setAriaPresetsOpen}>
+          <CollapsibleTrigger asChild>
+            <button className="flex items-center justify-between w-full p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/15 transition-colors">
+              <div className="flex items-center gap-2">
+                <Accessibility className="w-4 h-4 text-blue-500" />
+                <span className="text-sm font-medium">Accessibility Presets</span>
+              </div>
+              <ChevronDown
+                className={cn(
+                  'w-4 h-4 text-muted-foreground transition-transform',
+                  ariaPresetsOpen && 'rotate-180'
+                )}
+              />
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pt-3 space-y-3">
+            {/* ARIA Role Selector */}
+            <div className="space-y-2">
+              <Label className="text-xs">ARIA Role</Label>
+              <Select value={currentRole} onValueChange={handleAriaRoleChange}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="Select role..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {ARIA_ROLE_PRESETS.map((preset) => (
+                    <SelectItem
+                      key={preset.value || 'none'}
+                      value={preset.value}
+                      className="text-xs"
+                    >
+                      <div className="flex flex-col">
+                        <span>{preset.label}</span>
+                        <span className="text-[10px] text-muted-foreground">
+                          {preset.description}
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* ARIA States */}
+            <div className="space-y-2">
+              <Label className="text-xs">Common ARIA States</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {Object.entries(ARIA_STATE_PRESETS).slice(0, 4).map(([attrName, options]) => {
+                  const currentValue =
+                    attributes.find((a) => a.name === attrName)?.value || '';
+                  return (
+                    <div key={attrName} className="space-y-1">
+                      <Label className="text-[10px] text-muted-foreground">
+                        {attrName}
+                      </Label>
+                      <Select
+                        value={currentValue}
+                        onValueChange={(v) => handleAriaStateChange(attrName, v)}
+                      >
+                        <SelectTrigger className="h-7 text-[10px]">
+                          <SelectValue placeholder="—" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="" className="text-[10px]">
+                            None
+                          </SelectItem>
+                          {options.map((opt) => (
+                            <SelectItem
+                              key={opt.value}
+                              value={opt.value}
+                              className="text-[10px]"
+                            >
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* ARIA Label/Description Inputs */}
+            <div className="space-y-2">
+              <Label className="text-xs">Accessibility Labels</Label>
+              <div className="space-y-2">
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground">
+                    aria-label
+                  </Label>
+                  <Input
+                    className="h-8 text-xs"
+                    placeholder="Accessible name..."
+                    value={
+                      attributes.find((a) => a.name === 'aria-label')?.value || ''
+                    }
+                    onChange={(e) =>
+                      handleAriaStateChange('aria-label', e.target.value)
+                    }
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground">
+                    aria-describedby
+                  </Label>
+                  <Input
+                    className="h-8 text-xs"
+                    placeholder="Element ID reference..."
+                    value={
+                      attributes.find((a) => a.name === 'aria-describedby')
+                        ?.value || ''
+                    }
+                    onChange={(e) =>
+                      handleAriaStateChange('aria-describedby', e.target.value)
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
 
         {/* Info Banner */}
         <div className="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">

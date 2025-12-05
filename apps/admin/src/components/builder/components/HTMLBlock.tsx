@@ -51,6 +51,7 @@ export const HTMLBlock: FC<ExtendedHTMLBlockProps> & { craft?: Record<string, un
     attributes,
     elementId,
     hasAdvancedStyling,
+    hasCustomTransition,
   } = useAdvancedStyling();
 
   // Sanitize HTML to prevent XSS attacks
@@ -122,7 +123,7 @@ export const HTMLBlock: FC<ExtendedHTMLBlockProps> & { craft?: Record<string, un
       ref={(ref) => { ref && connect(drag(ref)); }}
       id={elementId}
       className={cn(
-        'relative transition-all duration-150',
+        `relative ${!hasCustomTransition ? 'transition-all duration-150' : ''}`,
         !hasContent && 'bg-muted border-2 border-dashed border-muted-foreground/25',
         advancedClassName,
         className

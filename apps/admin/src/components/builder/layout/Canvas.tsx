@@ -1,6 +1,7 @@
-// PagePress v0.0.10 - 2025-12-04
-// Canvas component for the page builder
+// PagePress v0.0.13 - 2025-12-05
+// Canvas component for the page builder - breadcrumb moved to bottom
 
+import { useCallback } from 'react';
 import { Frame, Element } from '@craftjs/core';
 import { useBuilderStore } from '@/stores/builder';
 import { useBreakpointStore } from '../responsive/breakpointStore';
@@ -17,9 +18,10 @@ interface CanvasProps {
 
 /**
  * Canvas component - The editable area where components are rendered
+ * Breadcrumb bar is fixed at the bottom
  */
 export function Canvas({ initialContent }: CanvasProps) {
-  const { isPreviewMode, isWireframeMode, showSpacingVisualizer } = useBuilderStore();
+  const { isWireframeMode, showSpacingVisualizer, isPreviewMode, editingNodeId } = useBuilderStore();
   const { 
     currentBreakpoint, 
     previewOrientation, 
@@ -30,13 +32,20 @@ export function Canvas({ initialContent }: CanvasProps) {
   const canvasWidth = getCanvasWidth(currentBreakpoint, previewOrientation);
   const canvasHeight = getCanvasHeight(currentBreakpoint, previewOrientation);
 
+  // Prevent default browser context menu on canvas when not in preview mode or editing
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    if (!isPreviewMode && !editingNodeId) {
+      e.preventDefault();
+    }
+  }, [isPreviewMode, editingNodeId]);
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
-      {/* Breadcrumb bar - shows element hierarchy */}
-      <BreadcrumbBar />
-      
       {/* Main canvas area */}
-      <div className="flex-1 bg-muted/50 overflow-auto p-8 relative">
+      <div 
+        className="flex-1 bg-muted/50 overflow-auto p-8 relative"
+        onContextMenu={handleContextMenu}
+      >
         <BuilderContextMenu>
           <DeviceFrame>
             <div
@@ -79,6 +88,9 @@ export function Canvas({ initialContent }: CanvasProps) {
           </DeviceFrame>
         </BuilderContextMenu>
       </div>
+      
+      {/* Breadcrumb bar - fixed at bottom, shows element hierarchy path */}
+      <BreadcrumbBar />
 
       {/* Wireframe and spacing mode styles */}
       <style>{`

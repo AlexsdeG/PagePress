@@ -57,6 +57,7 @@ export const BuilderButton: FC<ExtendedButtonProps> & { craft?: Record<string, u
     attributes,
     elementId,
     hasAdvancedStyling,
+    hasCustomTransition,
   } = useAdvancedStyling();
 
   // Base styles
@@ -133,7 +134,7 @@ export const BuilderButton: FC<ExtendedButtonProps> & { craft?: Record<string, u
           !hasAdvancedStyling && sizeStyles[size],
           !hasCustomColors && !hasAdvancedStyling && variantStyles[variant],
           !hasAdvancedStyling && fullWidth && 'w-full',
-          !isPreviewMode && 'transition-all duration-150',
+          !isPreviewMode && !hasCustomTransition && 'transition-all duration-150',
           (iconBefore || iconAfter) && 'gap-2',
           advancedClassName,
           className

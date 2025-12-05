@@ -63,6 +63,7 @@ export const Link: FC<LinkProps> & { craft?: Record<string, unknown> } = ({
     attributes,
     elementId,
     hasAdvancedStyling,
+    hasCustomTransition,
   } = useAdvancedStyling();
 
   // Font weight classes
@@ -135,7 +136,7 @@ export const Link: FC<LinkProps> & { craft?: Record<string, unknown> } = ({
           'inline-block cursor-pointer transition-colors',
           !hasAdvancedStyling && fontWeightClasses[fontWeight],
           !hasAdvancedStyling && underlineClasses[underline],
-          !isPreviewMode && 'transition-all duration-150',
+          !isPreviewMode && !hasCustomTransition && 'transition-all duration-150',
           advancedClassName,
           className
         )}

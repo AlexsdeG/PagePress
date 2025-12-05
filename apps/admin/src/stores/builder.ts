@@ -1,4 +1,4 @@
-// PagePress v0.0.6 - 2025-12-03
+// PagePress v0.0.12 - 2025-12-05
 // Zustand store for builder state management
 
 import { create } from 'zustand';
@@ -88,6 +88,10 @@ interface BuilderState {
   clipboard: string | null;
   setClipboard: (nodeJson: string | null) => void;
   
+  // Editing state - which element is currently in edit mode (Text/Heading inline editing)
+  editingNodeId: string | null;
+  setEditingNodeId: (id: string | null) => void;
+  
   // Reset
   reset: () => void;
 }
@@ -112,6 +116,7 @@ const defaultState = {
   hoveredNodeId: null,
   isDragging: false,
   clipboard: null,
+  editingNodeId: null,
 };
 
 /**
@@ -148,6 +153,8 @@ export const useBuilderStore = create<BuilderState>((set) => ({
   setIsDragging: (isDragging) => set({ isDragging }),
   
   setClipboard: (clipboard) => set({ clipboard }),
+  
+  setEditingNodeId: (editingNodeId) => set({ editingNodeId }),
   
   reset: () => set(defaultState),
 }));

@@ -63,6 +63,7 @@ export const List: FC<ListProps> & { craft?: Record<string, unknown> } = ({
     attributes,
     elementId,
     hasAdvancedStyling,
+    hasCustomTransition,
   } = useAdvancedStyling();
 
   // Map bullet style to CSS list-style-type
@@ -126,7 +127,7 @@ export const List: FC<ListProps> & { craft?: Record<string, unknown> } = ({
       id={elementId}
       className={cn(
         'relative',
-        !isPreviewMode && 'transition-all duration-150',
+        !isPreviewMode && !hasCustomTransition && 'transition-all duration-150',
         advancedClassName,
       )}
       style={{

@@ -71,6 +71,7 @@ export const Row: FC<RowProps> & { craft?: Record<string, unknown> } = ({
     attributes,
     elementId,
     hasAdvancedStyling,
+    hasCustomTransition,
   } = useAdvancedStyling();
 
   // Justify content classes
@@ -157,7 +158,7 @@ export const Row: FC<RowProps> & { craft?: Record<string, unknown> } = ({
         !hasAdvancedStyling && justifyClasses[justifyContent],
         !hasAdvancedStyling && alignClasses[alignItems],
         !hasAdvancedStyling && wrap && 'flex-wrap',
-        !isPreviewMode && 'transition-all duration-150',
+        !isPreviewMode && !hasCustomTransition && 'transition-all duration-150',
         advancedClassName,
         className
       )}

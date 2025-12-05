@@ -71,6 +71,7 @@ export const Column: FC<ColumnProps> & { craft?: Record<string, unknown> } = ({
     attributes,
     elementId,
     hasAdvancedStyling,
+    hasCustomTransition,
   } = useAdvancedStyling();
 
   // Align self classes
@@ -180,7 +181,7 @@ export const Column: FC<ColumnProps> & { craft?: Record<string, unknown> } = ({
       className={cn(
         'relative',
         !hasAdvancedStyling && alignClasses[alignSelf],
-        !isPreviewMode && 'transition-all duration-150',
+        !isPreviewMode && !hasCustomTransition && 'transition-all duration-150',
         advancedClassName,
         className
       )}

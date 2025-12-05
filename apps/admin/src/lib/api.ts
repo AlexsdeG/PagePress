@@ -219,83 +219,14 @@ export interface SettingsResponse {
 
 /**
  * Theme settings types
+ * Re-export from global types for API usage
  */
-export interface GlobalColor {
-  id: string;
-  name: string;
-  value: string;
-  category: 'primary' | 'secondary' | 'accent' | 'neutral' | 'custom';
-}
+export type { GlobalColor, GlobalTypography, GlobalThemeSettings, PageSettings, ThemeBreakpoint, SpacingConfig } from '@/components/builder/global/types';
 
-export interface GlobalTypography {
-  headingFont: string;
-  bodyFont: string;
-  baseFontSize: number;
-  headingSizes: {
-    h1: number;
-    h2: number;
-    h3: number;
-    h4: number;
-    h5: number;
-    h6: number;
-  };
-  lineHeights: {
-    heading: number;
-    body: number;
-  };
-}
-
-export interface ThemeBreakpoint {
-  id: string;
-  name: string;
-  minWidth: number;
-  maxWidth: number | null;
-}
-
-export interface SpacingConfig {
-  baseUnit: number;
-  scale: number[];
-}
-
-export interface GlobalThemeSettings {
-  colors: GlobalColor[];
-  typography: GlobalTypography;
-  elements: {
-    button: Record<string, unknown>;
-    link: Record<string, unknown>;
-    container: Record<string, unknown>;
-    form: Record<string, unknown>;
-  };
-  breakpoints: ThemeBreakpoint[];
-  spacing: SpacingConfig;
-}
+import type { GlobalThemeSettings, PageSettings } from '@/components/builder/global/types';
 
 export interface ThemeSettingsResponse {
   settings: GlobalThemeSettings;
-}
-
-export interface PageSettings {
-  disableHeader: boolean;
-  disableFooter: boolean;
-  fullWidth?: boolean;
-  transparentHeader?: boolean;
-  backgroundColor?: string;
-  metaTitle?: string;
-  metaDescription?: string;
-  canonicalUrl?: string;
-  noIndex: boolean;
-  noFollow: boolean;
-  ogTitle?: string;
-  ogDescription?: string;
-  ogImage?: string;
-  twitterTitle?: string;
-  twitterDescription?: string;
-  twitterImage?: string;
-  customCss?: string;
-  jsHead?: string;
-  jsBody?: string;
-  externalCss?: string;
-  externalJs?: string;
 }
 
 export interface PageSettingsResponse {

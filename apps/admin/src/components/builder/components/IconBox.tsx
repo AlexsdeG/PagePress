@@ -72,6 +72,7 @@ export const IconBox: FC<IconBoxProps> & { craft?: Record<string, unknown> } = (
     attributes,
     elementId,
     hasAdvancedStyling,
+    hasCustomTransition,
   } = useAdvancedStyling();
 
   // Parse size value
@@ -135,7 +136,7 @@ export const IconBox: FC<IconBoxProps> & { craft?: Record<string, unknown> } = (
       className={cn(
         'relative flex',
         !hasAdvancedStyling && layoutClasses[layout],
-        !isPreviewMode && 'transition-all duration-150',
+        !isPreviewMode && !hasCustomTransition && 'transition-all duration-150',
         advancedClassName,
         className
       )}

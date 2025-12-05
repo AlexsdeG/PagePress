@@ -2,6 +2,77 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.0.12] - 2025-12-05
+
+### Added
+- **Single Edit Mode:** Added `editingNodeId` to builder store - only one text/heading element can be in edit mode at a time
+- **Fixed Rich Text Toolbar:** New `RichTextToolbar` component that stays visible above the text editor (replaces BubbleMenu)
+- **Mouse Control in Editor:** Rich text editor now allows clicking to position cursor inside text
+- **Modified Props System:** 
+  - New `useModifiedProps` hook for tracking which properties have been explicitly modified by users
+  - `_modifiedProps` array stored alongside component props
+  - `isModified()`, `setModifiedProp()`, `resetProp()` utilities
+- **Settings Context Menu:** 
+  - New `SettingsFieldWrapper` component with right-click context menu
+  - "Reset to Default" option for modified fields
+  - "Copy Value" and optional "Paste Value" functionality
+  - Visual blue dot indicator for modified fields
+- **Custom Transition Detection:** Components now check for user-set transitions before applying default Tailwind classes
+
+### Fixed
+- **Effect Animations:** Fixed transitions not working for size/height/width changes by adding `hasCustomTransition` flag to prevent default `transition-all duration-150` from overriding user-set CSS transitions
+- **Heading Level Sizes:** H1-H6 level selector now properly updates font size based on level (36px→16px) unless explicitly modified
+- **Context Menu in Canvas:** Canvas now properly shows custom context menu instead of browser default, with edit mode detection
+- **Rich Text Editor:** Replaced BubbleMenu with fixed toolbar to prevent instant closing on focus/click
+- **Cursor Positioning:** Fixed mouse events being blocked in rich text editor by allowing propagation in wrapper div
+- **Escape Key Handling:** Added `onEscape` callback to RichTextEditor for proper exit from edit mode
+
+### Changed
+- **RichTextEditor:** Complete rewrite with fixed toolbar, proper mouse handling, and escape key support
+- **Text/Heading Components:** Now use global `editingNodeId` state instead of local `isEditing`
+- **Heading.settings.tsx:** Level selector now shows font sizes (H1 - 36px, H2 - 30px, etc.) and displays "(customized)" when modified
+- **14+ Builder Components:** Updated to conditionally apply default transition class based on `hasCustomTransition`
+  - Container, Button, Image, Link, Video, Row, Column, Section, Div, Divider, Spacer, IconBox, List, Icon, HTMLBlock
+
+### Technical
+- Added `hasCustomTransition` boolean to `useAdvancedStyling` hook return value
+- Created `hooks/index.ts` barrel export for builder hooks
+- Enhanced `ContextMenu` with editingNodeId check and toast notifications
+- Added `onContextMenu` handler to Canvas to prevent browser default menu
+
+---
+
+## [v0.0.11] - 2025-12-04
+
+### Added
+- **Rich Text Editing (Phase 8):** TipTap-based inline text editing for Text and Heading components
+- **RichTextEditor Component:** Full TipTap wrapper with StarterKit, Link, TextAlign, Underline, Placeholder, TextStyle, and Color extensions
+- **TextBubbleMenu:** Floating toolbar with Bold, Italic, Underline, Strikethrough, Link, Alignment, Lists, Headings, and clear formatting
+- **LinkDialog:** Popover form for creating/editing links with URL input and target selection
+- **CodeEditor Component:** Lazy-loaded Monaco Editor for syntax-highlighted HTML/CSS/JavaScript editing
+- **HTMLBlock Monaco Integration:** Replaced textarea with tabbed Monaco editors for HTML, CSS, and JS with syntax highlighting
+- **Element Defaults System:** `utils/elementDefaults.ts` for theme-based default values per component type
+- **Modified Props Tracking:** `types/modifiedProps.ts` for tracking user-modified vs default values with merge helpers
+- **ARIA Presets:** Enhanced AttributesTab with collapsible Accessibility Presets section including:
+  - ARIA role dropdown with 20+ common role presets (button, navigation, dialog, etc.)
+  - ARIA state selectors (aria-expanded, aria-selected, aria-checked, aria-disabled, aria-hidden, aria-pressed, aria-current, aria-live)
+  - aria-label and aria-describedby quick input fields
+
+### Changed
+- **Text Component:** Now supports inline rich text editing via double-click, stores `htmlContent` alongside plain `text`
+- **Heading Component:** Inline editing in minimal mode (no heading levels in toolbar since component manages level)
+- **HTMLBlock Settings:** Tabbed interface (HTML/CSS/JS) with Monaco editors instead of plain textareas
+- **API Types:** Unified theme types between api.ts and global/types.ts to avoid type mismatches
+
+### Technical
+- Added TipTap dependencies: @tiptap/react, @tiptap/starter-kit, @tiptap/extension-link, @tiptap/extension-text-align, @tiptap/extension-underline, @tiptap/extension-placeholder, @tiptap/extension-text-style, @tiptap/extension-color, @tiptap/extension-bubble-menu, @tiptap/extension-floating-menu
+- Added Monaco Editor: @monaco-editor/react, monaco-editor (dev)
+- Editor barrel export at `components/builder/editor/index.ts`
+- Double-click to edit pattern for Text/Heading with visual hints
+- Craft.js event propagation handling in editor components to prevent drag interference
+
+---
+
 ## [v0.0.10] - 2025-12-04
 
 ### Added

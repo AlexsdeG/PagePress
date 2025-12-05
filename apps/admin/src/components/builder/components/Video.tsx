@@ -96,6 +96,7 @@ export const Video: FC<VideoProps> & { craft?: Record<string, unknown> } = ({
     attributes,
     elementId,
     hasAdvancedStyling,
+    hasCustomTransition,
   } = useAdvancedStyling();
 
   // Parse value helper
@@ -211,7 +212,7 @@ export const Video: FC<VideoProps> & { craft?: Record<string, unknown> } = ({
       id={elementId}
       className={cn(
         'relative',
-        !isPreviewMode && 'transition-all duration-150',
+        !isPreviewMode && !hasCustomTransition && 'transition-all duration-150',
         advancedClassName,
         className
       )}
