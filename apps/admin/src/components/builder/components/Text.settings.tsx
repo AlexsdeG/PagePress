@@ -4,7 +4,7 @@
 import { useNode } from '@craftjs/core';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '../editor';
 import { ElementSettingsSidebar } from '../inspector/sidebar';
 import type { TextProps } from '../types';
 
@@ -23,12 +23,19 @@ function TextContentSettings({
       {/* Text Content */}
       <div className="space-y-2">
         <Label className="text-xs">Text Content</Label>
-        <Textarea
-          value={props.text || ''}
-          onChange={(e) => setProp((p: TextProps) => (p.text = e.target.value))}
+        <RichTextEditor
+          content={props.htmlContent || props.text || ''}
+          onChange={(html) =>
+            setProp((p: TextProps) => {
+              p.htmlContent = html;
+              // Update plain text for fallback
+              const tempDiv = document.createElement('div');
+              tempDiv.innerHTML = html;
+              p.text = tempDiv.textContent || '';
+            })
+          }
           placeholder="Enter text..."
-          rows={4}
-          className="text-sm"
+          className="min-h-[100px] border rounded-md p-2 text-sm"
         />
       </div>
 

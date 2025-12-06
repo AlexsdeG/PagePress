@@ -41,7 +41,7 @@ export const Text: FC<ExtendedTextProps> & { craft?: Record<string, unknown> } =
 }) => {
   const { isPreviewMode, editingNodeId, setEditingNodeId } = useBuilderStore();
   const { getBodyFontFamily, getBodyLineHeight } = useGlobalTypography();
-  
+
   const {
     connectors: { connect, drag },
     id,
@@ -65,8 +65,8 @@ export const Text: FC<ExtendedTextProps> & { craft?: Record<string, unknown> } =
   }, [isSelected, isEditing, setEditingNodeId]);
 
   // Get advanced styling
-  const { 
-    style: advancedStyle, 
+  const {
+    style: advancedStyle,
     className: advancedClassName,
     attributes,
     elementId,
@@ -135,21 +135,21 @@ export const Text: FC<ExtendedTextProps> & { craft?: Record<string, unknown> } =
   // Get outline styles based on selection/hover state
   const getOutlineStyles = (): React.CSSProperties => {
     if (isPreviewMode) return {};
-    
+
     if (isSelected) {
       return {
         outline: '2px solid #2563eb',
         outlineOffset: '-2px',
       };
     }
-    
+
     if (isHovered) {
       return {
         outline: '2px dashed #60a5fa',
         outlineOffset: '-2px',
       };
     }
-    
+
     return {};
   };
 
@@ -265,6 +265,7 @@ export const Text: FC<ExtendedTextProps> & { craft?: Record<string, unknown> } =
         ...getOutlineStyles(),
       }}
       {...attributes}
+      onDoubleClick={handleStartEditing}
     >
       {/* Selection label with pen icon */}
       {isSelected && (

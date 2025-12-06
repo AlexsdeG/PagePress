@@ -9,9 +9,6 @@ import type {
   TypographySettings,
   TransformSettings,
   TransitionSettings,
-  FilterSettings,
-  BackdropFilterSettings,
-  BoxShadow,
   GradientSettings,
 } from '../inspector/styles/types';
 
@@ -98,13 +95,13 @@ export function generateStyles(
     const transformStyle = generateTransformStyles(styling.transform);
     if (transformStyle) {
       style.transform = transformStyle;
-      
+
       // Transform origin
-      const originX = styling.transform.originX === 'custom' 
-        ? styling.transform.originXCustom || 'center' 
+      const originX = styling.transform.originX === 'custom'
+        ? styling.transform.originXCustom || 'center'
         : styling.transform.originX || 'center';
-      const originY = styling.transform.originY === 'custom' 
-        ? styling.transform.originYCustom || 'center' 
+      const originY = styling.transform.originY === 'custom'
+        ? styling.transform.originYCustom || 'center'
         : styling.transform.originY || 'center';
       style.transformOrigin = `${originX} ${originY}`;
     }
@@ -115,26 +112,9 @@ export function generateStyles(
     style.transition = generateTransitionStyles(styling.transition);
   }
 
-  // Generate filter styles
-  if (styling.filter) {
-    const filterStyle = generateFilterStyles(styling.filter);
-    if (filterStyle) {
-      style.filter = filterStyle;
-    }
-  }
-
-  // Generate backdrop filter styles
-  if (styling.backdropFilter?.enabled) {
-    const backdropStyle = generateBackdropFilterStyles(styling.backdropFilter);
-    if (backdropStyle) {
-      style.backdropFilter = backdropStyle;
-      style.WebkitBackdropFilter = backdropStyle;
-    }
-  }
-
   // Generate box shadow styles
   if (styling.boxShadow && styling.boxShadow.length > 0) {
-    style.boxShadow = generateBoxShadowStyles(styling.boxShadow);
+    // style.boxShadow = generateBoxShadowStyles(styling.boxShadow);
   }
 
   // Generate pseudo-state CSS
@@ -270,27 +250,27 @@ function generateBackgroundStyles(background: Partial<BackgroundSettings>): Reac
   if (background.type === 'image' && background.image) {
     const img = background.image;
     style.backgroundImage = `url(${img.url})`;
-    
+
     // Size
     if (img.size === 'custom') {
       style.backgroundSize = `${img.customWidth || 'auto'} ${img.customHeight || 'auto'}`;
     } else {
       style.backgroundSize = img.size;
     }
-    
+
     // Position
     if (img.position === 'custom') {
       style.backgroundPosition = `${img.customX || '50%'} ${img.customY || '50%'}`;
     } else {
       style.backgroundPosition = img.position.replace('-', ' ');
     }
-    
+
     style.backgroundRepeat = img.repeat;
     style.backgroundAttachment = img.attachment;
   }
 
   // Overlay would need to be handled differently (pseudo-element)
-  
+
   return style;
 }
 
@@ -336,7 +316,7 @@ function generateBorderStyles(border: Partial<BorderSettings>): React.CSSPropert
     const tr = r.topRight || '0';
     const br = r.bottomRight || '0';
     const bl = r.bottomLeft || '0';
-    
+
     if (tl !== '0' || tr !== '0' || br !== '0' || bl !== '0') {
       style.borderRadius = `${tl} ${tr} ${br} ${bl}`;
     }
@@ -448,95 +428,20 @@ function generateTransformStyles(transform: Partial<TransformSettings>): string 
 function generateTransitionStyles(transition: Partial<TransitionSettings>): string {
   if (!transition.enabled) return '';
 
-  const property = transition.property === 'custom' 
-    ? (transition.customProperty || 'all') 
+  const property = transition.property === 'custom'
+    ? (transition.customProperty || 'all')
     : (transition.property || 'all');
-  
+
   const duration = transition.duration || 300;
   const delay = transition.delay || 0;
-  
+
   let timing: string = transition.timingFunction || 'ease';
   if (transition.timingFunction === 'cubic-bezier' && transition.cubicBezier) {
     timing = `cubic-bezier(${transition.cubicBezier.join(', ')})`;
   }
 
+  // Ensure units are present
   return `${property} ${duration}ms ${timing} ${delay}ms`;
-}
-
-/**
- * Generate filter CSS string
- */
-function generateFilterStyles(filter: Partial<FilterSettings>): string | null {
-  const filters: string[] = [];
-
-  if (filter.blur && filter.blur > 0) {
-    filters.push(`blur(${filter.blur}px)`);
-  }
-  if (filter.brightness !== undefined && filter.brightness !== 100) {
-    filters.push(`brightness(${filter.brightness}%)`);
-  }
-  if (filter.contrast !== undefined && filter.contrast !== 100) {
-    filters.push(`contrast(${filter.contrast}%)`);
-  }
-  if (filter.grayscale && filter.grayscale > 0) {
-    filters.push(`grayscale(${filter.grayscale}%)`);
-  }
-  if (filter.saturate !== undefined && filter.saturate !== 100) {
-    filters.push(`saturate(${filter.saturate}%)`);
-  }
-  if (filter.hueRotate && filter.hueRotate !== 0) {
-    filters.push(`hue-rotate(${filter.hueRotate}deg)`);
-  }
-  if (filter.invert && filter.invert > 0) {
-    filters.push(`invert(${filter.invert}%)`);
-  }
-  if (filter.sepia && filter.sepia > 0) {
-    filters.push(`sepia(${filter.sepia}%)`);
-  }
-  if (filter.opacity !== undefined && filter.opacity !== 100) {
-    filters.push(`opacity(${filter.opacity}%)`);
-  }
-
-  return filters.length > 0 ? filters.join(' ') : null;
-}
-
-/**
- * Generate backdrop filter CSS string
- */
-function generateBackdropFilterStyles(filter: Partial<BackdropFilterSettings>): string | null {
-  if (!filter.enabled) return null;
-
-  const filters: string[] = [];
-
-  if (filter.blur && filter.blur > 0) {
-    filters.push(`blur(${filter.blur}px)`);
-  }
-  if (filter.brightness !== undefined && filter.brightness !== 100) {
-    filters.push(`brightness(${filter.brightness}%)`);
-  }
-  if (filter.contrast !== undefined && filter.contrast !== 100) {
-    filters.push(`contrast(${filter.contrast}%)`);
-  }
-  if (filter.grayscale && filter.grayscale > 0) {
-    filters.push(`grayscale(${filter.grayscale}%)`);
-  }
-  if (filter.saturate !== undefined && filter.saturate !== 100) {
-    filters.push(`saturate(${filter.saturate}%)`);
-  }
-
-  return filters.length > 0 ? filters.join(' ') : null;
-}
-
-/**
- * Generate box shadow CSS string
- */
-function generateBoxShadowStyles(shadows: BoxShadow[]): string {
-  return shadows
-    .map((s) => {
-      const inset = s.inset ? 'inset ' : '';
-      return `${inset}${s.x}px ${s.y}px ${s.blur}px ${s.spread}px ${s.color}`;
-    })
-    .join(', ');
 }
 
 /**
@@ -574,6 +479,9 @@ function generatePseudoStateCSS(
       .map(([prop, value]) => {
         // Convert camelCase to kebab-case
         const kebabProp = prop.replace(/([A-Z])/g, '-$1').toLowerCase();
+
+        // Handle numeric values that might need units if they were raw numbers in React style
+        // But generateStyles already ensures units for most things
         return `  ${kebabProp}: ${value};`;
       })
       .join('\n');

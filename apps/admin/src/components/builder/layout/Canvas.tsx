@@ -22,27 +22,30 @@ interface CanvasProps {
  */
 export function Canvas({ initialContent }: CanvasProps) {
   const { isWireframeMode, showSpacingVisualizer, isPreviewMode, editingNodeId } = useBuilderStore();
-  const { 
-    currentBreakpoint, 
-    previewOrientation, 
-    showDeviceFrame 
+  const {
+    currentBreakpoint,
+    previewOrientation,
+    showDeviceFrame
   } = useBreakpointStore();
-  
+
   // Get dimensions based on breakpoint AND orientation
   const canvasWidth = getCanvasWidth(currentBreakpoint, previewOrientation);
   const canvasHeight = getCanvasHeight(currentBreakpoint, previewOrientation);
 
   // Prevent default browser context menu on canvas when not in preview mode or editing
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
-    if (!isPreviewMode && !editingNodeId) {
+    if (!isPreviewMode) {
+      // If we are editing text, we might want the browser menu (for spellcheck etc), 
+      // but for general canvas we want our custom menu
+      // The BuilderContextMenu component will handle the actual menu display
       e.preventDefault();
     }
-  }, [isPreviewMode, editingNodeId]);
+  }, [isPreviewMode]);
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Main canvas area */}
-      <div 
+      <div
         className="flex-1 bg-muted/50 overflow-auto p-8 relative"
         onContextMenu={handleContextMenu}
       >
@@ -60,8 +63,8 @@ export function Canvas({ initialContent }: CanvasProps) {
               style={{
                 width: `${canvasWidth}px`,
                 maxWidth: '100%',
-                minHeight: currentBreakpoint === 'desktop' 
-                  ? 'calc(100vh - 200px)' 
+                minHeight: currentBreakpoint === 'desktop'
+                  ? 'calc(100vh - 200px)'
                   : undefined,
                 // Set height for mobile/tablet based on orientation
                 height: currentBreakpoint !== 'desktop' && showDeviceFrame
@@ -72,7 +75,7 @@ export function Canvas({ initialContent }: CanvasProps) {
             >
               {/* Floating toolbar */}
               <FloatingToolbar />
-              
+
               <Frame {...(initialContent ? { data: initialContent } : {})}>
                 <Element
                   is={Container}
@@ -88,7 +91,7 @@ export function Canvas({ initialContent }: CanvasProps) {
           </DeviceFrame>
         </BuilderContextMenu>
       </div>
-      
+
       {/* Breadcrumb bar - fixed at bottom, shows element hierarchy path */}
       <BreadcrumbBar />
 

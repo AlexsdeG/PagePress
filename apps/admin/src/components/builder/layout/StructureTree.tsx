@@ -3,12 +3,12 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useEditor } from '@craftjs/core';
-import { 
-  Box, 
-  Type, 
-  Heading1, 
-  Image, 
-  MousePointer2, 
+import {
+  Box,
+  Type,
+  Heading1,
+  Image,
+  MousePointer2,
   Code2,
   ChevronRight,
   ChevronDown,
@@ -92,9 +92,9 @@ interface TreeNodeProps {
 /**
  * Single node in the structure tree
  */
-function TreeNode({ 
-  nodeId, 
-  depth, 
+function TreeNode({
+  nodeId,
+  depth,
   dragState,
   onDragStart,
   onDragEnd,
@@ -200,16 +200,16 @@ function TreeNode({
   const handleDuplicate = (e?: React.MouseEvent) => {
     e?.stopPropagation();
     if (isRoot) return;
-    
+
     if (!parentId) return;
-    
+
     try {
       const parentNode = query.node(parentId).get();
       if (parentNode && parentNode.data.nodes) {
         const currentIndex = parentNode.data.nodes.indexOf(nodeId);
-        
+
         const newNodeId = duplicateNode(query, actions, nodeId, parentId, currentIndex + 1);
-        
+
         if (newNodeId) {
           setTimeout(() => {
             actions.selectNode(newNodeId);
@@ -278,13 +278,13 @@ function TreeNode({
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     if (dragState.draggedId === nodeId) return;
-    
+
     const rect = nodeRef.current?.getBoundingClientRect();
     if (!rect) return;
-    
+
     const y = e.clientY - rect.top;
     const height = rect.height;
-    
+
     let position: 'before' | 'after' | 'inside';
     if (isCanvas && y > height * 0.25 && y < height * 0.75) {
       position = 'inside';
@@ -293,7 +293,7 @@ function TreeNode({
     } else {
       position = 'after';
     }
-    
+
     onDragOver(nodeId, position);
   };
 
@@ -411,7 +411,7 @@ function TreeNode({
         {/* Quick actions with dropdown */}
         {!isRoot && !isEditing && (
           <div className="hidden group-hover:flex items-center gap-0.5">
-            <DropdownMenu>
+            <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
@@ -422,7 +422,7 @@ function TreeNode({
                   <MoreVertical className="h-3 w-3" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuContent align="end" className="w-40" side="right" alignOffset={-5}>
                 <DropdownMenuItem onClick={handleStartEdit}>
                   <Pencil className="h-3 w-3 mr-2" />
                   Rename
@@ -449,7 +449,7 @@ function TreeNode({
                   Move to Bottom
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={() => handleDelete()}
                   className="text-destructive focus:text-destructive"
                 >
@@ -466,9 +466,9 @@ function TreeNode({
       {hasChildren && isOpen && (
         <div>
           {childNodes.map((childId: string) => (
-            <TreeNode 
-              key={childId} 
-              nodeId={childId} 
+            <TreeNode
+              key={childId}
+              nodeId={childId}
               depth={depth + 1}
               dragState={dragState}
               onDragStart={onDragStart}
@@ -523,7 +523,7 @@ export function StructureTree() {
 
   const handleDrop = useCallback(() => {
     const { draggedId, dropTargetId, dropPosition } = dragState;
-    
+
     if (!draggedId || !dropTargetId || !dropPosition) {
       handleDragEnd();
       return;
@@ -532,7 +532,7 @@ export function StructureTree() {
     try {
       const draggedNode = query.node(draggedId).get();
       const targetNode = query.node(dropTargetId).get();
-      
+
       if (!draggedNode || !targetNode) {
         handleDragEnd();
         return;
@@ -561,7 +561,7 @@ export function StructureTree() {
       console.error('Drop error:', error);
       toast.error('Failed to move element');
     }
-    
+
     handleDragEnd();
   }, [dragState, query, actions, handleDragEnd]);
 
@@ -576,8 +576,8 @@ export function StructureTree() {
 
   return (
     <div className="py-2">
-      <TreeNode 
-        nodeId="ROOT" 
+      <TreeNode
+        nodeId="ROOT"
         depth={0}
         dragState={dragState}
         onDragStart={handleDragStart}

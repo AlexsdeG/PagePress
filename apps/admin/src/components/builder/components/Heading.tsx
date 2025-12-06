@@ -57,7 +57,7 @@ export const Heading: FC<ExtendedHeadingProps> & { craft?: Record<string, unknow
 }) => {
   const { isPreviewMode, editingNodeId, setEditingNodeId } = useBuilderStore();
   const { getHeadingFontFamily, getHeadingLineHeight, getHeadingSize } = useGlobalTypography();
-  
+
   const {
     connectors: { connect, drag },
     id,
@@ -81,8 +81,8 @@ export const Heading: FC<ExtendedHeadingProps> & { craft?: Record<string, unknow
   }, [isSelected, isEditing, setEditingNodeId]);
 
   // Get advanced styling
-  const { 
-    style: advancedStyle, 
+  const {
+    style: advancedStyle,
     className: advancedClassName,
     attributes,
     elementId,
@@ -104,16 +104,21 @@ export const Heading: FC<ExtendedHeadingProps> & { craft?: Record<string, unknow
   };
 
   const HeadingTag = `h${level}` as 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
-  
+
   // Use user-set fontSize if modified, otherwise use global or default
   const getActualFontSize = (): string => {
+    // If explicitly modified by user, use that
     if (fontSizeModified && fontSize !== undefined) {
       return `${fontSize}px`;
     }
+
+    // If using global font, try to get it
     if (useGlobalFont) {
       const globalSize = getHeadingSize(`h${level}` as 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6');
       if (globalSize) return globalSize;
     }
+
+    // Fallback to default for this level
     return `${defaultHeadingFontSizes[level]}px`;
   };
 
@@ -164,21 +169,21 @@ export const Heading: FC<ExtendedHeadingProps> & { craft?: Record<string, unknow
   // Get outline styles based on selection/hover state
   const getOutlineStyles = (): React.CSSProperties => {
     if (isPreviewMode) return {};
-    
+
     if (isSelected) {
       return {
         outline: '2px solid #2563eb',
         outlineOffset: '-2px',
       };
     }
-    
+
     if (isHovered) {
       return {
         outline: '2px dashed #60a5fa',
         outlineOffset: '-2px',
       };
     }
-    
+
     return {};
   };
 
@@ -308,6 +313,7 @@ export const Heading: FC<ExtendedHeadingProps> & { craft?: Record<string, unknow
       ),
       style: { ...baseStyle, ...advancedStyle, ...getOutlineStyles() },
       ...attributes,
+      onDoubleClick: handleStartEditing,
     },
     <>
       {/* Selection label with pen icon */}

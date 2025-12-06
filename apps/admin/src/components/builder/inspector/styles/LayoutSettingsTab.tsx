@@ -20,6 +20,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Link2, Link2Off } from 'lucide-react';
+import { SettingsFieldWrapper } from '../SettingsFieldWrapper';
 import type { LayoutSettings, SpacingValue, PositionSettings, DimensionsSettings, FlexSettings } from '../styles/types';
 
 interface LayoutSettingsTabProps {
@@ -201,7 +202,7 @@ function SpacingControl({
           )}
         </Button>
       </div>
-      
+
       {value.linked ? (
         <Input
           value={value.top}
@@ -259,7 +260,7 @@ function SpacingControl({
 export function LayoutSettingsTab({ value, onChange, className }: LayoutSettingsTabProps) {
   // Helper to update nested values
   const handleChange = useCallback(
-    <K extends keyof LayoutSettings>(key: K, newValue: LayoutSettings[K]) => {
+    <K extends keyof LayoutSettings>(key: K, newValue: LayoutSettings[K] | undefined) => {
       onChange({ ...value, [key]: newValue });
     },
     [value, onChange]
@@ -295,8 +296,43 @@ export function LayoutSettingsTab({ value, onChange, className }: LayoutSettings
     [value, onChange]
   );
 
+  // Check if a field is modified (exists and is not undefined/null/empty)
+  const isModified = useCallback((val: unknown): boolean => {
+    return val !== undefined && val !== null && val !== '';
+  }, []);
+
+  // Handle reset
+  const handleReset = useCallback((field: string, _defaultValue: unknown) => {
+    // We handle nested resets manually based on the field path or just set undefined
+    // For simplicity, we'll map field names to state updates
+    if (field === 'display') handleChange('display', undefined);
+    else if (field.startsWith('position.')) {
+      const key = field.split('.')[1] as keyof PositionSettings;
+      handlePositionChange({ [key]: undefined });
+    }
+    else if (field.startsWith('dimensions.')) {
+      const key = field.split('.')[1] as keyof DimensionsSettings;
+      handleDimensionsChange({ [key]: undefined });
+    }
+    else if (field.startsWith('flex.')) {
+      const key = field.split('.')[1] as keyof FlexSettings;
+      handleFlexChange({ [key]: undefined });
+    }
+    else if (field === 'margin') handleChange('margin', undefined);
+    else if (field === 'padding') handleChange('padding', undefined);
+    else if (field === 'overflow') handleChange('overflow', undefined);
+    else if (field === 'overflowX') handleChange('overflowX', undefined);
+    else if (field === 'overflowY') handleChange('overflowY', undefined);
+  }, [handleChange, handlePositionChange, handleDimensionsChange, handleFlexChange]);
+
   const isFlex = value.display === 'flex' || value.display === 'inline-flex';
   const needsPositionControls = value.position?.position !== 'static';
+
+  // Import SettingsFieldWrapper locally or assume it's available. 
+  // Since I cannot easily import it without knowing the path relative to this file (it's in ../../inspector/SettingsFieldWrapper),
+  // I will use a local wrapper similar to TypographySettingsTab for now to avoid import errors if paths are tricky, 
+  // BUT the best practice is to import it.
+  // The path is `../../inspector/SettingsFieldWrapper`.
 
   return (
     <div className={cn('space-y-4', className)}>
@@ -307,115 +343,171 @@ export function LayoutSettingsTab({ value, onChange, className }: LayoutSettings
             Display
           </AccordionTrigger>
           <AccordionContent className="pb-3 space-y-3">
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Display</Label>
-              <Select
-                value={value.display || 'block'}
-                onValueChange={(val) => handleChange('display', val as LayoutSettings['display'])}
-              >
-                <SelectTrigger className="h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {displayOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <SettingsFieldWrapper
+              fieldName="display"
+              isModified={isModified(value.display)}
+              defaultValue="block"
+              currentValue={value.display}
+              onReset={handleReset}
+              label="Display"
+            >
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Display</Label>
+                <Select
+                  value={value.display || 'block'}
+                  onValueChange={(val) => handleChange('display', val as LayoutSettings['display'])}
+                >
+                  <SelectTrigger className="h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {displayOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </SettingsFieldWrapper>
 
             {/* Flex options */}
             {isFlex && (
               <div className="space-y-3 pt-2 border-t">
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-2">
-                    <Label className="text-xs text-muted-foreground">Direction</Label>
-                    <Select
-                      value={value.flex?.direction || 'row'}
-                      onValueChange={(val) => handleFlexChange({ direction: val as FlexSettings['direction'] })}
-                    >
-                      <SelectTrigger className="h-8">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {flexDirectionOptions.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs text-muted-foreground">Wrap</Label>
-                    <Select
-                      value={value.flex?.wrap || 'nowrap'}
-                      onValueChange={(val) => handleFlexChange({ wrap: val as FlexSettings['wrap'] })}
-                    >
-                      <SelectTrigger className="h-8">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {flexWrapOptions.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <SettingsFieldWrapper
+                    fieldName="flex.direction"
+                    isModified={isModified(value.flex?.direction)}
+                    defaultValue="row"
+                    currentValue={value.flex?.direction}
+                    onReset={handleReset}
+                    label="Direction"
+                  >
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Direction</Label>
+                      <Select
+                        value={value.flex?.direction || 'row'}
+                        onValueChange={(val) => handleFlexChange({ direction: val as FlexSettings['direction'] })}
+                      >
+                        <SelectTrigger className="h-8">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {flexDirectionOptions.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </SettingsFieldWrapper>
+
+                  <SettingsFieldWrapper
+                    fieldName="flex.wrap"
+                    isModified={isModified(value.flex?.wrap)}
+                    defaultValue="nowrap"
+                    currentValue={value.flex?.wrap}
+                    onReset={handleReset}
+                    label="Wrap"
+                  >
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Wrap</Label>
+                      <Select
+                        value={value.flex?.wrap || 'nowrap'}
+                        onValueChange={(val) => handleFlexChange({ wrap: val as FlexSettings['wrap'] })}
+                      >
+                        <SelectTrigger className="h-8">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {flexWrapOptions.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </SettingsFieldWrapper>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-2">
-                    <Label className="text-xs text-muted-foreground">Justify</Label>
-                    <Select
-                      value={value.flex?.justifyContent || 'flex-start'}
-                      onValueChange={(val) => handleFlexChange({ justifyContent: val as FlexSettings['justifyContent'] })}
-                    >
-                      <SelectTrigger className="h-8">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {justifyContentOptions.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs text-muted-foreground">Align</Label>
-                    <Select
-                      value={value.flex?.alignItems || 'stretch'}
-                      onValueChange={(val) => handleFlexChange({ alignItems: val as FlexSettings['alignItems'] })}
-                    >
-                      <SelectTrigger className="h-8">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {alignItemsOptions.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <SettingsFieldWrapper
+                    fieldName="flex.justifyContent"
+                    isModified={isModified(value.flex?.justifyContent)}
+                    defaultValue="flex-start"
+                    currentValue={value.flex?.justifyContent}
+                    onReset={handleReset}
+                    label="Justify"
+                  >
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Justify</Label>
+                      <Select
+                        value={value.flex?.justifyContent || 'flex-start'}
+                        onValueChange={(val) => handleFlexChange({ justifyContent: val as FlexSettings['justifyContent'] })}
+                      >
+                        <SelectTrigger className="h-8">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {justifyContentOptions.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </SettingsFieldWrapper>
+
+                  <SettingsFieldWrapper
+                    fieldName="flex.alignItems"
+                    isModified={isModified(value.flex?.alignItems)}
+                    defaultValue="stretch"
+                    currentValue={value.flex?.alignItems}
+                    onReset={handleReset}
+                    label="Align"
+                  >
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Align</Label>
+                      <Select
+                        value={value.flex?.alignItems || 'stretch'}
+                        onValueChange={(val) => handleFlexChange({ alignItems: val as FlexSettings['alignItems'] })}
+                      >
+                        <SelectTrigger className="h-8">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {alignItemsOptions.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </SettingsFieldWrapper>
                 </div>
 
-                <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Gap</Label>
-                  <Input
-                    value={value.flex?.gap || ''}
-                    onChange={(e) => handleFlexChange({ gap: e.target.value })}
-                    placeholder="0px"
-                    className="h-8 text-xs"
-                  />
-                </div>
+                <SettingsFieldWrapper
+                  fieldName="flex.gap"
+                  isModified={isModified(value.flex?.gap)}
+                  defaultValue=""
+                  currentValue={value.flex?.gap}
+                  onReset={handleReset}
+                  label="Gap"
+                >
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Gap</Label>
+                    <Input
+                      value={value.flex?.gap || ''}
+                      onChange={(e) => handleFlexChange({ gap: e.target.value })}
+                      placeholder="0px"
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                </SettingsFieldWrapper>
               </div>
             )}
           </AccordionContent>
@@ -427,76 +519,130 @@ export function LayoutSettingsTab({ value, onChange, className }: LayoutSettings
             Position
           </AccordionTrigger>
           <AccordionContent className="pb-3 space-y-3">
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Position</Label>
-              <Select
-                value={value.position?.position || 'static'}
-                onValueChange={(val) => handlePositionChange({ position: val as PositionSettings['position'] })}
-              >
-                <SelectTrigger className="h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {positionOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <SettingsFieldWrapper
+              fieldName="position.position"
+              isModified={isModified(value.position?.position)}
+              defaultValue="static"
+              currentValue={value.position?.position}
+              onReset={handleReset}
+              label="Position"
+            >
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Position</Label>
+                <Select
+                  value={value.position?.position || 'static'}
+                  onValueChange={(val) => handlePositionChange({ position: val as PositionSettings['position'] })}
+                >
+                  <SelectTrigger className="h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {positionOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </SettingsFieldWrapper>
 
             {needsPositionControls && (
               <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Top</Label>
-                  <Input
-                    value={value.position?.top || ''}
-                    onChange={(e) => handlePositionChange({ top: e.target.value })}
-                    placeholder="auto"
-                    className="h-8 text-xs"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Right</Label>
-                  <Input
-                    value={value.position?.right || ''}
-                    onChange={(e) => handlePositionChange({ right: e.target.value })}
-                    placeholder="auto"
-                    className="h-8 text-xs"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Bottom</Label>
-                  <Input
-                    value={value.position?.bottom || ''}
-                    onChange={(e) => handlePositionChange({ bottom: e.target.value })}
-                    placeholder="auto"
-                    className="h-8 text-xs"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Left</Label>
-                  <Input
-                    value={value.position?.left || ''}
-                    onChange={(e) => handlePositionChange({ left: e.target.value })}
-                    placeholder="auto"
-                    className="h-8 text-xs"
-                  />
-                </div>
+                <SettingsFieldWrapper
+                  fieldName="position.top"
+                  isModified={isModified(value.position?.top)}
+                  defaultValue=""
+                  currentValue={value.position?.top}
+                  onReset={handleReset}
+                  label="Top"
+                >
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Top</Label>
+                    <Input
+                      value={value.position?.top || ''}
+                      onChange={(e) => handlePositionChange({ top: e.target.value })}
+                      placeholder="auto"
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                </SettingsFieldWrapper>
+                <SettingsFieldWrapper
+                  fieldName="position.right"
+                  isModified={isModified(value.position?.right)}
+                  defaultValue=""
+                  currentValue={value.position?.right}
+                  onReset={handleReset}
+                  label="Right"
+                >
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Right</Label>
+                    <Input
+                      value={value.position?.right || ''}
+                      onChange={(e) => handlePositionChange({ right: e.target.value })}
+                      placeholder="auto"
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                </SettingsFieldWrapper>
+                <SettingsFieldWrapper
+                  fieldName="position.bottom"
+                  isModified={isModified(value.position?.bottom)}
+                  defaultValue=""
+                  currentValue={value.position?.bottom}
+                  onReset={handleReset}
+                  label="Bottom"
+                >
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Bottom</Label>
+                    <Input
+                      value={value.position?.bottom || ''}
+                      onChange={(e) => handlePositionChange({ bottom: e.target.value })}
+                      placeholder="auto"
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                </SettingsFieldWrapper>
+                <SettingsFieldWrapper
+                  fieldName="position.left"
+                  isModified={isModified(value.position?.left)}
+                  defaultValue=""
+                  currentValue={value.position?.left}
+                  onReset={handleReset}
+                  label="Left"
+                >
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Left</Label>
+                    <Input
+                      value={value.position?.left || ''}
+                      onChange={(e) => handlePositionChange({ left: e.target.value })}
+                      placeholder="auto"
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                </SettingsFieldWrapper>
               </div>
             )}
 
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Z-Index</Label>
-              <Input
-                type="number"
-                value={value.position?.zIndex ?? ''}
-                onChange={(e) => handlePositionChange({ zIndex: parseInt(e.target.value) || undefined })}
-                placeholder="auto"
-                className="h-8 text-xs"
-              />
-            </div>
+            <SettingsFieldWrapper
+              fieldName="position.zIndex"
+              isModified={isModified(value.position?.zIndex)}
+              defaultValue=""
+              currentValue={value.position?.zIndex}
+              onReset={handleReset}
+              label="Z-Index"
+            >
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Z-Index</Label>
+                <Input
+                  type="number"
+                  value={value.position?.zIndex ?? ''}
+                  onChange={(e) => handlePositionChange({ zIndex: parseInt(e.target.value) || undefined })}
+                  placeholder="auto"
+                  className="h-8 text-xs"
+                />
+              </div>
+            </SettingsFieldWrapper>
           </AccordionContent>
         </AccordionItem>
 
@@ -507,66 +653,120 @@ export function LayoutSettingsTab({ value, onChange, className }: LayoutSettings
           </AccordionTrigger>
           <AccordionContent className="pb-3 space-y-3">
             <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Width</Label>
-                <Input
-                  value={value.dimensions?.width || ''}
-                  onChange={(e) => handleDimensionsChange({ width: e.target.value })}
-                  placeholder="auto"
-                  className="h-8 text-xs"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Height</Label>
-                <Input
-                  value={value.dimensions?.height || ''}
-                  onChange={(e) => handleDimensionsChange({ height: e.target.value })}
-                  placeholder="auto"
-                  className="h-8 text-xs"
-                />
-              </div>
+              <SettingsFieldWrapper
+                fieldName="dimensions.width"
+                isModified={isModified(value.dimensions?.width)}
+                defaultValue=""
+                currentValue={value.dimensions?.width}
+                onReset={handleReset}
+                label="Width"
+              >
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Width</Label>
+                  <Input
+                    value={value.dimensions?.width || ''}
+                    onChange={(e) => handleDimensionsChange({ width: e.target.value })}
+                    placeholder="auto"
+                    className="h-8 text-xs"
+                  />
+                </div>
+              </SettingsFieldWrapper>
+              <SettingsFieldWrapper
+                fieldName="dimensions.height"
+                isModified={isModified(value.dimensions?.height)}
+                defaultValue=""
+                currentValue={value.dimensions?.height}
+                onReset={handleReset}
+                label="Height"
+              >
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Height</Label>
+                  <Input
+                    value={value.dimensions?.height || ''}
+                    onChange={(e) => handleDimensionsChange({ height: e.target.value })}
+                    placeholder="auto"
+                    className="h-8 text-xs"
+                  />
+                </div>
+              </SettingsFieldWrapper>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Min Width</Label>
-                <Input
-                  value={value.dimensions?.minWidth || ''}
-                  onChange={(e) => handleDimensionsChange({ minWidth: e.target.value })}
-                  placeholder="none"
-                  className="h-8 text-xs"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Max Width</Label>
-                <Input
-                  value={value.dimensions?.maxWidth || ''}
-                  onChange={(e) => handleDimensionsChange({ maxWidth: e.target.value })}
-                  placeholder="none"
-                  className="h-8 text-xs"
-                />
-              </div>
+              <SettingsFieldWrapper
+                fieldName="dimensions.minWidth"
+                isModified={isModified(value.dimensions?.minWidth)}
+                defaultValue=""
+                currentValue={value.dimensions?.minWidth}
+                onReset={handleReset}
+                label="Min Width"
+              >
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Min Width</Label>
+                  <Input
+                    value={value.dimensions?.minWidth || ''}
+                    onChange={(e) => handleDimensionsChange({ minWidth: e.target.value })}
+                    placeholder="none"
+                    className="h-8 text-xs"
+                  />
+                </div>
+              </SettingsFieldWrapper>
+              <SettingsFieldWrapper
+                fieldName="dimensions.maxWidth"
+                isModified={isModified(value.dimensions?.maxWidth)}
+                defaultValue=""
+                currentValue={value.dimensions?.maxWidth}
+                onReset={handleReset}
+                label="Max Width"
+              >
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Max Width</Label>
+                  <Input
+                    value={value.dimensions?.maxWidth || ''}
+                    onChange={(e) => handleDimensionsChange({ maxWidth: e.target.value })}
+                    placeholder="none"
+                    className="h-8 text-xs"
+                  />
+                </div>
+              </SettingsFieldWrapper>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Min Height</Label>
-                <Input
-                  value={value.dimensions?.minHeight || ''}
-                  onChange={(e) => handleDimensionsChange({ minHeight: e.target.value })}
-                  placeholder="none"
-                  className="h-8 text-xs"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Max Height</Label>
-                <Input
-                  value={value.dimensions?.maxHeight || ''}
-                  onChange={(e) => handleDimensionsChange({ maxHeight: e.target.value })}
-                  placeholder="none"
-                  className="h-8 text-xs"
-                />
-              </div>
+              <SettingsFieldWrapper
+                fieldName="dimensions.minHeight"
+                isModified={isModified(value.dimensions?.minHeight)}
+                defaultValue=""
+                currentValue={value.dimensions?.minHeight}
+                onReset={handleReset}
+                label="Min Height"
+              >
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Min Height</Label>
+                  <Input
+                    value={value.dimensions?.minHeight || ''}
+                    onChange={(e) => handleDimensionsChange({ minHeight: e.target.value })}
+                    placeholder="none"
+                    className="h-8 text-xs"
+                  />
+                </div>
+              </SettingsFieldWrapper>
+              <SettingsFieldWrapper
+                fieldName="dimensions.maxHeight"
+                isModified={isModified(value.dimensions?.maxHeight)}
+                defaultValue=""
+                currentValue={value.dimensions?.maxHeight}
+                onReset={handleReset}
+                label="Max Height"
+              >
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Max Height</Label>
+                  <Input
+                    value={value.dimensions?.maxHeight || ''}
+                    onChange={(e) => handleDimensionsChange({ maxHeight: e.target.value })}
+                    placeholder="none"
+                    className="h-8 text-xs"
+                  />
+                </div>
+              </SettingsFieldWrapper>
             </div>
           </AccordionContent>
         </AccordionItem>
@@ -577,16 +777,34 @@ export function LayoutSettingsTab({ value, onChange, className }: LayoutSettings
             Spacing
           </AccordionTrigger>
           <AccordionContent className="pb-3 space-y-3">
-            <SpacingControl
+            <SettingsFieldWrapper
+              fieldName="margin"
+              isModified={isModified(value.margin)}
+              defaultValue={defaultLayoutSettings.margin}
+              currentValue={value.margin}
+              onReset={handleReset}
               label="Margin"
-              value={value.margin || defaultLayoutSettings.margin}
-              onChange={(val) => handleChange('margin', val)}
-            />
-            <SpacingControl
+            >
+              <SpacingControl
+                label="Margin"
+                value={value.margin || defaultLayoutSettings.margin}
+                onChange={(val) => handleChange('margin', val)}
+              />
+            </SettingsFieldWrapper>
+            <SettingsFieldWrapper
+              fieldName="padding"
+              isModified={isModified(value.padding)}
+              defaultValue={defaultLayoutSettings.padding}
+              currentValue={value.padding}
+              onReset={handleReset}
               label="Padding"
-              value={value.padding || defaultLayoutSettings.padding}
-              onChange={(val) => handleChange('padding', val)}
-            />
+            >
+              <SpacingControl
+                label="Padding"
+                value={value.padding || defaultLayoutSettings.padding}
+                onChange={(val) => handleChange('padding', val)}
+              />
+            </SettingsFieldWrapper>
           </AccordionContent>
         </AccordionItem>
 
@@ -596,62 +814,89 @@ export function LayoutSettingsTab({ value, onChange, className }: LayoutSettings
             Overflow
           </AccordionTrigger>
           <AccordionContent className="pb-3 space-y-3">
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Overflow</Label>
-              <Select
-                value={value.overflow || 'visible'}
-                onValueChange={(val) => handleChange('overflow', val as LayoutSettings['overflow'])}
-              >
-                <SelectTrigger className="h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {overflowOptions.map((opt) => (
-                    <SelectItem key={opt} value={opt}>
-                      {opt.charAt(0).toUpperCase() + opt.slice(1)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <SettingsFieldWrapper
+              fieldName="overflow"
+              isModified={isModified(value.overflow)}
+              defaultValue="visible"
+              currentValue={value.overflow}
+              onReset={handleReset}
+              label="Overflow"
+            >
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Overflow</Label>
+                <Select
+                  value={value.overflow || 'visible'}
+                  onValueChange={(val) => handleChange('overflow', val as LayoutSettings['overflow'])}
+                >
+                  <SelectTrigger className="h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {overflowOptions.map((opt) => (
+                      <SelectItem key={opt} value={opt}>
+                        {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </SettingsFieldWrapper>
 
             <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Overflow X</Label>
-                <Select
-                  value={value.overflowX || value.overflow || 'visible'}
-                  onValueChange={(val) => handleChange('overflowX', val as LayoutSettings['overflowX'])}
-                >
-                  <SelectTrigger className="h-8">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {overflowOptions.map((opt) => (
-                      <SelectItem key={opt} value={opt}>
-                        {opt.charAt(0).toUpperCase() + opt.slice(1)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Overflow Y</Label>
-                <Select
-                  value={value.overflowY || value.overflow || 'visible'}
-                  onValueChange={(val) => handleChange('overflowY', val as LayoutSettings['overflowY'])}
-                >
-                  <SelectTrigger className="h-8">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {overflowOptions.map((opt) => (
-                      <SelectItem key={opt} value={opt}>
-                        {opt.charAt(0).toUpperCase() + opt.slice(1)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <SettingsFieldWrapper
+                fieldName="overflowX"
+                isModified={isModified(value.overflowX)}
+                defaultValue="visible"
+                currentValue={value.overflowX}
+                onReset={handleReset}
+                label="Overflow X"
+              >
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Overflow X</Label>
+                  <Select
+                    value={value.overflowX || value.overflow || 'visible'}
+                    onValueChange={(val) => handleChange('overflowX', val as LayoutSettings['overflowX'])}
+                  >
+                    <SelectTrigger className="h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {overflowOptions.map((opt) => (
+                        <SelectItem key={opt} value={opt}>
+                          {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </SettingsFieldWrapper>
+              <SettingsFieldWrapper
+                fieldName="overflowY"
+                isModified={isModified(value.overflowY)}
+                defaultValue="visible"
+                currentValue={value.overflowY}
+                onReset={handleReset}
+                label="Overflow Y"
+              >
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Overflow Y</Label>
+                  <Select
+                    value={value.overflowY || value.overflow || 'visible'}
+                    onValueChange={(val) => handleChange('overflowY', val as LayoutSettings['overflowY'])}
+                  >
+                    <SelectTrigger className="h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {overflowOptions.map((opt) => (
+                        <SelectItem key={opt} value={opt}>
+                          {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </SettingsFieldWrapper>
             </div>
           </AccordionContent>
         </AccordionItem>

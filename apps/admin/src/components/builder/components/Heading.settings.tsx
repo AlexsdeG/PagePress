@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { RichTextEditor } from '../editor';
 import { ElementSettingsSidebar } from '../inspector/sidebar';
 import { SettingsFieldWrapper } from '../inspector/SettingsFieldWrapper';
 import { useModifiedProps } from '../hooks';
@@ -34,7 +35,7 @@ function HeadingContentSettings({
   setProp: (cb: (props: ExtendedHeadingProps) => void) => void;
 }) {
   const { isModified, resetProp, setModifiedProp } = useModifiedProps();
-  
+
   // Get the current displayed font size (either user-set or default for level)
   const currentFontSize = props.fontSizeModified && props.fontSize !== undefined
     ? props.fontSize
@@ -62,15 +63,21 @@ function HeadingContentSettings({
       >
         <div className="space-y-2">
           <Label className="text-xs">Text</Label>
-          <Input
-            value={props.text || ''}
-            onChange={(e) => {
-              setModifiedProp('text', e.target.value);
+          <RichTextEditor
+            content={props.htmlContent || props.text || ''}
+            onChange={(html) => {
+              const tempDiv = document.createElement('div');
+              tempDiv.innerHTML = html;
+              const plainText = tempDiv.textContent || '';
+
+              setModifiedProp('text', plainText);
               setProp((p) => {
-                p.htmlContent = e.target.value;
+                p.htmlContent = html;
               });
             }}
             placeholder="Enter heading text..."
+            minimalMode={true}
+            className="min-h-[60px] border rounded-md p-2 text-sm"
           />
         </div>
       </SettingsFieldWrapper>

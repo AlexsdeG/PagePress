@@ -40,7 +40,7 @@ export const Container: FC<ContainerProps> & { craft?: Record<string, unknown> }
   children,
 }) => {
   const { isPreviewMode } = useBuilderStore();
-  
+
   const {
     connectors: { connect, drag },
     id,
@@ -56,14 +56,16 @@ export const Container: FC<ContainerProps> & { craft?: Record<string, unknown> }
   }));
 
   // Get advanced styling
-  const { 
-    style: advancedStyle, 
+  const {
+    style: advancedStyle,
     className: advancedClassName,
     attributes,
     elementId,
     hasAdvancedStyling,
     hasCustomTransition,
-  } = useAdvancedStyling();
+  } = useAdvancedStyling({
+    componentType: 'container',
+  });
 
   const flexClasses: Record<string, Record<string, string>> = {
     justifyContent: {
@@ -110,21 +112,21 @@ export const Container: FC<ContainerProps> & { craft?: Record<string, unknown> }
   // Determine outline styles based on selection/hover state (editor only)
   const getOutlineStyles = () => {
     if (isPreviewMode) return {};
-    
+
     if (isSelected) {
       return {
         outline: '2px solid #2563eb',
         outlineOffset: '-2px',
       };
     }
-    
+
     if (isHovered) {
       return {
         outline: '2px dashed #60a5fa',
         outlineOffset: '-2px',
       };
     }
-    
+
     // Default dotted outline for containers to show structure
     return {
       outline: '1px dashed #d1d5db',

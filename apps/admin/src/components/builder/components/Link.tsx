@@ -43,7 +43,7 @@ export const Link: FC<LinkProps> & { craft?: Record<string, unknown> } = ({
   className = '',
 }) => {
   const { isPreviewMode } = useBuilderStore();
-  
+
   const {
     connectors: { connect, drag },
     id,
@@ -57,14 +57,16 @@ export const Link: FC<LinkProps> & { craft?: Record<string, unknown> } = ({
   }));
 
   // Get advanced styling
-  const { 
-    style: advancedStyle, 
+  const {
+    style: advancedStyle,
     className: advancedClassName,
     attributes,
     elementId,
     hasAdvancedStyling,
     hasCustomTransition,
-  } = useAdvancedStyling();
+  } = useAdvancedStyling({
+    componentType: 'link',
+  });
 
   // Font weight classes
   const fontWeightClasses: Record<string, string> = {
@@ -84,21 +86,21 @@ export const Link: FC<LinkProps> & { craft?: Record<string, unknown> } = ({
   // Get outline styles based on selection/hover state
   const getOutlineStyles = () => {
     if (isPreviewMode) return {};
-    
+
     if (isSelected) {
       return {
         outline: '2px solid #2563eb',
         outlineOffset: '2px',
       };
     }
-    
+
     if (isHovered) {
       return {
         outline: '2px dashed #60a5fa',
         outlineOffset: '2px',
       };
     }
-    
+
     return {};
   };
 

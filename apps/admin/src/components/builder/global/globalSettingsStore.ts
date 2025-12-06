@@ -85,6 +85,8 @@ export const useGlobalSettingsStore = create<GlobalSettingsState>(
       if (!current) return;
 
       // Optimistic update
+      // Deep merge is handled by the API/Backend, but for local state we need to be careful
+      // For now, shallow merge is okay as long as we update specific sections
       const newSettings = { ...current, ...settings };
       set({ themeSettings: newSettings as GlobalThemeSettings });
 

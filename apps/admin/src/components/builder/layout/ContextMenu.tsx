@@ -27,9 +27,9 @@ interface BuilderContextMenuProps {
  */
 export function BuilderContextMenu({ children }: BuilderContextMenuProps) {
   const { setClipboard, clipboard, isPreviewMode, editingNodeId } = useBuilderStore();
-  
-  const { 
-    selected, 
+
+  const {
+    selected,
     parentId,
     siblings,
     actions,
@@ -72,17 +72,17 @@ export function BuilderContextMenu({ children }: BuilderContextMenuProps) {
 
   const handlePaste = useCallback(() => {
     if (!clipboard || !selected) return;
-    
+
     try {
       // Check if selected node is a canvas (can accept children)
       const node = query.node(selected).get();
       const targetId = node.data.isCanvas ? selected : (parentId || 'ROOT');
-      
+
       // For now, just duplicate since parsing serialized node is complex
       // This will be enhanced later
       const nodeTree = query.node(selected).toNodeTree();
       const parent = query.node(targetId).get();
-      
+
       if (parent && parent.data.nodes) {
         const insertIndex = parent.data.nodes.indexOf(selected) + 1;
         actions.addNodeTree(nodeTree, targetId, insertIndex);
@@ -96,15 +96,15 @@ export function BuilderContextMenu({ children }: BuilderContextMenuProps) {
 
   const handleDuplicate = useCallback(() => {
     if (!selected || isRoot || !parentId) return;
-    
+
     try {
       const parentNode = query.node(parentId).get();
       if (parentNode && parentNode.data.nodes) {
         const currentIndex = parentNode.data.nodes.indexOf(selected);
-        
+
         // Use the safe duplicate function
         const newNodeId = duplicateNode(query, actions, selected, parentId, currentIndex + 1);
-        
+
         if (newNodeId) {
           setTimeout(() => {
             actions.selectNode(newNodeId);
@@ -152,9 +152,16 @@ export function BuilderContextMenu({ children }: BuilderContextMenuProps) {
     }
   }, [parentId, actions]);
 
-  // In preview mode or when editing text, allow browser default
-  if (isPreviewMode || editingNodeId) {
+  // In preview mode, just render children
+  if (isPreviewMode) {
     return <>{children}</>;
+  }
+
+  // If editing text, we might want to allow browser default behavior for text interaction
+  // But we still wrap it to maintain structure
+  if (editingNodeId) {
+    // Check if the click target is inside the editing node
+    // This logic is handled by the trigger's onContextMenu
   }
 
   return (
@@ -217,7 +224,7 @@ export function BuilderContextMenu({ children }: BuilderContextMenuProps) {
             <ContextMenuSeparator />
 
             {/* Delete */}
-            <ContextMenuItem 
+            <ContextMenuItem
               onClick={handleDelete}
               className="text-destructive focus:text-destructive"
             >

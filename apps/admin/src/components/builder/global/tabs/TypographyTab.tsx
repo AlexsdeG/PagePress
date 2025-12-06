@@ -180,10 +180,12 @@ export function TypographyTab() {
             type="number"
             step="0.1"
             className="h-9"
-            value={typography.bodyLineHeight || 1.6}
-            onChange={(e) =>
-              updateTypography('bodyLineHeight', parseFloat(e.target.value))
-            }
+            value={typography.bodyLineHeight || ''}
+            onChange={(e) => {
+              const val = e.target.value;
+              updateTypography('bodyLineHeight', val === '' ? undefined : parseFloat(val));
+            }}
+            placeholder="1.6"
           />
         </div>
         <div className="space-y-2">
@@ -192,10 +194,12 @@ export function TypographyTab() {
             type="number"
             step="0.1"
             className="h-9"
-            value={typography.headingLineHeight || 1.2}
-            onChange={(e) =>
-              updateTypography('headingLineHeight', parseFloat(e.target.value))
-            }
+            value={typography.headingLineHeight || ''}
+            onChange={(e) => {
+              const val = e.target.value;
+              updateTypography('headingLineHeight', val === '' ? undefined : parseFloat(val));
+            }}
+            placeholder="1.2"
           />
         </div>
       </div>

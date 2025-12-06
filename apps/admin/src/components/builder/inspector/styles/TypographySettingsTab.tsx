@@ -177,8 +177,8 @@ function TrackedField({
 
   const handleCopy = useCallback(async () => {
     try {
-      const value = typeof currentValue === 'object' 
-        ? JSON.stringify(currentValue) 
+      const value = typeof currentValue === 'object'
+        ? JSON.stringify(currentValue)
         : String(currentValue ?? '');
       await navigator.clipboard.writeText(value);
       toast.success('Copied to clipboard');
@@ -193,7 +193,7 @@ function TrackedField({
         <div className="relative">
           {/* Blue dot indicator for modified fields */}
           {isModified && (
-            <div 
+            <div
               className="absolute -left-2.5 top-3 w-2 h-2 rounded-full bg-blue-500 z-10"
               title="Modified from default"
             />
@@ -202,7 +202,7 @@ function TrackedField({
         </div>
       </ContextMenuTrigger>
       <ContextMenuContent className="w-48">
-        <ContextMenuItem 
+        <ContextMenuItem
           onClick={handleReset}
           disabled={!isModified || !onReset}
           className={!isModified ? 'text-muted-foreground' : ''}
@@ -226,624 +226,627 @@ function TrackedField({
  */
 export const TypographySettingsTab = forwardRef<TypographySettingsRef, TypographySettingsTabProps>(
   function TypographySettingsTab({ value, onChange, className, modifiedFields, onResetField }, ref) {
-  const [customFontFamily, setCustomFontFamily] = useState('');
+    const [customFontFamily, setCustomFontFamily] = useState('');
 
-  // Check if a field is modified
-  const isModified = useCallback((fieldName: string): boolean => {
-    if (modifiedFields) {
-      return modifiedFields.has(fieldName);
-    }
-    // Fallback: compare with default
-    const key = fieldName as keyof TypographySettings;
-    return value[key] !== defaultTypographySettings[key] && value[key] !== undefined && value[key] !== '';
-  }, [modifiedFields, value]);
-
-  // Handle field reset
-  const handleResetField = useCallback((fieldName: string, defaultValue: unknown) => {
-    if (onResetField) {
-      onResetField(fieldName, defaultValue);
-    } else {
-      // Default behavior: reset to default value
+    // Check if a field is modified
+    const isModified = useCallback((fieldName: string): boolean => {
+      if (modifiedFields) {
+        return modifiedFields.has(fieldName);
+      }
+      // Fallback: compare with default
       const key = fieldName as keyof TypographySettings;
-      onChange({ ...value, [key]: defaultValue });
-    }
-  }, [onResetField, onChange, value]);
+      // It is modified if it exists and is not undefined/null/empty
+      return value[key] !== undefined && value[key] !== null && value[key] !== '';
+    }, [modifiedFields, value]);
 
-  // Update a single property
-  const handleChange = useCallback(
-    <K extends keyof TypographySettings>(key: K, newValue: TypographySettings[K]) => {
-      onChange({ ...value, [key]: newValue });
-    },
-    [value, onChange]
-  );
+    // Handle field reset
+    const handleResetField = useCallback((fieldName: string, defaultValue: unknown) => {
+      if (onResetField) {
+        onResetField(fieldName, defaultValue);
+      } else {
+        // Default behavior: reset to undefined to remove the override
+        const key = fieldName as keyof TypographySettings;
+        // We explicitly set to undefined to remove the key from the object
+        // This allows fallback to global settings or defaults
+        onChange({ ...value, [key]: undefined });
+      }
+    }, [onResetField, onChange, value]);
 
-  // Expose API via ref
-  useImperativeHandle(ref, () => ({
-    getValue: () => value,
-    setValue: (newValue: Partial<TypographySettings>) => onChange(newValue),
-    setProperty: <K extends keyof TypographySettings>(key: K, val: TypographySettings[K]) => {
-      onChange({ ...value, [key]: val });
-    },
-    reset: () => onChange({ ...defaultTypographySettings }),
-    getDefaults: () => defaultTypographySettings,
-  }), [value, onChange]);
+    // Update a single property
+    const handleChange = useCallback(
+      <K extends keyof TypographySettings>(key: K, newValue: TypographySettings[K]) => {
+        onChange({ ...value, [key]: newValue });
+      },
+      [value, onChange]
+    );
 
-  // Add text shadow
-  const handleAddShadow = useCallback(() => {
-    const newShadow: TextShadow = {
-      id: generateShadowId(),
-      x: 0,
-      y: 2,
-      blur: 4,
-      color: 'rgba(0, 0, 0, 0.25)',
-    };
-    onChange({
-      ...value,
-      textShadow: [...(value.textShadow || []), newShadow],
-    });
-  }, [value, onChange]);
+    // Expose API via ref
+    useImperativeHandle(ref, () => ({
+      getValue: () => value,
+      setValue: (newValue: Partial<TypographySettings>) => onChange(newValue),
+      setProperty: <K extends keyof TypographySettings>(key: K, val: TypographySettings[K]) => {
+        onChange({ ...value, [key]: val });
+      },
+      reset: () => onChange({ ...defaultTypographySettings }),
+      getDefaults: () => defaultTypographySettings,
+    }), [value, onChange]);
 
-  // Remove text shadow
-  const handleRemoveShadow = useCallback(
-    (id: string) => {
+    // Add text shadow
+    const handleAddShadow = useCallback(() => {
+      const newShadow: TextShadow = {
+        id: generateShadowId(),
+        x: 0,
+        y: 2,
+        blur: 4,
+        color: 'rgba(0, 0, 0, 0.25)',
+      };
       onChange({
         ...value,
-        textShadow: (value.textShadow || []).filter((s) => s.id !== id),
+        textShadow: [...(value.textShadow || []), newShadow],
       });
-    },
-    [value, onChange]
-  );
+    }, [value, onChange]);
 
-  // Update text shadow
-  const handleUpdateShadow = useCallback(
-    (id: string, updates: Partial<TextShadow>) => {
-      onChange({
-        ...value,
-        textShadow: (value.textShadow || []).map((s) =>
-          s.id === id ? { ...s, ...updates } : s
-        ),
-      });
-    },
-    [value, onChange]
-  );
+    // Remove text shadow
+    const handleRemoveShadow = useCallback(
+      (id: string) => {
+        onChange({
+          ...value,
+          textShadow: (value.textShadow || []).filter((s) => s.id !== id),
+        });
+      },
+      [value, onChange]
+    );
 
-  return (
-    <div className={cn('space-y-4', className)}>
-      <Accordion type="multiple" defaultValue={['font', 'spacing', 'alignment']} className="space-y-1">
-        {/* Font */}
-        <AccordionItem value="font" className="border rounded-md px-3">
-          <AccordionTrigger className="py-2 text-sm font-medium hover:no-underline">
-            Font
-          </AccordionTrigger>
-          <AccordionContent className="pb-3 space-y-3">
-            {/* Font Family */}
-            <TrackedField
-              fieldName="fontFamily"
-              defaultValue={defaultTypographySettings.fontFamily}
-              currentValue={value.fontFamily}
-              isModified={isModified('fontFamily')}
-              onReset={handleResetField}
-            >
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Font Family</Label>
-                <Select
-                  value={value.fontFamily || 'inherit'}
-                  onValueChange={(val) => handleChange('fontFamily', val)}
-                >
-                  <SelectTrigger className={cn('h-8', isModified('fontFamily') && 'border-blue-400')}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {commonFontFamilies.map((font) => (
-                      <SelectItem key={font.value} value={font.value}>
-                        <span style={{ fontFamily: font.value }}>{font.label}</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <div className="flex gap-2">
+    // Update text shadow
+    const handleUpdateShadow = useCallback(
+      (id: string, updates: Partial<TextShadow>) => {
+        onChange({
+          ...value,
+          textShadow: (value.textShadow || []).map((s) =>
+            s.id === id ? { ...s, ...updates } : s
+          ),
+        });
+      },
+      [value, onChange]
+    );
+
+    return (
+      <div className={cn('space-y-4', className)}>
+        <Accordion type="multiple" defaultValue={['font', 'spacing', 'alignment']} className="space-y-1">
+          {/* Font */}
+          <AccordionItem value="font" className="border rounded-md px-3">
+            <AccordionTrigger className="py-2 text-sm font-medium hover:no-underline">
+              Font
+            </AccordionTrigger>
+            <AccordionContent className="pb-3 space-y-3">
+              {/* Font Family */}
+              <TrackedField
+                fieldName="fontFamily"
+                defaultValue={defaultTypographySettings.fontFamily}
+                currentValue={value.fontFamily}
+                isModified={isModified('fontFamily')}
+                onReset={handleResetField}
+              >
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Font Family</Label>
+                  <Select
+                    value={value.fontFamily || 'inherit'}
+                    onValueChange={(val) => handleChange('fontFamily', val)}
+                  >
+                    <SelectTrigger className={cn('h-8', isModified('fontFamily') && 'border-blue-400')}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {commonFontFamilies.map((font) => (
+                        <SelectItem key={font.value} value={font.value}>
+                          <span style={{ fontFamily: font.value }}>{font.label}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <div className="flex gap-2">
+                    <Input
+                      value={customFontFamily}
+                      onChange={(e) => setCustomFontFamily(e.target.value)}
+                      placeholder="Custom font family..."
+                      className="h-8 text-xs flex-1"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 px-2"
+                      onClick={() => {
+                        if (customFontFamily) {
+                          handleChange('fontFamily', customFontFamily);
+                          setCustomFontFamily('');
+                        }
+                      }}
+                    >
+                      Apply
+                    </Button>
+                  </div>
+                </div>
+              </TrackedField>
+
+              {/* Font Size */}
+              <TrackedField
+                fieldName="fontSize"
+                defaultValue={defaultTypographySettings.fontSize}
+                currentValue={value.fontSize}
+                isModified={isModified('fontSize')}
+                onReset={handleResetField}
+              >
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Font Size</Label>
                   <Input
-                    value={customFontFamily}
-                    onChange={(e) => setCustomFontFamily(e.target.value)}
-                    placeholder="Custom font family..."
-                    className="h-8 text-xs flex-1"
+                    value={value.fontSize || ''}
+                    onChange={(e) => handleChange('fontSize', e.target.value)}
+                    placeholder="16px, 1rem, etc."
+                    className={cn('h-8 text-xs', isModified('fontSize') && 'border-blue-400')}
                   />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 px-2"
-                    onClick={() => {
-                      if (customFontFamily) {
-                        handleChange('fontFamily', customFontFamily);
-                        setCustomFontFamily('');
-                      }
+                </div>
+              </TrackedField>
+
+              {/* Font Weight */}
+              <TrackedField
+                fieldName="fontWeight"
+                defaultValue={defaultTypographySettings.fontWeight}
+                currentValue={value.fontWeight}
+                isModified={isModified('fontWeight')}
+                onReset={handleResetField}
+              >
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Font Weight</Label>
+                  <Select
+                    value={String(value.fontWeight || 'normal')}
+                    onValueChange={(val) => {
+                      const numVal = parseInt(val);
+                      handleChange('fontWeight', isNaN(numVal) ? (val as 'normal' | 'bold') : numVal as TypographySettings['fontWeight']);
                     }}
                   >
-                    Apply
-                  </Button>
+                    <SelectTrigger className={cn('h-8', isModified('fontWeight') && 'border-blue-400')}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {fontWeightOptions.map((weight) => (
+                        <SelectItem key={weight.value} value={String(weight.value)}>
+                          {weight.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              </div>
-            </TrackedField>
+              </TrackedField>
 
-            {/* Font Size */}
-            <TrackedField
-              fieldName="fontSize"
-              defaultValue={defaultTypographySettings.fontSize}
-              currentValue={value.fontSize}
-              isModified={isModified('fontSize')}
-              onReset={handleResetField}
-            >
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Font Size</Label>
-                <Input
-                  value={value.fontSize || ''}
-                  onChange={(e) => handleChange('fontSize', e.target.value)}
-                  placeholder="16px, 1rem, etc."
-                  className={cn('h-8 text-xs', isModified('fontSize') && 'border-blue-400')}
-                />
-              </div>
-            </TrackedField>
-
-            {/* Font Weight */}
-            <TrackedField
-              fieldName="fontWeight"
-              defaultValue={defaultTypographySettings.fontWeight}
-              currentValue={value.fontWeight}
-              isModified={isModified('fontWeight')}
-              onReset={handleResetField}
-            >
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Font Weight</Label>
-                <Select
-                  value={String(value.fontWeight || 'normal')}
-                  onValueChange={(val) => {
-                    const numVal = parseInt(val);
-                    handleChange('fontWeight', isNaN(numVal) ? (val as 'normal' | 'bold') : numVal as TypographySettings['fontWeight']);
-                  }}
-                >
-                  <SelectTrigger className={cn('h-8', isModified('fontWeight') && 'border-blue-400')}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {fontWeightOptions.map((weight) => (
-                      <SelectItem key={weight.value} value={String(weight.value)}>
-                        {weight.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </TrackedField>
-
-            {/* Font Style */}
-            <TrackedField
-              fieldName="fontStyle"
-              defaultValue={defaultTypographySettings.fontStyle}
-              currentValue={value.fontStyle}
-              isModified={isModified('fontStyle')}
-              onReset={handleResetField}
-            >
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Font Style</Label>
-                <Select
-                  value={value.fontStyle || 'normal'}
-                  onValueChange={(val) => handleChange('fontStyle', val as TypographySettings['fontStyle'])}
-                >
-                  <SelectTrigger className={cn('h-8', isModified('fontStyle') && 'border-blue-400')}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {fontStyleOptions.map((style) => (
-                      <SelectItem key={style.value} value={style.value}>
-                        {style.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </TrackedField>
-
-            {/* Color */}
-            <TrackedField
-              fieldName="color"
-              defaultValue={defaultTypographySettings.color}
-              currentValue={value.color}
-              isModified={isModified('color')}
-              onReset={handleResetField}
-            >
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Color</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <button className={cn(
-                      'w-full h-8 rounded border flex items-center gap-2 px-2',
-                      isModified('color') && 'border-blue-400'
-                    )}>
-                      <div
-                        className="w-5 h-5 rounded border"
-                        style={{ backgroundColor: value.color || 'inherit' }}
-                      />
-                      <span className="text-xs flex-1 text-left">{value.color || 'Inherit'}</span>
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-3" align="start">
-                    <HexColorPicker
-                      color={value.color || '#000000'}
-                      onChange={(color) => handleChange('color', color)}
-                    />
-                    <Input
-                      value={value.color || ''}
-                      onChange={(e) => handleChange('color', e.target.value)}
-                      placeholder="inherit"
-                      className="mt-2 h-8 text-xs"
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </TrackedField>
-          </AccordionContent>
-        </AccordionItem>
-
-        {/* Spacing */}
-        <AccordionItem value="spacing" className="border rounded-md px-3">
-          <AccordionTrigger className="py-2 text-sm font-medium hover:no-underline">
-            Spacing
-          </AccordionTrigger>
-          <AccordionContent className="pb-3 space-y-3">
-            {/* Line Height */}
-            <TrackedField
-              fieldName="lineHeight"
-              defaultValue={defaultTypographySettings.lineHeight}
-              currentValue={value.lineHeight}
-              isModified={isModified('lineHeight')}
-              onReset={handleResetField}
-            >
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Line Height</Label>
-                <Input
-                  value={value.lineHeight || ''}
-                  onChange={(e) => handleChange('lineHeight', e.target.value)}
-                  placeholder="1.5, 24px, etc."
-                  className={cn('h-8 text-xs', isModified('lineHeight') && 'border-blue-400')}
-                />
-              </div>
-            </TrackedField>
-
-            {/* Letter Spacing */}
-            <TrackedField
-              fieldName="letterSpacing"
-              defaultValue={defaultTypographySettings.letterSpacing}
-              currentValue={value.letterSpacing}
-              isModified={isModified('letterSpacing')}
-              onReset={handleResetField}
-            >
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Letter Spacing</Label>
-                <Input
-                  value={value.letterSpacing || ''}
-                  onChange={(e) => handleChange('letterSpacing', e.target.value)}
-                  placeholder="0px, 0.1em, etc."
-                  className={cn('h-8 text-xs', isModified('letterSpacing') && 'border-blue-400')}
-                />
-              </div>
-            </TrackedField>
-
-            {/* Word Spacing */}
-            <TrackedField
-              fieldName="wordSpacing"
-              defaultValue={defaultTypographySettings.wordSpacing}
-              currentValue={value.wordSpacing}
-              isModified={isModified('wordSpacing')}
-              onReset={handleResetField}
-            >
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Word Spacing</Label>
-                <Input
-                  value={value.wordSpacing || ''}
-                  onChange={(e) => handleChange('wordSpacing', e.target.value)}
-                  placeholder="normal, 2px, etc."
-                  className={cn('h-8 text-xs', isModified('wordSpacing') && 'border-blue-400')}
-                />
-              </div>
-            </TrackedField>
-          </AccordionContent>
-        </AccordionItem>
-
-        {/* Alignment & Transform */}
-        <AccordionItem value="alignment" className="border rounded-md px-3">
-          <AccordionTrigger className="py-2 text-sm font-medium hover:no-underline">
-            Alignment & Transform
-          </AccordionTrigger>
-          <AccordionContent className="pb-3 space-y-3">
-            {/* Text Align */}
-            <TrackedField
-              fieldName="textAlign"
-              defaultValue={defaultTypographySettings.textAlign}
-              currentValue={value.textAlign}
-              isModified={isModified('textAlign')}
-              onReset={handleResetField}
-            >
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Text Align</Label>
-                <div className="flex gap-1">
-                  {[
-                    { value: 'left', icon: AlignLeft },
-                    { value: 'center', icon: AlignCenter },
-                    { value: 'right', icon: AlignRight },
-                    { value: 'justify', icon: AlignJustify },
-                  ].map((align) => (
-                    <Button
-                      key={align.value}
-                      variant={value.textAlign === align.value ? 'default' : 'outline'}
-                      size="sm"
-                      className={cn(
-                        'h-8 flex-1',
-                        value.textAlign === align.value && isModified('textAlign') && 'ring-1 ring-blue-400'
-                      )}
-                      onClick={() => handleChange('textAlign', align.value as TypographySettings['textAlign'])}
-                    >
-                      <align.icon className="h-4 w-4" />
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            </TrackedField>
-
-            {/* Text Transform */}
-            <TrackedField
-              fieldName="textTransform"
-              defaultValue={defaultTypographySettings.textTransform}
-              currentValue={value.textTransform}
-              isModified={isModified('textTransform')}
-              onReset={handleResetField}
-            >
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Text Transform</Label>
-                <Select
-                  value={value.textTransform || 'none'}
-                  onValueChange={(val) => handleChange('textTransform', val as TypographySettings['textTransform'])}
-                >
-                  <SelectTrigger className={cn('h-8', isModified('textTransform') && 'border-blue-400')}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {textTransformOptions.map((transform) => (
-                      <SelectItem key={transform.value} value={transform.value}>
-                        {transform.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </TrackedField>
-          </AccordionContent>
-        </AccordionItem>
-
-        {/* Decoration */}
-        <AccordionItem value="decoration" className="border rounded-md px-3">
-          <AccordionTrigger className="py-2 text-sm font-medium hover:no-underline">
-            Decoration
-          </AccordionTrigger>
-          <AccordionContent className="pb-3 space-y-3">
-            {/* Text Decoration */}
-            <TrackedField
-              fieldName="textDecoration"
-              defaultValue={defaultTypographySettings.textDecoration}
-              currentValue={value.textDecoration}
-              isModified={isModified('textDecoration')}
-              onReset={handleResetField}
-            >
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Text Decoration</Label>
-                <Select
-                  value={value.textDecoration || 'none'}
-                  onValueChange={(val) => handleChange('textDecoration', val as TypographySettings['textDecoration'])}
-                >
-                  <SelectTrigger className={cn('h-8', isModified('textDecoration') && 'border-blue-400')}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {textDecorationOptions.map((decoration) => (
-                      <SelectItem key={decoration.value} value={decoration.value}>
-                        {decoration.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </TrackedField>
-
-            {value.textDecoration && value.textDecoration !== 'none' && (
-              <>
-                {/* Decoration Style */}
-                <TrackedField
-                  fieldName="textDecorationStyle"
-                  defaultValue="solid"
-                  currentValue={value.textDecorationStyle}
-                  isModified={isModified('textDecorationStyle')}
-                  onReset={handleResetField}
-                >
-                  <div className="space-y-2">
-                    <Label className="text-xs text-muted-foreground">Decoration Style</Label>
-                    <Select
-                      value={value.textDecorationStyle || 'solid'}
-                      onValueChange={(val) => handleChange('textDecorationStyle', val as TypographySettings['textDecorationStyle'])}
-                    >
-                      <SelectTrigger className={cn('h-8', isModified('textDecorationStyle') && 'border-blue-400')}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {textDecorationStyleOptions.map((style) => (
-                          <SelectItem key={style.value} value={style.value}>
-                            {style.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </TrackedField>
-
-                {/* Decoration Color */}
-                <TrackedField
-                  fieldName="textDecorationColor"
-                  defaultValue=""
-                  currentValue={value.textDecorationColor}
-                  isModified={isModified('textDecorationColor')}
-                  onReset={handleResetField}
-                >
-                  <div className="space-y-2">
-                    <Label className="text-xs text-muted-foreground">Decoration Color</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <button className={cn(
-                          'w-full h-8 rounded border flex items-center gap-2 px-2',
-                          isModified('textDecorationColor') && 'border-blue-400'
-                        )}>
-                          <div
-                            className="w-5 h-5 rounded border"
-                            style={{ backgroundColor: value.textDecorationColor || 'currentColor' }}
-                          />
-                          <span className="text-xs flex-1 text-left">
-                            {value.textDecorationColor || 'Inherit'}
-                          </span>
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-3" align="start">
-                        <HexColorPicker
-                          color={value.textDecorationColor || '#000000'}
-                          onChange={(color) => handleChange('textDecorationColor', color)}
-                        />
-                        <Input
-                          value={value.textDecorationColor || ''}
-                          onChange={(e) => handleChange('textDecorationColor', e.target.value)}
-                          placeholder="inherit"
-                          className="mt-2 h-8 text-xs"
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                </TrackedField>
-              </>
-            )}
-          </AccordionContent>
-        </AccordionItem>
-
-        {/* Text Shadow */}
-        <AccordionItem value="shadow" className="border rounded-md px-3">
-          <AccordionTrigger className="py-2 text-sm font-medium hover:no-underline">
-            Text Shadow
-          </AccordionTrigger>
-          <AccordionContent className="pb-3 space-y-3">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs text-muted-foreground">Shadows</Label>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleAddShadow}
-                className="h-6 px-2 text-xs"
+              {/* Font Style */}
+              <TrackedField
+                fieldName="fontStyle"
+                defaultValue={defaultTypographySettings.fontStyle}
+                currentValue={value.fontStyle}
+                isModified={isModified('fontStyle')}
+                onReset={handleResetField}
               >
-                <Plus className="h-3 w-3 mr-1" />
-                Add
-              </Button>
-            </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Font Style</Label>
+                  <Select
+                    value={value.fontStyle || 'normal'}
+                    onValueChange={(val) => handleChange('fontStyle', val as TypographySettings['fontStyle'])}
+                  >
+                    <SelectTrigger className={cn('h-8', isModified('fontStyle') && 'border-blue-400')}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {fontStyleOptions.map((style) => (
+                        <SelectItem key={style.value} value={style.value}>
+                          {style.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </TrackedField>
 
-            {(!value.textShadow || value.textShadow.length === 0) ? (
-              <div className="text-xs text-muted-foreground text-center py-4 border rounded-md border-dashed">
-                No text shadows
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {value.textShadow.map((shadow, index) => (
-                  <div key={shadow.id} className="border rounded-md p-2 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium">Shadow {index + 1}</span>
+              {/* Color */}
+              <TrackedField
+                fieldName="color"
+                defaultValue={defaultTypographySettings.color}
+                currentValue={value.color}
+                isModified={isModified('color')}
+                onReset={handleResetField}
+              >
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Color</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button className={cn(
+                        'w-full h-8 rounded border flex items-center gap-2 px-2',
+                        isModified('color') && 'border-blue-400'
+                      )}>
+                        <div
+                          className="w-5 h-5 rounded border"
+                          style={{ backgroundColor: value.color || 'inherit' }}
+                        />
+                        <span className="text-xs flex-1 text-left">{value.color || 'Inherit'}</span>
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-3" align="start">
+                      <HexColorPicker
+                        color={value.color || '#000000'}
+                        onChange={(color) => handleChange('color', color)}
+                      />
+                      <Input
+                        value={value.color || ''}
+                        onChange={(e) => handleChange('color', e.target.value)}
+                        placeholder="inherit"
+                        className="mt-2 h-8 text-xs"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </TrackedField>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Spacing */}
+          <AccordionItem value="spacing" className="border rounded-md px-3">
+            <AccordionTrigger className="py-2 text-sm font-medium hover:no-underline">
+              Spacing
+            </AccordionTrigger>
+            <AccordionContent className="pb-3 space-y-3">
+              {/* Line Height */}
+              <TrackedField
+                fieldName="lineHeight"
+                defaultValue={defaultTypographySettings.lineHeight}
+                currentValue={value.lineHeight}
+                isModified={isModified('lineHeight')}
+                onReset={handleResetField}
+              >
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Line Height</Label>
+                  <Input
+                    value={value.lineHeight || ''}
+                    onChange={(e) => handleChange('lineHeight', e.target.value)}
+                    placeholder="1.5, 24px, etc."
+                    className={cn('h-8 text-xs', isModified('lineHeight') && 'border-blue-400')}
+                  />
+                </div>
+              </TrackedField>
+
+              {/* Letter Spacing */}
+              <TrackedField
+                fieldName="letterSpacing"
+                defaultValue={defaultTypographySettings.letterSpacing}
+                currentValue={value.letterSpacing}
+                isModified={isModified('letterSpacing')}
+                onReset={handleResetField}
+              >
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Letter Spacing</Label>
+                  <Input
+                    value={value.letterSpacing || ''}
+                    onChange={(e) => handleChange('letterSpacing', e.target.value)}
+                    placeholder="0px, 0.1em, etc."
+                    className={cn('h-8 text-xs', isModified('letterSpacing') && 'border-blue-400')}
+                  />
+                </div>
+              </TrackedField>
+
+              {/* Word Spacing */}
+              <TrackedField
+                fieldName="wordSpacing"
+                defaultValue={defaultTypographySettings.wordSpacing}
+                currentValue={value.wordSpacing}
+                isModified={isModified('wordSpacing')}
+                onReset={handleResetField}
+              >
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Word Spacing</Label>
+                  <Input
+                    value={value.wordSpacing || ''}
+                    onChange={(e) => handleChange('wordSpacing', e.target.value)}
+                    placeholder="normal, 2px, etc."
+                    className={cn('h-8 text-xs', isModified('wordSpacing') && 'border-blue-400')}
+                  />
+                </div>
+              </TrackedField>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Alignment & Transform */}
+          <AccordionItem value="alignment" className="border rounded-md px-3">
+            <AccordionTrigger className="py-2 text-sm font-medium hover:no-underline">
+              Alignment & Transform
+            </AccordionTrigger>
+            <AccordionContent className="pb-3 space-y-3">
+              {/* Text Align */}
+              <TrackedField
+                fieldName="textAlign"
+                defaultValue={defaultTypographySettings.textAlign}
+                currentValue={value.textAlign}
+                isModified={isModified('textAlign')}
+                onReset={handleResetField}
+              >
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Text Align</Label>
+                  <div className="flex gap-1">
+                    {[
+                      { value: 'left', icon: AlignLeft },
+                      { value: 'center', icon: AlignCenter },
+                      { value: 'right', icon: AlignRight },
+                      { value: 'justify', icon: AlignJustify },
+                    ].map((align) => (
                       <Button
-                        variant="ghost"
+                        key={align.value}
+                        variant={value.textAlign === align.value ? 'default' : 'outline'}
                         size="sm"
-                        onClick={() => handleRemoveShadow(shadow.id)}
-                        className="h-6 w-6 p-0 text-destructive"
+                        className={cn(
+                          'h-8 flex-1',
+                          value.textAlign === align.value && isModified('textAlign') && 'ring-1 ring-blue-400'
+                        )}
+                        onClick={() => handleChange('textAlign', align.value as TypographySettings['textAlign'])}
                       >
-                        <X className="h-3 w-3" />
+                        <align.icon className="h-4 w-4" />
                       </Button>
-                    </div>
+                    ))}
+                  </div>
+                </div>
+              </TrackedField>
 
-                    {/* Color */}
-                    <div className="flex items-center gap-2">
+              {/* Text Transform */}
+              <TrackedField
+                fieldName="textTransform"
+                defaultValue={defaultTypographySettings.textTransform}
+                currentValue={value.textTransform}
+                isModified={isModified('textTransform')}
+                onReset={handleResetField}
+              >
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Text Transform</Label>
+                  <Select
+                    value={value.textTransform || 'none'}
+                    onValueChange={(val) => handleChange('textTransform', val as TypographySettings['textTransform'])}
+                  >
+                    <SelectTrigger className={cn('h-8', isModified('textTransform') && 'border-blue-400')}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {textTransformOptions.map((transform) => (
+                        <SelectItem key={transform.value} value={transform.value}>
+                          {transform.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </TrackedField>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Decoration */}
+          <AccordionItem value="decoration" className="border rounded-md px-3">
+            <AccordionTrigger className="py-2 text-sm font-medium hover:no-underline">
+              Decoration
+            </AccordionTrigger>
+            <AccordionContent className="pb-3 space-y-3">
+              {/* Text Decoration */}
+              <TrackedField
+                fieldName="textDecoration"
+                defaultValue={defaultTypographySettings.textDecoration}
+                currentValue={value.textDecoration}
+                isModified={isModified('textDecoration')}
+                onReset={handleResetField}
+              >
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Text Decoration</Label>
+                  <Select
+                    value={value.textDecoration || 'none'}
+                    onValueChange={(val) => handleChange('textDecoration', val as TypographySettings['textDecoration'])}
+                  >
+                    <SelectTrigger className={cn('h-8', isModified('textDecoration') && 'border-blue-400')}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {textDecorationOptions.map((decoration) => (
+                        <SelectItem key={decoration.value} value={decoration.value}>
+                          {decoration.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </TrackedField>
+
+              {value.textDecoration && value.textDecoration !== 'none' && (
+                <>
+                  {/* Decoration Style */}
+                  <TrackedField
+                    fieldName="textDecorationStyle"
+                    defaultValue="solid"
+                    currentValue={value.textDecorationStyle}
+                    isModified={isModified('textDecorationStyle')}
+                    onReset={handleResetField}
+                  >
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Decoration Style</Label>
+                      <Select
+                        value={value.textDecorationStyle || 'solid'}
+                        onValueChange={(val) => handleChange('textDecorationStyle', val as TypographySettings['textDecorationStyle'])}
+                      >
+                        <SelectTrigger className={cn('h-8', isModified('textDecorationStyle') && 'border-blue-400')}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {textDecorationStyleOptions.map((style) => (
+                            <SelectItem key={style.value} value={style.value}>
+                              {style.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </TrackedField>
+
+                  {/* Decoration Color */}
+                  <TrackedField
+                    fieldName="textDecorationColor"
+                    defaultValue=""
+                    currentValue={value.textDecorationColor}
+                    isModified={isModified('textDecorationColor')}
+                    onReset={handleResetField}
+                  >
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Decoration Color</Label>
                       <Popover>
                         <PopoverTrigger asChild>
-                          <button
-                            className="w-6 h-6 rounded border shadow-sm"
-                            style={{ backgroundColor: shadow.color }}
-                          />
+                          <button className={cn(
+                            'w-full h-8 rounded border flex items-center gap-2 px-2',
+                            isModified('textDecorationColor') && 'border-blue-400'
+                          )}>
+                            <div
+                              className="w-5 h-5 rounded border"
+                              style={{ backgroundColor: value.textDecorationColor || 'currentColor' }}
+                            />
+                            <span className="text-xs flex-1 text-left">
+                              {value.textDecorationColor || 'Inherit'}
+                            </span>
+                          </button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-3" align="start">
                           <HexColorPicker
-                            color={shadow.color}
-                            onChange={(color) => handleUpdateShadow(shadow.id, { color })}
+                            color={value.textDecorationColor || '#000000'}
+                            onChange={(color) => handleChange('textDecorationColor', color)}
                           />
                           <Input
-                            value={shadow.color}
-                            onChange={(e) => handleUpdateShadow(shadow.id, { color: e.target.value })}
-                            placeholder="rgba(0,0,0,0.25)"
+                            value={value.textDecorationColor || ''}
+                            onChange={(e) => handleChange('textDecorationColor', e.target.value)}
+                            placeholder="inherit"
                             className="mt-2 h-8 text-xs"
                           />
                         </PopoverContent>
                       </Popover>
-                      <span className="text-xs text-muted-foreground flex-1">{shadow.color}</span>
                     </div>
+                  </TrackedField>
+                </>
+              )}
+            </AccordionContent>
+          </AccordionItem>
 
-                    {/* X, Y, Blur */}
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="space-y-1">
-                        <Label className="text-[10px] text-muted-foreground">X</Label>
-                        <div className="flex items-center gap-1">
-                          <Slider
-                            value={[shadow.x]}
-                            min={-20}
-                            max={20}
-                            step={1}
-                            onValueChange={([val]) => handleUpdateShadow(shadow.id, { x: val })}
-                            className="flex-1"
-                          />
-                          <span className="text-[10px] w-6 text-right">{shadow.x}</span>
-                        </div>
+          {/* Text Shadow */}
+          <AccordionItem value="shadow" className="border rounded-md px-3">
+            <AccordionTrigger className="py-2 text-sm font-medium hover:no-underline">
+              Text Shadow
+            </AccordionTrigger>
+            <AccordionContent className="pb-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs text-muted-foreground">Shadows</Label>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleAddShadow}
+                  className="h-6 px-2 text-xs"
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Add
+                </Button>
+              </div>
+
+              {(!value.textShadow || value.textShadow.length === 0) ? (
+                <div className="text-xs text-muted-foreground text-center py-4 border rounded-md border-dashed">
+                  No text shadows
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {value.textShadow.map((shadow, index) => (
+                    <div key={shadow.id} className="border rounded-md p-2 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium">Shadow {index + 1}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveShadow(shadow.id)}
+                          className="h-6 w-6 p-0 text-destructive"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
                       </div>
-                      <div className="space-y-1">
-                        <Label className="text-[10px] text-muted-foreground">Y</Label>
-                        <div className="flex items-center gap-1">
-                          <Slider
-                            value={[shadow.y]}
-                            min={-20}
-                            max={20}
-                            step={1}
-                            onValueChange={([val]) => handleUpdateShadow(shadow.id, { y: val })}
-                            className="flex-1"
-                          />
-                          <span className="text-[10px] w-6 text-right">{shadow.y}</span>
-                        </div>
+
+                      {/* Color */}
+                      <div className="flex items-center gap-2">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button
+                              className="w-6 h-6 rounded border shadow-sm"
+                              style={{ backgroundColor: shadow.color }}
+                            />
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-3" align="start">
+                            <HexColorPicker
+                              color={shadow.color}
+                              onChange={(color) => handleUpdateShadow(shadow.id, { color })}
+                            />
+                            <Input
+                              value={shadow.color}
+                              onChange={(e) => handleUpdateShadow(shadow.id, { color: e.target.value })}
+                              placeholder="rgba(0,0,0,0.25)"
+                              className="mt-2 h-8 text-xs"
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <span className="text-xs text-muted-foreground flex-1">{shadow.color}</span>
                       </div>
-                      <div className="space-y-1">
-                        <Label className="text-[10px] text-muted-foreground">Blur</Label>
-                        <div className="flex items-center gap-1">
-                          <Slider
-                            value={[shadow.blur]}
-                            min={0}
-                            max={30}
-                            step={1}
-                            onValueChange={([val]) => handleUpdateShadow(shadow.id, { blur: val })}
-                            className="flex-1"
-                          />
-                          <span className="text-[10px] w-6 text-right">{shadow.blur}</span>
+
+                      {/* X, Y, Blur */}
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">X</Label>
+                          <div className="flex items-center gap-1">
+                            <Slider
+                              value={[shadow.x]}
+                              min={-20}
+                              max={20}
+                              step={1}
+                              onValueChange={([val]) => handleUpdateShadow(shadow.id, { x: val })}
+                              className="flex-1"
+                            />
+                            <span className="text-[10px] w-6 text-right">{shadow.x}</span>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">Y</Label>
+                          <div className="flex items-center gap-1">
+                            <Slider
+                              value={[shadow.y]}
+                              min={-20}
+                              max={20}
+                              step={1}
+                              onValueChange={([val]) => handleUpdateShadow(shadow.id, { y: val })}
+                              className="flex-1"
+                            />
+                            <span className="text-[10px] w-6 text-right">{shadow.y}</span>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">Blur</Label>
+                          <div className="flex items-center gap-1">
+                            <Slider
+                              value={[shadow.blur]}
+                              min={0}
+                              max={30}
+                              step={1}
+                              onValueChange={([val]) => handleUpdateShadow(shadow.id, { blur: val })}
+                              className="flex-1"
+                            />
+                            <span className="text-[10px] w-6 text-right">{shadow.blur}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
-    </div>
-  );
-});
+                  ))}
+                </div>
+              )}
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </div>
+    );
+  });

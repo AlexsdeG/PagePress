@@ -6,12 +6,15 @@ import { useNode } from '@craftjs/core';
 import { generateStyles, type GeneratedStyles } from '../utils/styleGenerator';
 import type { AdvancedStyling } from '../inspector/styles/types';
 import type { ElementMetadata, PseudoClass } from '../inspector/sidebar/types';
+import { useGlobalSettingsStore } from '../global/globalSettingsStore';
 
 interface UseAdvancedStylingOptions {
   /** Default styles to merge with */
   defaultStyle?: React.CSSProperties;
   /** Additional CSS classes */
   additionalClasses?: string;
+  /** Component type for global settings inheritance */
+  componentType?: 'container' | 'button' | 'link' | 'form';
 }
 
 interface UseAdvancedStylingResult {
@@ -54,7 +57,8 @@ interface UseAdvancedStylingResult {
 export function useAdvancedStyling(
   options: UseAdvancedStylingOptions = {}
 ): UseAdvancedStylingResult {
-  const { defaultStyle = {}, additionalClasses = '' } = options;
+  const { defaultStyle = {}, additionalClasses = '', componentType } = options;
+  const themeSettings = useGlobalSettingsStore((state) => state.themeSettings);
 
   const {
     advancedStyling,
@@ -84,7 +88,7 @@ export function useAdvancedStyling(
 
   // Inject pseudo CSS if present
   const styleTagRef = useRef<HTMLStyleElement | null>(null);
-  
+
   useEffect(() => {
     if (generatedStyles.pseudoCSS) {
       // Create or update style tag
@@ -110,11 +114,42 @@ export function useAdvancedStyling(
 
   // Combine default style with generated styles
   const combinedStyle = useMemo<React.CSSProperties>(() => {
+    let globalDefaults: React.CSSProperties = {};
+
+    if (componentType && themeSettings?.elements?.[componentType]) {
+      // Map global settings to CSS properties
+      // We need to be careful about property names matching CSS properties
+      const defaults = themeSettings.elements[componentType];
+
+      // Basic mapping - this might need refinement based on GlobalElementDefaults structure
+      // For container: { maxWidth, padding }
+      // For button: { padding, borderRadius, fontSize }
+      // For link: { color, textDecoration } (hoverColor handled via pseudo)
+
+      if (componentType === 'container') {
+        const containerDefaults = defaults as { maxWidth: string; padding: string };
+        if (containerDefaults.padding) globalDefaults.padding = containerDefaults.padding;
+        // maxWidth usually applies to width or max-width depending on layout
+        // But here we just set maxWidth
+        if (containerDefaults.maxWidth) globalDefaults.maxWidth = containerDefaults.maxWidth;
+      } else if (componentType === 'button') {
+        const btnDefaults = defaults as { padding: string; borderRadius: string; fontSize: string };
+        if (btnDefaults.padding) globalDefaults.padding = btnDefaults.padding;
+        if (btnDefaults.borderRadius) globalDefaults.borderRadius = btnDefaults.borderRadius;
+        if (btnDefaults.fontSize) globalDefaults.fontSize = btnDefaults.fontSize;
+      } else if (componentType === 'link') {
+        const linkDefaults = defaults as { color: string; textDecoration: string };
+        if (linkDefaults.color) globalDefaults.color = linkDefaults.color;
+        if (linkDefaults.textDecoration) globalDefaults.textDecoration = linkDefaults.textDecoration;
+      }
+    }
+
     return {
       ...defaultStyle,
+      ...globalDefaults,
       ...generatedStyles.style,
     };
-  }, [defaultStyle, generatedStyles.style]);
+  }, [defaultStyle, generatedStyles.style, themeSettings, componentType]);
 
   // Combine classes
   const combinedClassName = useMemo(() => {
@@ -129,6 +164,10 @@ export function useAdvancedStyling(
 
   // Check if custom transition is enabled
   const hasCustomTransition = Boolean(advancedStyling?.transition?.enabled);
+
+  // If custom transition is enabled, we need to ensure it's applied to the style
+  // The generator already handles this, but we need to make sure the component knows about it
+  // so it doesn't apply default Tailwind transitions that might conflict
 
   return {
     style: combinedStyle,

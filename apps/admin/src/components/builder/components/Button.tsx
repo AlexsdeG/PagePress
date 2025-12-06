@@ -37,7 +37,7 @@ export const BuilderButton: FC<ExtendedButtonProps> & { craft?: Record<string, u
   iconSize = 16,
 }) => {
   const { isPreviewMode } = useBuilderStore();
-  
+
   const {
     connectors: { connect, drag },
     id,
@@ -51,14 +51,16 @@ export const BuilderButton: FC<ExtendedButtonProps> & { craft?: Record<string, u
   }));
 
   // Get advanced styling
-  const { 
-    style: advancedStyle, 
+  const {
+    style: advancedStyle,
     className: advancedClassName,
     attributes,
     elementId,
     hasAdvancedStyling,
     hasCustomTransition,
-  } = useAdvancedStyling();
+  } = useAdvancedStyling({
+    componentType: 'button',
+  });
 
   // Base styles
   const baseStyles = 'inline-flex items-center justify-center font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50';
@@ -85,21 +87,21 @@ export const BuilderButton: FC<ExtendedButtonProps> & { craft?: Record<string, u
   // Get outline styles based on selection/hover state
   const getOutlineStyles = (): React.CSSProperties => {
     if (isPreviewMode) return {};
-    
+
     if (isSelected) {
       return {
         outline: '2px solid #2563eb',
         outlineOffset: '2px',
       };
     }
-    
+
     if (isHovered) {
       return {
         outline: '2px dashed #60a5fa',
         outlineOffset: '2px',
       };
     }
-    
+
     return {};
   };
 

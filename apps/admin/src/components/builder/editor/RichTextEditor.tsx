@@ -53,7 +53,7 @@ export function RichTextEditor({
   onEscape,
 }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
-  
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -90,7 +90,7 @@ export function RichTextEditor({
       onFocus?.();
     },
     onBlur: ({ event }) => {
-      // Check if the blur target is within the toolbar
+      // Check if the blur target is within the toolbar or editor wrapper
       const relatedTarget = event?.relatedTarget as HTMLElement | null;
       if (relatedTarget && editorRef.current?.contains(relatedTarget)) {
         // Don't trigger onBlur if focus moved to toolbar
@@ -160,8 +160,8 @@ export function RichTextEditor({
     <div
       ref={editorRef}
       className="relative"
-      // Stop propagation to prevent Craft.js from capturing events
-      onMouseDown={(e) => e.stopPropagation()}
+      // We need to allow mousedown to propagate so the editor can receive focus
+      // But we handle drag prevention in the editor extensions or parent
       onClick={(e) => e.stopPropagation()}
     >
       {/* Fixed toolbar above the editor */}
