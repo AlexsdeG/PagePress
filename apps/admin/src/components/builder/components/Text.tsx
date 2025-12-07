@@ -30,17 +30,17 @@ interface ExtendedTextProps extends TextProps {
 export const Text: FC<ExtendedTextProps> & { craft?: Record<string, unknown> } = ({
   text = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
   htmlContent,
-  fontSize = 16,
+  fontSize,
   fontWeight = 'normal',
   textAlign = 'left',
-  color = '#000000',
-  lineHeight = 1.5,
+  color,
+  lineHeight,
   letterSpacing = 0,
   className = '',
   useGlobalFont = true,
 }) => {
   const { isPreviewMode, editingNodeId, setEditingNodeId } = useBuilderStore();
-  const { getBodyFontFamily, getBodyLineHeight } = useGlobalTypography();
+  const { getBodyFontFamily, getBodyLineHeight, getBaseFontSize } = useGlobalTypography();
 
   const {
     connectors: { connect, drag },
@@ -63,6 +63,23 @@ export const Text: FC<ExtendedTextProps> & { craft?: Record<string, unknown> } =
       setEditingNodeId(null);
     }
   }, [isSelected, isEditing, setEditingNodeId]);
+
+  // Initialize font size from global settings on mount
+  useEffect(() => {
+    if (!fontSize && useGlobalFont) {
+      const baseSize = getBaseFontSize();
+      if (baseSize) {
+        setProp((props: ExtendedTextProps) => {
+          props.fontSize = baseSize;
+
+          // Also update advanced styling for consistency
+          if (!props.advancedStyling) props.advancedStyling = {};
+          if (!props.advancedStyling.typography) props.advancedStyling.typography = {};
+          props.advancedStyling.typography.fontSize = `${baseSize}px`;
+        });
+      }
+    }
+  }, []); // Run once on mount
 
   // Get advanced styling
   const {
@@ -155,9 +172,9 @@ export const Text: FC<ExtendedTextProps> & { craft?: Record<string, unknown> } =
 
   // Base styles - use global typography if enabled
   const baseStyle: React.CSSProperties = hasAdvancedStyling ? {} : {
-    fontSize: `${fontSize}px`,
-    color,
-    lineHeight: useGlobalFont ? getBodyLineHeight() : lineHeight,
+    fontSize: fontSize ? `${fontSize}px` : `${getBaseFontSize()}px`,
+    color: color || 'inherit',
+    lineHeight: lineHeight || (useGlobalFont ? getBodyLineHeight() : 1.5),
     letterSpacing: `${letterSpacing}px`,
     fontFamily: useGlobalFont ? getBodyFontFamily() : undefined,
   };
@@ -195,7 +212,9 @@ export const Text: FC<ExtendedTextProps> & { craft?: Record<string, unknown> } =
   if (isEditing) {
     return (
       <div
-        ref={(ref) => { ref && connect(ref); }}
+        ref={() => {
+          // We intentionally DO NOT connect the ref in edit mode
+        }}
         id={elementId}
         className={cn(
           'relative',
@@ -269,7 +288,7 @@ export const Text: FC<ExtendedTextProps> & { craft?: Record<string, unknown> } =
     >
       {/* Selection label with pen icon */}
       {isSelected && (
-        <div className="absolute -top-6 left-0 flex items-center gap-1 z-10">
+        <div className="absolute -top-5 left-0 flex items-center gap-1 z-10">
           <span className="text-xs text-white bg-blue-600 px-1.5 py-0.5 rounded-t-lg font-medium">
             Text
           </span>

@@ -103,6 +103,7 @@ function TreeNode({
 }: TreeNodeProps) {
   const [isOpen, setIsOpen] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [editValue, setEditValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const nodeRef = useRef<HTMLDivElement>(null);
@@ -410,8 +411,11 @@ function TreeNode({
 
         {/* Quick actions with dropdown */}
         {!isRoot && !isEditing && (
-          <div className="hidden group-hover:flex items-center gap-0.5">
-            <DropdownMenu modal={false}>
+          <div className={cn(
+            "flex items-center gap-0.5",
+            isMenuOpen ? "flex" : "hidden group-hover:flex"
+          )}>
+            <DropdownMenu modal={false} onOpenChange={setIsMenuOpen}>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"

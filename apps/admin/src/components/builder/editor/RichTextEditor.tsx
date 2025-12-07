@@ -109,6 +109,8 @@ export function RichTextEditor({
           '[&_.is-editor-empty:first-child::before]:float-left',
           '[&_.is-editor-empty:first-child::before]:h-0',
           '[&_.is-editor-empty:first-child::before]:pointer-events-none',
+          // Enforce text selection and cursor
+          'cursor-text select-text',
           className
         ),
       },
@@ -123,7 +125,7 @@ export function RichTextEditor({
           // Allow click events to proceed normally
           return false;
         },
-        keydown: (view, event) => {
+        keydown: (_view, event) => {
           // Handle Escape key to exit editing
           if (event.key === 'Escape') {
             onEscape?.();
@@ -163,6 +165,11 @@ export function RichTextEditor({
       // We need to allow mousedown to propagate so the editor can receive focus
       // But we handle drag prevention in the editor extensions or parent
       onClick={(e) => e.stopPropagation()}
+      onMouseDown={(e) => {
+        e.stopPropagation();
+        // We only stop propagation to prevent the parent (Craft.js) from handling the drag/selection
+        // But we allow immediate propagation so the editor's internal handlers can fire
+      }}
     >
       {/* Fixed toolbar above the editor */}
       {showToolbar && editable && (

@@ -80,6 +80,21 @@ export const Heading: FC<ExtendedHeadingProps> & { craft?: Record<string, unknow
     }
   }, [isSelected, isEditing, setEditingNodeId]);
 
+  // Initialize font size on mount if not set (fix for spawn issue)
+  useEffect(() => {
+    if (fontSize === undefined && !fontSizeModified) {
+      setProp((props: ExtendedHeadingProps) => {
+        props.fontSize = defaultHeadingFontSizes[level];
+        props.fontSizeModified = true;
+
+        // Also update advanced styling for consistency
+        if (!props.advancedStyling) props.advancedStyling = {};
+        if (!props.advancedStyling.typography) props.advancedStyling.typography = {};
+        props.advancedStyling.typography.fontSize = `${defaultHeadingFontSizes[level]}px`;
+      });
+    }
+  }, []); // Run once on mount
+
   // Get advanced styling
   const {
     style: advancedStyle,
@@ -248,7 +263,9 @@ export const Heading: FC<ExtendedHeadingProps> & { craft?: Record<string, unknow
     return React.createElement(
       HeadingTag,
       {
-        ref: (ref: HTMLHeadingElement | null) => { if (ref) connect(ref); },
+        ref: () => {
+          // We intentionally DO NOT connect the ref in edit mode
+        },
         id: elementId,
         className: cn(
           'relative',
@@ -263,7 +280,7 @@ export const Heading: FC<ExtendedHeadingProps> & { craft?: Record<string, unknow
       },
       <>
         {/* Selection label with save/cancel buttons */}
-        <div className="absolute -top-6 left-0 flex items-center gap-1 z-10">
+        <div className="absolute -top-7 left-0 flex items-center gap-1 z-10">
           <span className="text-xs text-white bg-green-600 px-1.5 py-0.5 rounded-t-lg font-medium">
             H{level} (Editing)
           </span>
@@ -318,7 +335,7 @@ export const Heading: FC<ExtendedHeadingProps> & { craft?: Record<string, unknow
     <>
       {/* Selection label with pen icon */}
       {isSelected && (
-        <div className="absolute -top-6 left-0 flex items-center gap-1 z-10">
+        <div className="absolute -top-5 left-0 flex items-center gap-1 z-10">
           <span className="text-xs text-white bg-blue-600 px-1.5 py-0.5 rounded-t-lg font-medium">
             H{level}
           </span>

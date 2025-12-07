@@ -49,8 +49,8 @@ export function Canvas({ initialContent }: CanvasProps) {
         className="flex-1 bg-muted/50 overflow-auto p-8 relative"
         onContextMenu={handleContextMenu}
       >
-        <BuilderContextMenu>
-          <DeviceFrame>
+        <DeviceFrame>
+          <BuilderContextMenu>
             <div
               data-builder-canvas
               className={cn(
@@ -88,8 +88,8 @@ export function Canvas({ initialContent }: CanvasProps) {
                 />
               </Frame>
             </div>
-          </DeviceFrame>
-        </BuilderContextMenu>
+          </BuilderContextMenu>
+        </DeviceFrame>
       </div>
 
       {/* Breadcrumb bar - fixed at bottom, shows element hierarchy path */}

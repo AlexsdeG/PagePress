@@ -236,14 +236,13 @@
 - [x] **Store styles per breakpoint:** Desktop (base), Tablet (<992px), Mobile (<768px), Mobile Portrait (<479px)
 - [ ] **Visual Indicator:** Icon showing if value differs from desktop
 - [ ] **Inheritance:** Values cascade down from larger breakpoints
-- [ ] **Reset to Desktop:** Button to remove breakpoint-specific value
+- [ ] **Reset to Desktop:** Button to remove breakpoint-specific value (in general setting tab)
 
 ### Responsive Controls
 - [x] **Device breakpoint toggle:** Toolbar buttons to switch between breakpoints
-- [ ] **Per-property breakpoint toggle:** Click to set mobile-specific value
-- [ ] **Hide on breakpoint:** Toggle visibility per device
-- [ ] **Responsive spacing:** Different padding/margin per breakpoint
-- [ ] **Responsive typography:** Different font sizes per breakpoint
+- [ ] **Per-property breakpoint toggle:** Click to set mobile-specific value (in general setting tab and in the top tab title bar on the right side same as pseudo state system to allow to change between pseudo states or breakpoints in all of the tabs easily)
+- [ ] **Hide on breakpoint:** Toggle visibility per device (in general setting tab)
+- [ ] **Responsive spacing/typogrpahy/settings:** Different padding/margin per breakpoint. Different font sizes per breakpoint. all element settings tabs options should be allowed to differ from breakpoints. system should work similar to pseudo state system
 
 ### Preview Enhancements
 - [x] **Device Frames:** Visual phone/tablet frame around canvas

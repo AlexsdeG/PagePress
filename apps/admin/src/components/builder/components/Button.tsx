@@ -4,7 +4,8 @@
 import { useNode, useEditor } from '@craftjs/core';
 import { cn } from '@/lib/utils';
 import { useBuilderStore } from '@/stores/builder';
-import { useAdvancedStyling } from '../hooks/useAdvancedStyling';
+import { useAdvancedStyling, useGlobalTypography } from '../hooks';
+import { useEffect } from 'react';
 import { renderIcon } from '../inspector/inputs/IconPicker';
 import type { FC } from 'react';
 import type { ButtonProps } from '../types';
@@ -49,6 +50,23 @@ export const BuilderButton: FC<ExtendedButtonProps> & { craft?: Record<string, u
     isSelected: state.events.selected.has(id),
     isHovered: state.events.hovered.has(id),
   }));
+
+  // Initialize font size from global settings on mount
+  const { getBaseFontSize } = useGlobalTypography();
+  useEffect(() => {
+    // Only apply if no advanced styling for typography exists
+    const hasTypographyOverride = advancedStyling?.typography?.fontSize;
+    if (!hasTypographyOverride) {
+      const baseSize = getBaseFontSize();
+      if (baseSize) {
+        setProp((props: ExtendedButtonProps) => {
+          if (!props.advancedStyling) props.advancedStyling = {};
+          if (!props.advancedStyling.typography) props.advancedStyling.typography = {};
+          props.advancedStyling.typography.fontSize = `${baseSize}px`;
+        });
+      }
+    }
+  }, []); // Run once on mount
 
   // Get advanced styling
   const {

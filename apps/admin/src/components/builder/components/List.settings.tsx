@@ -4,7 +4,7 @@
 import { useNode } from '@craftjs/core';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '../editor';
 import {
   Select,
   SelectContent,
@@ -102,14 +102,19 @@ function ListContentSettings({
         </Select>
       </div>
 
-      {/* Items */}
+      {/* Items (Rich Text) */}
       <div className="space-y-2">
-        <Label className="text-xs">Items (one per line)</Label>
-        <Textarea
-          value={itemsText}
-          onChange={(e) => handleItemsChange(e.target.value)}
+        <Label className="text-xs">List Items</Label>
+        <RichTextEditor
+          content={props.htmlContent || `<ul>${(props.items || []).map(i => `<li>${i}</li>`).join('')}</ul>`}
+          onChange={(html) => {
+            setProp((p: ListProps) => {
+              p.htmlContent = html;
+              // We could try to parse back to items, but htmlContent is enough for display
+            });
+          }}
           placeholder="Enter list items..."
-          rows={5}
+          className="min-h-[150px] border rounded-md p-2 text-sm"
         />
       </div>
 

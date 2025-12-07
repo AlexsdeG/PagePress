@@ -105,11 +105,18 @@ function HeadingContentSettings({
             onValueChange={(value) => {
               const newLevel = Number(value) as HeadingProps['level'];
               setModifiedProp('level', newLevel);
+
+              // When level changes, we explicitly set the font size to the new level's default
+              // We mark it as modified so it takes precedence and updates the Typography UI
               setProp((p) => {
-                // If fontSize hasn't been manually modified, update it to match the new level
-                if (!p.fontSizeModified) {
-                  p.fontSize = defaultHeadingFontSizes[newLevel];
-                }
+                p.fontSizeModified = true;
+                const newSize = `${defaultHeadingFontSizes[newLevel as number]}px`;
+                p.fontSize = defaultHeadingFontSizes[newLevel as number];
+
+                // Also update advanced styling so the Typography tab reflects the change
+                if (!p.advancedStyling) p.advancedStyling = {};
+                if (!p.advancedStyling.typography) p.advancedStyling.typography = {};
+                p.advancedStyling.typography.fontSize = newSize;
               });
             }}
           >

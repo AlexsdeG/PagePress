@@ -14,7 +14,7 @@ interface UseAdvancedStylingOptions {
   /** Additional CSS classes */
   additionalClasses?: string;
   /** Component type for global settings inheritance */
-  componentType?: 'container' | 'button' | 'link' | 'form';
+  componentType?: 'container' | 'button' | 'link' | 'form' | 'heading' | 'text';
 }
 
 interface UseAdvancedStylingResult {
@@ -141,6 +141,26 @@ export function useAdvancedStyling(
         const linkDefaults = defaults as { color: string; textDecoration: string };
         if (linkDefaults.color) globalDefaults.color = linkDefaults.color;
         if (linkDefaults.textDecoration) globalDefaults.textDecoration = linkDefaults.textDecoration;
+      } else if (componentType === 'heading') {
+        // Apply global heading styles
+        if (themeSettings.typography) {
+          const typo = themeSettings.typography;
+          if (typo.fontFamily?.heading) globalDefaults.fontFamily = typo.fontFamily.heading;
+          if (typo.headingLineHeight) globalDefaults.lineHeight = typo.headingLineHeight;
+          // Note: fontSize depends on level, which we don't know here easily without passing it in options
+          // But Heading component handles its own default font size logic via getActualFontSize
+          // However, if we want advanced styling to reflect it, we might need to pass it.
+          // For now, we let Heading component handle the specific level size via its own logic
+          // unless advancedStyling overrides it.
+        }
+      } else if (componentType === 'text') {
+        // Apply global body styles
+        if (themeSettings.typography) {
+          const typo = themeSettings.typography;
+          if (typo.fontFamily?.body) globalDefaults.fontFamily = typo.fontFamily.body;
+          if (typo.bodyLineHeight) globalDefaults.lineHeight = typo.bodyLineHeight;
+          if (typo.baseFontSize) globalDefaults.fontSize = `${typo.baseFontSize}px`;
+        }
       }
     }
 
