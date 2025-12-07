@@ -50,6 +50,7 @@ export interface TextProps extends BaseComponentProps {
   color?: string;
   lineHeight?: number;
   letterSpacing?: number;
+  htmlContent?: string;
 }
 
 /**

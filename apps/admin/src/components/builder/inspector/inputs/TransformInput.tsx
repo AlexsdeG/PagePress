@@ -8,11 +8,15 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { RotateCcw } from 'lucide-react';
+import { StyleIndicator } from './StyleIndicator';
 import type { TransformSettings } from '../styles/types';
+import type { StyleSourceResult } from '../sidebar/types';
 
 interface TransformInputProps {
   value: TransformSettings;
   onChange: (value: TransformSettings) => void;
+  getStyleSource?: (path: string) => StyleSourceResult;
+  path?: string;
   className?: string;
 }
 
@@ -139,7 +143,7 @@ function ClickableSlider({ label, value, min, max, step, unit = '', onChange }: 
 /**
  * Transform Input - Translate, Rotate, Scale, Skew controls
  */
-export function TransformInput({ value, onChange, className }: TransformInputProps) {
+export function TransformInput({ value, onChange, getStyleSource, path, className }: TransformInputProps) {
   // Update a single property
   const handleChange = useCallback(
     <K extends keyof TransformSettings>(key: K, newValue: TransformSettings[K]) => {
@@ -170,7 +174,19 @@ export function TransformInput({ value, onChange, className }: TransformInputPro
     <div className={cn('space-y-4', className)}>
       {/* Header with reset */}
       <div className="flex items-center justify-between">
-        <Label className="text-sm font-medium">Transform</Label>
+        <div className="flex items-center gap-2">
+          <Label className="text-sm font-medium">Transform</Label>
+          {getStyleSource && path && (
+            <StyleIndicator
+              isModified={getStyleSource(path).source === 'user'}
+              isClassInherited={getStyleSource(path).source === 'class'}
+              isGlobalInherited={getStyleSource(path).source === 'global'}
+              isResponsiveOverride={getStyleSource(path).isResponsive}
+              className="static translate-y-0 ml-1"
+              orientation="vertical"
+            />
+          )}
+        </div>
         {hasChanges && (
           <Button
             variant="ghost"
@@ -334,7 +350,7 @@ export function TransformInput({ value, onChange, className }: TransformInputPro
             </Button>
           ))}
         </div>
-        
+
         {/* Custom origin inputs */}
         {(value.originX === 'custom' || value.originY === 'custom') && (
           <div className="grid grid-cols-2 gap-2 mt-2">
@@ -358,7 +374,7 @@ export function TransformInput({ value, onChange, className }: TransformInputPro
             </div>
           </div>
         )}
-        
+
         <Button
           variant="ghost"
           size="sm"

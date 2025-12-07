@@ -22,6 +22,8 @@ import type { HeadingProps } from '../types';
 interface ExtendedHeadingProps extends HeadingProps {
   fontSizeModified?: boolean;
   _modifiedProps?: string[];
+  advancedStyling?: any; // Using any to avoid complex type imports for now, or import AdvancedStyling
+  htmlContent?: string;
 }
 
 /**

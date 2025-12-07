@@ -234,7 +234,7 @@
 
 ### Breakpoint Architecture
 - [x] **Store styles per breakpoint:** Desktop (base), Tablet (<992px), Mobile (<768px), Mobile Portrait (<479px)
-- [ ] **Visual Indicator:** Icon showing if value differs from desktop
+- [ ] **Visual Indicator:** yellow dot right side inputs/slider/textarea/others showing if value differs from desktop
 - [ ] **Inheritance:** Values cascade down from larger breakpoints
 - [ ] **Reset to Desktop:** Button to remove breakpoint-specific value (in general setting tab)
 

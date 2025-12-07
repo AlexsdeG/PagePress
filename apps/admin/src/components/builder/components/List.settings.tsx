@@ -26,15 +26,6 @@ function ListContentSettings({
   props: ListProps;
   setProp: (cb: (props: ListProps) => void) => void;
 }) {
-  // Convert items array to text for editing
-  const itemsText = (props.items || []).join('\n');
-
-  // Handle items text change
-  const handleItemsChange = (text: string) => {
-    const items = text.split('\n').filter((item) => item.trim() !== '');
-    setProp((p: ListProps) => (p.items = items.length > 0 ? items : ['Item']));
-  };
-
   // Get available bullet styles based on list type
   const getBulletStyles = () => {
     if (props.listType === 'ol') {

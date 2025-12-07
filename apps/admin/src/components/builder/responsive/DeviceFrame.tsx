@@ -18,10 +18,8 @@ export function DeviceFrame({ children }: DeviceFrameProps) {
   const { currentBreakpoint, showDeviceFrame, previewOrientation } =
     useBreakpointStore();
 
-  // Don't show frame for desktop or when disabled
-  if (!showDeviceFrame || currentBreakpoint === 'desktop') {
-    return <>{children}</>;
-  }
+  const isDesktop = currentBreakpoint === 'desktop';
+  const isActive = showDeviceFrame && !isDesktop;
 
   const dimensions = BREAKPOINT_DIMENSIONS[currentBreakpoint];
   const isLandscape = previewOrientation === 'landscape';
@@ -31,67 +29,78 @@ export function DeviceFrame({ children }: DeviceFrameProps) {
   const height = isLandscape ? dimensions.width : dimensions.height;
 
   const isPhone =
-    currentBreakpoint === 'mobile' || currentBreakpoint === 'mobilePortrait';
-  const isTablet = currentBreakpoint === 'tablet';
+    (currentBreakpoint === 'mobile' || currentBreakpoint === 'mobilePortrait') && isActive;
+  const isTablet = currentBreakpoint === 'tablet' && isActive;
 
   return (
-    <div className="flex items-center justify-center p-8">
+    <div className={cn(
+      "transition-all duration-300",
+      isActive ? "flex items-center justify-center p-8" : "w-full h-full"
+    )}>
       <div
         className={cn(
-          'relative bg-gray-900 shadow-2xl',
+          'relative transition-all duration-300',
+          isActive ? 'bg-gray-900 shadow-2xl' : 'bg-transparent',
           // Bezel sizes
           isPhone && 'rounded-[40px] p-3',
-          isTablet && 'rounded-[30px] p-4'
+          isTablet && 'rounded-[30px] p-4',
+          !isActive && 'w-full h-full'
         )}
       >
         {/* Notch for modern phones */}
-        {isPhone && !isLandscape && (
+        {isActive && isPhone && !isLandscape && (
           <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-20 h-5 bg-gray-900 rounded-b-xl z-10" />
         )}
 
         {/* Side notch for landscape phones */}
-        {isPhone && isLandscape && (
+        {isActive && isPhone && isLandscape && (
           <div className="absolute left-1.5 top-1/2 -translate-y-1/2 h-20 w-5 bg-gray-900 rounded-r-xl z-10" />
         )}
 
         {/* Home button for tablets (iPad style) */}
-        {isTablet && !isLandscape && (
+        {isActive && isTablet && !isLandscape && (
           <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-10 h-10 rounded-full border-2 border-gray-700" />
         )}
 
         {/* Camera dot */}
-        {isPhone && !isLandscape && (
+        {isActive && isPhone && !isLandscape && (
           <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-700 rounded-full" />
         )}
 
         {/* Screen */}
         <div
           className={cn(
-            'bg-white overflow-auto',
+            'transition-all duration-300',
+            isActive ? 'bg-white overflow-auto' : 'w-full h-full bg-transparent',
             isPhone && 'rounded-4xl',
             isTablet && 'rounded-[20px]'
           )}
-          style={{
+          style={isActive ? {
             width: `${width}px`,
             height: `${height}px`,
             maxHeight: 'calc(100vh - 200px)',
+          } : {
+            width: '100%',
+            height: '100%'
           }}
         >
           {children}
         </div>
 
         {/* Power button (right side) */}
-        <div
-          className={cn(
-            'absolute bg-gray-700 rounded-l-sm',
-            isLandscape
-              ? 'top-2 right-0 w-1 h-10 rounded-t-sm'
-              : 'top-20 -right-0.5 w-1 h-16'
-          )}
-        />
+        {isActive && (
+          <div
+            className={cn(
+              'absolute bg-gray-700 rounded-l-sm',
+              isLandscape
+                ? 'top-2 right-0 w-1 h-10 rounded-t-sm'
+                : 'top-20 -right-0.5 w-1 h-16'
+            )}
+          />
+        )}
 
         {/* Volume buttons (left side for phone) */}
-        {isPhone && (
+        {isActive && isPhone && (
           <>
             <div
               className={cn(
@@ -114,9 +123,11 @@ export function DeviceFrame({ children }: DeviceFrameProps) {
       </div>
 
       {/* Device label */}
-      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-xs text-muted-foreground">
-        {width} × {height}
-      </div>
+      {isActive && (
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-xs text-muted-foreground">
+          {width} × {height}
+        </div>
+      )}
     </div>
   );
 }
@@ -125,7 +136,7 @@ export function DeviceFrame({ children }: DeviceFrameProps) {
  * Get canvas width based on current breakpoint and orientation
  */
 export function getCanvasWidth(
-  breakpoint: BreakpointId, 
+  breakpoint: BreakpointId,
   orientation: 'portrait' | 'landscape' = 'portrait'
 ): number {
   const dimensions = BREAKPOINT_DIMENSIONS[breakpoint];
@@ -140,7 +151,7 @@ export function getCanvasWidth(
  * Get canvas height based on current breakpoint and orientation
  */
 export function getCanvasHeight(
-  breakpoint: BreakpointId, 
+  breakpoint: BreakpointId,
   orientation: 'portrait' | 'landscape' = 'portrait'
 ): number {
   const dimensions = BREAKPOINT_DIMENSIONS[breakpoint];

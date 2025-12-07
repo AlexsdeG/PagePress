@@ -104,9 +104,14 @@ function ClickableShadowSlider({ label, value, min, max, step, onChange }: Click
   );
 }
 
+import { StyleIndicator } from './StyleIndicator';
+import type { StyleSourceResult } from '../sidebar/types';
+
 interface BoxShadowInputProps {
   value: BoxShadow[];
   onChange: (value: BoxShadow[]) => void;
+  getStyleSource?: (path: string) => StyleSourceResult;
+  path?: string;
   className?: string;
 }
 
@@ -164,7 +169,7 @@ const shadowPresets: { name: string; shadows: Omit<BoxShadow, 'id'>[] }[] = [
 /**
  * Box Shadow Input - Multiple shadows with inset option
  */
-export function BoxShadowInput({ value, onChange, className }: BoxShadowInputProps) {
+export function BoxShadowInput({ value, onChange, getStyleSource, path, className }: BoxShadowInputProps) {
   // Get CSS box-shadow string for preview
   const shadowCSS = useMemo(() => {
     const result = boxShadowToCSS(value);
@@ -284,7 +289,19 @@ export function BoxShadowInput({ value, onChange, className }: BoxShadowInputPro
       {/* Shadows list */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <Label className="text-xs text-muted-foreground">Shadows</Label>
+          <div className="flex items-center gap-2">
+            <Label className="text-xs text-muted-foreground">Shadows</Label>
+            {getStyleSource && path && (
+              <StyleIndicator
+                isModified={getStyleSource(path).source === 'user'}
+                isClassInherited={getStyleSource(path).source === 'class'}
+                isGlobalInherited={getStyleSource(path).source === 'global'}
+                isResponsiveOverride={getStyleSource(path).isResponsive}
+                className="static translate-y-0 ml-1"
+                orientation="vertical"
+              />
+            )}
+          </div>
           <Button
             variant="ghost"
             size="sm"
@@ -310,7 +327,7 @@ export function BoxShadowInput({ value, onChange, className }: BoxShadowInputPro
               >
                 <div className="flex items-center gap-2">
                   <GripVertical className="h-4 w-4 text-muted-foreground cursor-move" />
-                  
+
                   <AccordionTrigger className="flex-1 py-2 hover:no-underline">
                     <div className="flex items-center gap-2">
                       <div

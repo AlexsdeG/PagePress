@@ -3,12 +3,13 @@
 
 import { useCallback, useMemo } from 'react';
 import { useGlobalSettingsStore } from '../global/globalSettingsStore';
+import type { GlobalTypography } from '../global/types';
 
 /**
  * Hook to get global colors with utilities
  */
 export function useGlobalColors() {
-  const { themeSettings, updateColor, addColor, removeColor, getColorById, getColorByName } = 
+  const { themeSettings, updateColor, addColor, removeColor, getColorById, getColorByName } =
     useGlobalSettingsStore();
 
   const colors = useMemo(() => themeSettings?.colors || [], [themeSettings]);
@@ -43,7 +44,7 @@ export function useGlobalColors() {
  */
 export function useGlobalTypography() {
   const { themeSettings, updateThemeSettings } = useGlobalSettingsStore();
-  
+
   const typography = useMemo<GlobalTypography | null>(
     () => themeSettings?.typography || null,
     [themeSettings]
@@ -64,7 +65,7 @@ export function useGlobalTypography() {
   const getHeadingSize = useCallback((level: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6', breakpoint: string = 'desktop') => {
     const sizes = typography?.headingSizes?.[level];
     if (!sizes) return undefined;
-    return (sizes as Record<string, string>)[breakpoint];
+    return (sizes as unknown as Record<string, string>)[breakpoint];
   }, [typography]);
 
   const getBodyLineHeight = useCallback(() => {
@@ -201,7 +202,7 @@ export function useApplyGlobalTypography(options?: {
   headingLevel?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
   inheritFromGlobal?: boolean;
 }) {
-  const { typography, getHeadingFontFamily, getBodyFontFamily, getHeadingSize, getBodyLineHeight, getHeadingLineHeight } = 
+  const { typography, getHeadingFontFamily, getBodyFontFamily, getHeadingSize, getBodyLineHeight, getHeadingLineHeight } =
     useGlobalTypography();
 
   const style = useMemo<React.CSSProperties>(() => {

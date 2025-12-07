@@ -23,13 +23,16 @@ import {
 } from '@/components/ui/accordion';
 import { HexColorPicker } from 'react-colorful';
 import { Image } from 'lucide-react';
+import { SettingsFieldWrapper } from '../SettingsFieldWrapper';
 import type { BackgroundSettings, BackgroundImageSettings, BackgroundOverlaySettings } from '../styles/types';
+import type { PropertySource } from '../sidebar/types';
 import { GradientInput, defaultGradient } from '../inputs/GradientInput';
 import { gradientToCSS } from './styleToCSS';
 
 interface BackgroundSettingsTabProps {
   value: Partial<BackgroundSettings>;
   onChange: (value: Partial<BackgroundSettings>) => void;
+  getStyleSource?: (path: string) => PropertySource;
   className?: string;
 }
 
@@ -99,12 +102,24 @@ const backgroundAttachmentOptions: { value: BackgroundImageSettings['attachment'
 /**
  * Background Settings Tab - Color, gradient, image, video, overlay
  */
-export function BackgroundSettingsTab({ value, onChange, className }: BackgroundSettingsTabProps) {
+export function BackgroundSettingsTab({ value, onChange, getStyleSource, className }: BackgroundSettingsTabProps) {
+  // Helper to get source flags
+  const getSourceFlags = useCallback((path: string) => {
+    if (!getStyleSource) return {};
+    const { source, isResponsive } = getStyleSource(path);
+    return {
+      isModified: source === 'user',
+      isClassInherited: source === 'class',
+      isGlobalInherited: source === 'global',
+      isResponsiveOverride: isResponsive,
+    };
+  }, [getStyleSource]);
+
   // Handle type change
   const handleTypeChange = useCallback(
     (type: BackgroundSettings['type']) => {
       const newValue: Partial<BackgroundSettings> = { type };
-      
+
       // Initialize defaults based on type
       if (type === 'color' && !value.color) {
         newValue.color = '#ffffff';
@@ -125,7 +140,7 @@ export function BackgroundSettingsTab({ value, onChange, className }: Background
           muted: true,
         };
       }
-      
+
       onChange({ ...value, ...newValue });
     },
     [value, onChange]
@@ -163,20 +178,24 @@ export function BackgroundSettingsTab({ value, onChange, className }: Background
       case 'image':
         return value.image?.url
           ? {
-              backgroundImage: `url(${value.image.url})`,
-              backgroundSize: value.image.size === 'custom' 
-                ? `${value.image.customWidth || 'auto'} ${value.image.customHeight || 'auto'}`
-                : value.image.size,
-              backgroundPosition: value.image.position === 'custom'
-                ? `${value.image.customX || '50%'} ${value.image.customY || '50%'}`
-                : value.image.position?.replace('-', ' '),
-              backgroundRepeat: value.image.repeat,
-            }
+            backgroundImage: `url(${value.image.url})`,
+            backgroundSize: value.image.size === 'custom'
+              ? `${value.image.customWidth || 'auto'} ${value.image.customHeight || 'auto'}`
+              : value.image.size,
+            backgroundPosition: value.image.position === 'custom'
+              ? `${value.image.customX || '50%'} ${value.image.customY || '50%'}`
+              : value.image.position?.replace('-', ' '),
+            backgroundRepeat: value.image.repeat,
+          }
           : {};
       default:
         return {};
     }
   };
+
+  const handleReset = useCallback((field: string) => {
+    onChange({ ...value, [field]: undefined });
+  }, [value, onChange]);
 
   return (
     <div className={cn('space-y-4', className)}>
@@ -193,60 +212,87 @@ export function BackgroundSettingsTab({ value, onChange, className }: Background
       </div>
 
       {/* Type selector */}
-      <div className="space-y-2">
-        <Label className="text-xs text-muted-foreground">Background Type</Label>
-        <Select
-          value={value.type || 'none'}
-          onValueChange={(val) => handleTypeChange(val as BackgroundSettings['type'])}
-        >
-          <SelectTrigger className="h-8">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {backgroundTypeOptions.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <SettingsFieldWrapper
+        fieldName="type"
+        {...getSourceFlags('background.type')}
+        defaultValue="none"
+        currentValue={value.type}
+        onReset={() => handleReset('type')}
+        label="Background Type"
+      >
+        <div className="space-y-2">
+          <Label className="text-xs text-muted-foreground">Background Type</Label>
+          <Select
+            value={value.type || 'none'}
+            onValueChange={(val) => handleTypeChange(val as BackgroundSettings['type'])}
+          >
+            <SelectTrigger className="h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {backgroundTypeOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </SettingsFieldWrapper>
 
       {/* Color picker */}
       {value.type === 'color' && (
-        <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">Background Color</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <button className="w-full h-8 rounded border flex items-center gap-2 px-2">
-                <div
-                  className="w-5 h-5 rounded border"
-                  style={{ backgroundColor: value.color || '#ffffff' }}
+        <SettingsFieldWrapper
+          fieldName="color"
+          {...getSourceFlags('background.color')}
+          defaultValue="#ffffff"
+          currentValue={value.color}
+          onReset={() => handleReset('color')}
+          label="Background Color"
+        >
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Background Color</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className="w-full h-8 rounded border flex items-center gap-2 px-2">
+                  <div
+                    className="w-5 h-5 rounded border"
+                    style={{ backgroundColor: value.color || '#ffffff' }}
+                  />
+                  <span className="text-xs flex-1 text-left">{value.color || '#ffffff'}</span>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-3" align="start">
+                <HexColorPicker
+                  color={value.color || '#ffffff'}
+                  onChange={(color) => onChange({ ...value, color })}
                 />
-                <span className="text-xs flex-1 text-left">{value.color || '#ffffff'}</span>
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-3" align="start">
-              <HexColorPicker
-                color={value.color || '#ffffff'}
-                onChange={(color) => onChange({ ...value, color })}
-              />
-              <Input
-                value={value.color || '#ffffff'}
-                onChange={(e) => onChange({ ...value, color: e.target.value })}
-                className="mt-2 h-8 text-xs"
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
+                <Input
+                  value={value.color || '#ffffff'}
+                  onChange={(e) => onChange({ ...value, color: e.target.value })}
+                  className="mt-2 h-8 text-xs"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        </SettingsFieldWrapper>
       )}
 
       {/* Gradient editor */}
       {value.type === 'gradient' && (
-        <GradientInput
-          value={value.gradient || defaultGradient}
-          onChange={(gradient) => onChange({ ...value, gradient })}
-        />
+        <SettingsFieldWrapper
+          fieldName="gradient"
+          {...getSourceFlags('background.gradient')}
+          defaultValue={defaultGradient}
+          currentValue={value.gradient}
+          onReset={() => handleReset('gradient')}
+          label="Gradient"
+        >
+          <GradientInput
+            value={value.gradient || defaultGradient}
+            onChange={(gradient) => onChange({ ...value, gradient })}
+          />
+        </SettingsFieldWrapper>
       )}
 
       {/* Image settings */}
@@ -257,20 +303,29 @@ export function BackgroundSettingsTab({ value, onChange, className }: Background
               Image Source
             </AccordionTrigger>
             <AccordionContent className="pb-3 space-y-3">
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Image URL</Label>
-                <div className="flex gap-2">
-                  <Input
-                    value={value.image?.url || ''}
-                    onChange={(e) => handleImageChange({ url: e.target.value })}
-                    placeholder="https://..."
-                    className="h-8 text-xs flex-1"
-                  />
-                  <Button variant="outline" size="sm" className="h-8 px-2">
-                    <Image className="h-4 w-4" />
-                  </Button>
+              <SettingsFieldWrapper
+                fieldName="image.url"
+                {...getSourceFlags('background.image.url')}
+                defaultValue=""
+                currentValue={value.image?.url}
+                onReset={() => handleImageChange({ url: '' })}
+                label="Image URL"
+              >
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Image URL</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={value.image?.url || ''}
+                      onChange={(e) => handleImageChange({ url: e.target.value })}
+                      placeholder="https://..."
+                      className="h-8 text-xs flex-1"
+                    />
+                    <Button variant="outline" size="sm" className="h-8 px-2">
+                      <Image className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              </SettingsFieldWrapper>
             </AccordionContent>
           </AccordionItem>
 
@@ -280,130 +335,166 @@ export function BackgroundSettingsTab({ value, onChange, className }: Background
             </AccordionTrigger>
             <AccordionContent className="pb-3 space-y-3">
               {/* Size */}
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Size</Label>
-                <Select
-                  value={value.image?.size || 'cover'}
-                  onValueChange={(val) => handleImageChange({ size: val as BackgroundImageSettings['size'] })}
-                >
-                  <SelectTrigger className="h-8">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {backgroundSizeOptions.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <SettingsFieldWrapper
+                fieldName="image.size"
+                {...getSourceFlags('background.image.size')}
+                defaultValue="cover"
+                currentValue={value.image?.size}
+                onReset={() => handleImageChange({ size: 'cover' })}
+                label="Size"
+              >
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Size</Label>
+                  <Select
+                    value={value.image?.size || 'cover'}
+                    onValueChange={(val) => handleImageChange({ size: val as BackgroundImageSettings['size'] })}
+                  >
+                    <SelectTrigger className="h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {backgroundSizeOptions.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
-                {value.image?.size === 'custom' && (
-                  <div className="grid grid-cols-2 gap-2 mt-2">
-                    <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">Width</Label>
-                      <Input
-                        value={value.image.customWidth || ''}
-                        onChange={(e) => handleImageChange({ customWidth: e.target.value })}
-                        placeholder="auto"
-                        className="h-8 text-xs"
-                      />
+                  {value.image?.size === 'custom' && (
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Width</Label>
+                        <Input
+                          value={value.image.customWidth || ''}
+                          onChange={(e) => handleImageChange({ customWidth: e.target.value })}
+                          placeholder="auto"
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Height</Label>
+                        <Input
+                          value={value.image.customHeight || ''}
+                          onChange={(e) => handleImageChange({ customHeight: e.target.value })}
+                          placeholder="auto"
+                          className="h-8 text-xs"
+                        />
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">Height</Label>
-                      <Input
-                        value={value.image.customHeight || ''}
-                        onChange={(e) => handleImageChange({ customHeight: e.target.value })}
-                        placeholder="auto"
-                        className="h-8 text-xs"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              </SettingsFieldWrapper>
 
               {/* Position */}
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Position</Label>
-                <Select
-                  value={value.image?.position || 'center'}
-                  onValueChange={(val) => handleImageChange({ position: val as BackgroundImageSettings['position'] })}
-                >
-                  <SelectTrigger className="h-8">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {backgroundPositionOptions.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <SettingsFieldWrapper
+                fieldName="image.position"
+                {...getSourceFlags('background.image.position')}
+                defaultValue="center"
+                currentValue={value.image?.position}
+                onReset={() => handleImageChange({ position: 'center' })}
+                label="Position"
+              >
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Position</Label>
+                  <Select
+                    value={value.image?.position || 'center'}
+                    onValueChange={(val) => handleImageChange({ position: val as BackgroundImageSettings['position'] })}
+                  >
+                    <SelectTrigger className="h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {backgroundPositionOptions.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
-                {value.image?.position === 'custom' && (
-                  <div className="grid grid-cols-2 gap-2 mt-2">
-                    <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">X</Label>
-                      <Input
-                        value={value.image.customX || ''}
-                        onChange={(e) => handleImageChange({ customX: e.target.value })}
-                        placeholder="50%"
-                        className="h-8 text-xs"
-                      />
+                  {value.image?.position === 'custom' && (
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">X</Label>
+                        <Input
+                          value={value.image.customX || ''}
+                          onChange={(e) => handleImageChange({ customX: e.target.value })}
+                          placeholder="50%"
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Y</Label>
+                        <Input
+                          value={value.image.customY || ''}
+                          onChange={(e) => handleImageChange({ customY: e.target.value })}
+                          placeholder="50%"
+                          className="h-8 text-xs"
+                        />
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">Y</Label>
-                      <Input
-                        value={value.image.customY || ''}
-                        onChange={(e) => handleImageChange({ customY: e.target.value })}
-                        placeholder="50%"
-                        className="h-8 text-xs"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              </SettingsFieldWrapper>
 
               {/* Repeat */}
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Repeat</Label>
-                <Select
-                  value={value.image?.repeat || 'no-repeat'}
-                  onValueChange={(val) => handleImageChange({ repeat: val as BackgroundImageSettings['repeat'] })}
-                >
-                  <SelectTrigger className="h-8">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {backgroundRepeatOptions.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <SettingsFieldWrapper
+                fieldName="image.repeat"
+                {...getSourceFlags('background.image.repeat')}
+                defaultValue="no-repeat"
+                currentValue={value.image?.repeat}
+                onReset={() => handleImageChange({ repeat: 'no-repeat' })}
+                label="Repeat"
+              >
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Repeat</Label>
+                  <Select
+                    value={value.image?.repeat || 'no-repeat'}
+                    onValueChange={(val) => handleImageChange({ repeat: val as BackgroundImageSettings['repeat'] })}
+                  >
+                    <SelectTrigger className="h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {backgroundRepeatOptions.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </SettingsFieldWrapper>
 
               {/* Attachment */}
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Attachment</Label>
-                <Select
-                  value={value.image?.attachment || 'scroll'}
-                  onValueChange={(val) => handleImageChange({ attachment: val as BackgroundImageSettings['attachment'] })}
-                >
-                  <SelectTrigger className="h-8">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {backgroundAttachmentOptions.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <SettingsFieldWrapper
+                fieldName="image.attachment"
+                {...getSourceFlags('background.image.attachment')}
+                defaultValue="scroll"
+                currentValue={value.image?.attachment}
+                onReset={() => handleImageChange({ attachment: 'scroll' })}
+                label="Attachment"
+              >
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Attachment</Label>
+                  <Select
+                    value={value.image?.attachment || 'scroll'}
+                    onValueChange={(val) => handleImageChange({ attachment: val as BackgroundImageSettings['attachment'] })}
+                  >
+                    <SelectTrigger className="h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {backgroundAttachmentOptions.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </SettingsFieldWrapper>
             </AccordionContent>
           </AccordionItem>
         </Accordion>
@@ -412,25 +503,43 @@ export function BackgroundSettingsTab({ value, onChange, className }: Background
       {/* Video settings */}
       {value.type === 'video' && (
         <div className="space-y-3">
-          <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">Video URL</Label>
-            <Input
-              value={value.video?.url || ''}
-              onChange={(e) => onChange({ ...value, video: { ...value.video, url: e.target.value } })}
-              placeholder="https://..."
-              className="h-8 text-xs"
-            />
-          </div>
+          <SettingsFieldWrapper
+            fieldName="video.url"
+            {...getSourceFlags('background.video.url')}
+            defaultValue=""
+            currentValue={value.video?.url}
+            onReset={() => onChange({ ...value, video: { ...value.video, url: '' } })}
+            label="Video URL"
+          >
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Video URL</Label>
+              <Input
+                value={value.video?.url || ''}
+                onChange={(e) => onChange({ ...value, video: { ...value.video, url: e.target.value } })}
+                placeholder="https://..."
+                className="h-8 text-xs"
+              />
+            </div>
+          </SettingsFieldWrapper>
 
-          <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">Poster Image</Label>
-            <Input
-              value={value.video?.posterImage || ''}
-              onChange={(e) => onChange({ ...value, video: { ...value.video, url: value.video?.url || '', posterImage: e.target.value } })}
-              placeholder="https://..."
-              className="h-8 text-xs"
-            />
-          </div>
+          <SettingsFieldWrapper
+            fieldName="video.posterImage"
+            {...getSourceFlags('background.video.posterImage')}
+            defaultValue=""
+            currentValue={value.video?.posterImage}
+            onReset={() => onChange({ ...value, video: { ...value.video, url: value.video?.url || '', posterImage: '' } })}
+            label="Poster Image"
+          >
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Poster Image</Label>
+              <Input
+                value={value.video?.posterImage || ''}
+                onChange={(e) => onChange({ ...value, video: { ...value.video, url: value.video?.url || '', posterImage: e.target.value } })}
+                placeholder="https://..."
+                className="h-8 text-xs"
+              />
+            </div>
+          </SettingsFieldWrapper>
 
           <div className="flex gap-4">
             <label className="flex items-center gap-2 text-xs">
@@ -478,71 +587,107 @@ export function BackgroundSettingsTab({ value, onChange, className }: Background
 
           {value.overlay?.enabled && (
             <>
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Overlay Type</Label>
-                <Select
-                  value={value.overlay.type || 'color'}
-                  onValueChange={(val) => handleOverlayChange({ type: val as 'color' | 'gradient' })}
-                >
-                  <SelectTrigger className="h-8">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="color">Color</SelectItem>
-                    <SelectItem value="gradient">Gradient</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <SettingsFieldWrapper
+                fieldName="overlay.type"
+                {...getSourceFlags('background.overlay.type')}
+                defaultValue="color"
+                currentValue={value.overlay.type}
+                onReset={() => handleOverlayChange({ type: 'color' })}
+                label="Overlay Type"
+              >
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Overlay Type</Label>
+                  <Select
+                    value={value.overlay.type || 'color'}
+                    onValueChange={(val) => handleOverlayChange({ type: val as 'color' | 'gradient' })}
+                  >
+                    <SelectTrigger className="h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="color">Color</SelectItem>
+                      <SelectItem value="gradient">Gradient</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </SettingsFieldWrapper>
 
               {value.overlay.type === 'color' && (
                 <>
-                  <div className="space-y-2">
-                    <Label className="text-xs text-muted-foreground">Color</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <button className="w-full h-8 rounded border flex items-center gap-2 px-2">
-                          <div
-                            className="w-5 h-5 rounded border"
-                            style={{ backgroundColor: value.overlay.color || '#000000' }}
+                  <SettingsFieldWrapper
+                    fieldName="overlay.color"
+                    {...getSourceFlags('background.overlay.color')}
+                    defaultValue="#000000"
+                    currentValue={value.overlay.color}
+                    onReset={() => handleOverlayChange({ color: '#000000' })}
+                    label="Color"
+                  >
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Color</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button className="w-full h-8 rounded border flex items-center gap-2 px-2">
+                            <div
+                              className="w-5 h-5 rounded border"
+                              style={{ backgroundColor: value.overlay.color || '#000000' }}
+                            />
+                            <span className="text-xs flex-1 text-left">{value.overlay.color || '#000000'}</span>
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-3" align="start">
+                          <HexColorPicker
+                            color={value.overlay.color || '#000000'}
+                            onChange={(color) => handleOverlayChange({ color })}
                           />
-                          <span className="text-xs flex-1 text-left">{value.overlay.color || '#000000'}</span>
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-3" align="start">
-                        <HexColorPicker
-                          color={value.overlay.color || '#000000'}
-                          onChange={(color) => handleOverlayChange({ color })}
-                        />
-                        <Input
-                          value={value.overlay.color || '#000000'}
-                          onChange={(e) => handleOverlayChange({ color: e.target.value })}
-                          className="mt-2 h-8 text-xs"
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-xs text-muted-foreground">Opacity</Label>
-                      <span className="text-xs text-muted-foreground">{(value.overlay.opacity ?? 50)}%</span>
+                          <Input
+                            value={value.overlay.color || '#000000'}
+                            onChange={(e) => handleOverlayChange({ color: e.target.value })}
+                            className="mt-2 h-8 text-xs"
+                          />
+                        </PopoverContent>
+                      </Popover>
                     </div>
-                    <Slider
-                      value={[value.overlay.opacity ?? 50]}
-                      min={0}
-                      max={100}
-                      step={1}
-                      onValueChange={([val]) => handleOverlayChange({ opacity: val })}
-                    />
-                  </div>
+                  </SettingsFieldWrapper>
+
+                  <SettingsFieldWrapper
+                    fieldName="overlay.opacity"
+                    {...getSourceFlags('background.overlay.opacity')}
+                    defaultValue={50}
+                    currentValue={value.overlay.opacity}
+                    onReset={() => handleOverlayChange({ opacity: 50 })}
+                    label="Opacity"
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs text-muted-foreground">Opacity</Label>
+                        <span className="text-xs text-muted-foreground">{(value.overlay.opacity ?? 50)}%</span>
+                      </div>
+                      <Slider
+                        value={[value.overlay.opacity ?? 50]}
+                        min={0}
+                        max={100}
+                        step={1}
+                        onValueChange={([val]) => handleOverlayChange({ opacity: val })}
+                      />
+                    </div>
+                  </SettingsFieldWrapper>
                 </>
               )}
 
               {value.overlay.type === 'gradient' && (
-                <GradientInput
-                  value={value.overlay.gradient || defaultGradient}
-                  onChange={(gradient) => handleOverlayChange({ gradient })}
-                />
+                <SettingsFieldWrapper
+                  fieldName="overlay.gradient"
+                  {...getSourceFlags('background.overlay.gradient')}
+                  defaultValue={defaultGradient}
+                  currentValue={value.overlay.gradient}
+                  onReset={() => handleOverlayChange({ gradient: defaultGradient })}
+                  label="Gradient"
+                >
+                  <GradientInput
+                    value={value.overlay.gradient || defaultGradient}
+                    onChange={(gradient) => handleOverlayChange({ gradient })}
+                  />
+                </SettingsFieldWrapper>
               )}
             </>
           )}

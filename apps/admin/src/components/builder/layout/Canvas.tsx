@@ -21,7 +21,7 @@ interface CanvasProps {
  * Breadcrumb bar is fixed at the bottom
  */
 export function Canvas({ initialContent }: CanvasProps) {
-  const { isWireframeMode, showSpacingVisualizer, isPreviewMode, editingNodeId } = useBuilderStore();
+  const { isWireframeMode, showSpacingVisualizer, isPreviewMode } = useBuilderStore();
   const {
     currentBreakpoint,
     previewOrientation,
@@ -73,20 +73,26 @@ export function Canvas({ initialContent }: CanvasProps) {
                 overflow: currentBreakpoint !== 'desktop' ? 'auto' : undefined,
               }}
             >
-              {/* Floating toolbar */}
-              <FloatingToolbar />
+              <div className={cn(
+                'min-h-full',
+                (currentBreakpoint === 'tablet' || currentBreakpoint === 'mobile' || currentBreakpoint === 'mobilePortrait') && 'bp-tablet',
+                (currentBreakpoint === 'mobile' || currentBreakpoint === 'mobilePortrait') && 'bp-mobile'
+              )}>
+                {/* Floating toolbar */}
+                <FloatingToolbar />
 
-              <Frame {...(initialContent ? { data: initialContent } : {})}>
-                <Element
-                  is={Container}
-                  canvas
-                  display="flex"
-                  flexDirection="column"
-                  padding={24}
-                  minHeight={400}
-                  backgroundColor="#ffffff"
-                />
-              </Frame>
+                <Frame {...(initialContent ? { data: initialContent } : {})}>
+                  <Element
+                    is={Container}
+                    canvas
+                    display="flex"
+                    flexDirection="column"
+                    padding={24}
+                    minHeight={400}
+                    backgroundColor="#ffffff"
+                  />
+                </Frame>
+              </div>
             </div>
           </BuilderContextMenu>
         </DeviceFrame>

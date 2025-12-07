@@ -1,7 +1,8 @@
 // PagePress v0.0.9 - 2025-12-04
 // Element Settings Sidebar Types - Complete Bricks-style implementation
 
-import type { AdvancedStyling } from '../styles/types';
+import type { AdvancedStyling, PseudoClass } from '../styles/types';
+export type { AdvancedStyling, PseudoClass };
 
 /**
  * Element metadata stored with each component
@@ -51,7 +52,7 @@ export interface CSSClassDefinition {
 /**
  * Icon sidebar tab IDs - Extended for full Bricks-like experience
  */
-export type SettingsTabId = 
+export type SettingsTabId =
   | 'content'
   | 'general'
   | 'layout'
@@ -72,23 +73,6 @@ export interface SettingsTab {
   icon: string;
   description?: string;
 }
-
-/**
- * Pseudo-class/state options
- */
-export type PseudoClass = 
-  | 'default'
-  | 'hover'
-  | 'active'
-  | 'focus'
-  | 'focus-within'
-  | 'focus-visible'
-  | 'visited'
-  | 'disabled'
-  | 'first-child'
-  | 'last-child'
-  | 'before'
-  | 'after';
 
 /**
  * Available pseudo-classes with labels
@@ -127,7 +111,15 @@ export const ALL_SETTINGS_TABS: SettingsTab[] = [
 /**
  * Property source indicator for class inheritance
  */
-export type PropertySource = 'default' | 'class' | 'manual';
+export type PropertySource = 'default' | 'class' | 'user' | 'global';
+
+/**
+ * Result of style source check
+ */
+export interface StyleSourceResult {
+  source: PropertySource;
+  isResponsive: boolean;
+}
 
 /**
  * Property with source tracking
@@ -209,7 +201,7 @@ export function getComponentBadgeColor(componentType: string): string {
   if (interactiveComponents.includes(componentType)) return 'bg-orange-500/20 text-orange-600 dark:text-orange-400 border-orange-500/30';
   if (codeComponents.includes(componentType)) return 'bg-gray-500/20 text-gray-600 dark:text-gray-400 border-gray-500/30';
   if (utilityComponents.includes(componentType)) return 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 border-cyan-500/30';
-  
+
   return 'bg-slate-500/20 text-slate-600 dark:text-slate-400 border-slate-500/30';
 }
 

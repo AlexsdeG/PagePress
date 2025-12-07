@@ -17,10 +17,13 @@ import {
 import { HexColorPicker } from 'react-colorful';
 import { Link2, Link2Off } from 'lucide-react';
 import type { BorderSettings, BorderSide, BorderRadius } from '../styles/types';
+import { StyleIndicator } from './StyleIndicator';
+import type { StyleSourceResult } from '../sidebar/types';
 
 interface BorderInputProps {
   value: BorderSettings;
   onChange: (value: BorderSettings) => void;
+  getStyleSource?: (path: string) => StyleSourceResult;
   className?: string;
 }
 
@@ -73,17 +76,40 @@ function BorderSideControl({
   label,
   value,
   onChange,
+  getStyleSource,
+  path,
 }: {
   label: string;
   value: BorderSide;
   onChange: (value: BorderSide) => void;
+  getStyleSource?: (path: string) => StyleSourceResult;
+  path: string;
 }) {
+  const widthSource = getStyleSource?.(`${path}.width`) || { source: undefined, isResponsive: false };
+  const styleSource = getStyleSource?.(`${path}.style`) || { source: undefined, isResponsive: false };
+  const colorSource = getStyleSource?.(`${path}.color`) || { source: undefined, isResponsive: false };
+
+  // Aggregate source for the label indicator (if any property is modified)
+  const isModified = widthSource.source === 'user' || styleSource.source === 'user' || colorSource.source === 'user';
+  const isClassInherited = widthSource.source === 'class' || styleSource.source === 'class' || colorSource.source === 'class';
+  const isGlobalInherited = widthSource.source === 'global' || styleSource.source === 'global' || colorSource.source === 'global';
+  const isResponsiveOverride = widthSource.isResponsive || styleSource.isResponsive || colorSource.isResponsive;
+
   return (
-    <div className="space-y-2">
-      <Label className="text-xs text-muted-foreground">{label}</Label>
+    <div className="space-y-2 relative pl-3">
+      <div className="flex items-center gap-2">
+        <StyleIndicator
+          isModified={isModified}
+          isClassInherited={isClassInherited}
+          isGlobalInherited={isGlobalInherited}
+          isResponsiveOverride={isResponsiveOverride}
+          orientation="vertical"
+        />
+        <Label className="text-xs text-muted-foreground">{label}</Label>
+      </div>
       <div className="flex gap-2">
         {/* Width */}
-        <div className="w-16">
+        <div className="w-16 relative">
           <Input
             type="number"
             min={0}
@@ -94,7 +120,7 @@ function BorderSideControl({
         </div>
 
         {/* Style */}
-        <div className="flex-1">
+        <div className="flex-1 relative">
           <Select
             value={value.style}
             onValueChange={(style) => onChange({ ...value, style: style as BorderSide['style'] })}
@@ -116,7 +142,7 @@ function BorderSideControl({
         <Popover>
           <PopoverTrigger asChild>
             <button
-              className="w-8 h-8 rounded border shadow-sm"
+              className="w-8 h-8 rounded border shadow-sm relative"
               style={{ backgroundColor: value.color }}
             />
           </PopoverTrigger>
@@ -144,14 +170,29 @@ function RadiusCornerControl({
   label,
   value,
   onChange,
+  getStyleSource,
+  path,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  getStyleSource?: (path: string) => StyleSourceResult;
+  path: string;
 }) {
+  const { source, isResponsive } = getStyleSource?.(path) || { source: undefined, isResponsive: false };
+
   return (
-    <div className="space-y-1">
-      <Label className="text-xs text-muted-foreground">{label}</Label>
+    <div className="space-y-1 relative pl-3">
+      <div className="flex items-center gap-2">
+        <StyleIndicator
+          isModified={source === 'user'}
+          isClassInherited={source === 'class'}
+          isGlobalInherited={source === 'global'}
+          isResponsiveOverride={isResponsive}
+          orientation="vertical"
+        />
+        <Label className="text-xs text-muted-foreground">{label}</Label>
+      </div>
       <Input
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -165,7 +206,7 @@ function RadiusCornerControl({
 /**
  * Border Input - Per-side border control with radius
  */
-export function BorderInput({ value, onChange, className }: BorderInputProps) {
+export function BorderInput({ value, onChange, getStyleSource, className }: BorderInputProps) {
   // Update a single side
   const handleSideChange = useCallback(
     (side: 'top' | 'right' | 'bottom' | 'left', sideValue: BorderSide) => {
@@ -212,7 +253,7 @@ export function BorderInput({ value, onChange, className }: BorderInputProps) {
   const handleRadiusChange = useCallback(
     (corner: keyof BorderRadius, cornerValue: string) => {
       if (typeof cornerValue !== 'string') return;
-      
+
       if (value.radius.linked) {
         // Update all corners
         onChange({
@@ -307,6 +348,8 @@ export function BorderInput({ value, onChange, className }: BorderInputProps) {
             label="All Sides"
             value={value.top}
             onChange={(v) => handleSideChange('top', v)}
+            getStyleSource={getStyleSource}
+            path="top"
           />
         ) : (
           // Unlinked mode - individual controls
@@ -315,21 +358,29 @@ export function BorderInput({ value, onChange, className }: BorderInputProps) {
               label="Top"
               value={value.top}
               onChange={(v) => handleSideChange('top', v)}
+              getStyleSource={getStyleSource}
+              path="top"
             />
             <BorderSideControl
               label="Right"
               value={value.right}
               onChange={(v) => handleSideChange('right', v)}
+              getStyleSource={getStyleSource}
+              path="right"
             />
             <BorderSideControl
               label="Bottom"
               value={value.bottom}
               onChange={(v) => handleSideChange('bottom', v)}
+              getStyleSource={getStyleSource}
+              path="bottom"
             />
             <BorderSideControl
               label="Left"
               value={value.left}
               onChange={(v) => handleSideChange('left', v)}
+              getStyleSource={getStyleSource}
+              path="left"
             />
           </div>
         )}
@@ -360,6 +411,8 @@ export function BorderInput({ value, onChange, className }: BorderInputProps) {
             label="All Corners"
             value={value.radius.topLeft}
             onChange={(v) => handleRadiusChange('topLeft', v)}
+            getStyleSource={getStyleSource}
+            path="radius.topLeft"
           />
         ) : (
           // Unlinked mode - individual controls
@@ -368,21 +421,29 @@ export function BorderInput({ value, onChange, className }: BorderInputProps) {
               label="Top Left"
               value={value.radius.topLeft}
               onChange={(v) => handleRadiusChange('topLeft', v)}
+              getStyleSource={getStyleSource}
+              path="radius.topLeft"
             />
             <RadiusCornerControl
               label="Top Right"
               value={value.radius.topRight}
               onChange={(v) => handleRadiusChange('topRight', v)}
+              getStyleSource={getStyleSource}
+              path="radius.topRight"
             />
             <RadiusCornerControl
               label="Bottom Left"
               value={value.radius.bottomLeft}
               onChange={(v) => handleRadiusChange('bottomLeft', v)}
+              getStyleSource={getStyleSource}
+              path="radius.bottomLeft"
             />
             <RadiusCornerControl
               label="Bottom Right"
               value={value.radius.bottomRight}
               onChange={(v) => handleRadiusChange('bottomRight', v)}
+              getStyleSource={getStyleSource}
+              path="radius.bottomRight"
             />
           </div>
         )}

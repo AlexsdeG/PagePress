@@ -413,18 +413,39 @@ export const defaultAdvancedStyling: AdvancedStyling = {
 };
 
 /**
- * Pseudo state types
+ * Breakpoint types
  */
-export type PseudoState = 'default' | 'hover' | 'active' | 'focus' | 'focus-within' | 'visited';
+export type Breakpoint = 'desktop' | 'tablet' | 'mobile';
+
+/**
+ * Pseudo-class/state options
+ * Expanded to match full Bricks-like experience
+ */
+export type PseudoClass =
+  | 'default'
+  | 'hover'
+  | 'active'
+  | 'focus'
+  | 'focus-within'
+  | 'focus-visible'
+  | 'visited'
+  | 'disabled'
+  | 'first-child'
+  | 'last-child'
+  | 'before'
+  | 'after';
 
 /**
  * Styling with pseudo states
  */
-export interface PseudoStateStyling {
-  default: AdvancedStyling;
-  hover?: Partial<AdvancedStyling>;
-  active?: Partial<AdvancedStyling>;
-  focus?: Partial<AdvancedStyling>;
-  focusWithin?: Partial<AdvancedStyling>;
-  visited?: Partial<AdvancedStyling>;
-}
+export type PseudoStateStyling = Partial<Record<PseudoClass, Partial<AdvancedStyling>>>;
+
+/**
+ * Responsive styling with breakpoints and pseudo-states
+ */
+export type BreakpointStyling = {
+  [key in Breakpoint]?: Partial<AdvancedStyling> & {
+    pseudoStates?: PseudoStateStyling;
+  };
+};
+

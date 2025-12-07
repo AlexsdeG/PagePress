@@ -2,11 +2,11 @@
 // Pseudo State Selector Component
 
 import { cn } from '@/lib/utils';
-import type { PseudoState } from '../styles/types';
+import type { PseudoClass } from '../styles/types';
 
 interface PseudoStateSelectorProps {
-  value: PseudoState;
-  onChange: (state: PseudoState) => void;
+  value: PseudoClass;
+  onChange: (state: PseudoClass) => void;
   className?: string;
 }
 
@@ -18,7 +18,7 @@ export function PseudoStateSelector({
   onChange,
   className,
 }: PseudoStateSelectorProps) {
-  const states: { value: PseudoState; label: string }[] = [
+  const states: { value: PseudoClass; label: string }[] = [
     { value: 'default', label: 'Default' },
     { value: 'hover', label: ':hover' },
     { value: 'active', label: ':active' },

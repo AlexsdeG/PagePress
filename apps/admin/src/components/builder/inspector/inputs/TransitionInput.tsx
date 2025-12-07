@@ -15,11 +15,15 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { RotateCcw } from 'lucide-react';
+import { StyleIndicator } from './StyleIndicator';
 import type { TransitionSettings } from '../styles/types';
+import type { StyleSourceResult } from '../sidebar/types';
 
 interface TransitionInputProps {
   value: TransitionSettings;
   onChange: (value: TransitionSettings) => void;
+  getStyleSource?: (path: string) => StyleSourceResult;
+  path?: string;
   className?: string;
 }
 
@@ -159,7 +163,7 @@ function ClickableSlider({ label, value, min, max, step, unit, onChange }: Click
 /**
  * Transition Input - CSS transition controls
  */
-export function TransitionInput({ value, onChange, className }: TransitionInputProps) {
+export function TransitionInput({ value, onChange, getStyleSource, path, className }: TransitionInputProps) {
   // Update a single property
   const handleChange = useCallback(
     <K extends keyof TransitionSettings>(key: K, newValue: TransitionSettings[K]) => {
@@ -187,6 +191,16 @@ export function TransitionInput({ value, onChange, className }: TransitionInputP
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Label className="text-sm font-medium">Transition</Label>
+          {getStyleSource && path && (
+            <StyleIndicator
+              isModified={getStyleSource(path).source === 'user'}
+              isClassInherited={getStyleSource(path).source === 'class'}
+              isGlobalInherited={getStyleSource(path).source === 'global'}
+              isResponsiveOverride={getStyleSource(path).isResponsive}
+              className="static translate-y-0 ml-1"
+              orientation="vertical"
+            />
+          )}
           <button
             role="switch"
             aria-checked={value.enabled}
@@ -239,7 +253,7 @@ export function TransitionInput({ value, onChange, className }: TransitionInputP
                 ))}
               </SelectContent>
             </Select>
-            
+
             {value.property === 'custom' && (
               <Input
                 value={value.customProperty || ''}

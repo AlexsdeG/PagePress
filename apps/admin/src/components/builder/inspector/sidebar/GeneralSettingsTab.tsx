@@ -3,11 +3,11 @@
 
 import { useState, useCallback } from 'react';
 import { useNode } from '@craftjs/core';
-import { 
-  Copy, 
-  Plus, 
-  X, 
-  Check, 
+import {
+  Copy,
+  Plus,
+  X,
+  Check,
   ChevronDown,
   Palette,
   Info,
@@ -55,8 +55,8 @@ import {
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useClassStore, sanitizeClassName } from './classStore';
-import { 
-  COMPONENT_TYPE_LABELS, 
+import {
+  COMPONENT_TYPE_LABELS,
   getComponentBadgeColor,
   generateElementId,
   PSEUDO_CLASS_OPTIONS,
@@ -79,8 +79,8 @@ interface GeneralSettingsTabProps {
 /**
  * General Settings Tab - Element metadata, pseudo-state, and class management
  */
-export function GeneralSettingsTab({ 
-  styling, 
+export function GeneralSettingsTab({
+  styling,
   activePseudoState,
   onPseudoStateChange,
   className,
@@ -102,7 +102,7 @@ export function GeneralSettingsTab({
   }));
 
   const { classes, addClass, isNameAvailable, searchClasses } = useClassStore();
-  
+
   const [localName, setLocalName] = useState(customName || '');
   const [classSearch, setClassSearch] = useState('');
   const [newClassName, setNewClassName] = useState('');
@@ -112,7 +112,7 @@ export function GeneralSettingsTab({
   const [classListOpen, setClassListOpen] = useState(true);
 
   // Filter classes for dropdown
-  const filteredClasses = classSearch 
+  const filteredClasses = classSearch
     ? searchClasses(classSearch)
     : classes;
 
@@ -130,8 +130,8 @@ export function GeneralSettingsTab({
     setProp((props: Record<string, unknown>) => {
       const metadata = (props.elementMetadata || {}) as ElementMetadata;
       if (!metadata.elementId) {
-        props.elementMetadata = { 
-          ...metadata, 
+        props.elementMetadata = {
+          ...metadata,
           elementId: generateElementId(),
           appliedClasses: metadata.appliedClasses || [],
         };
@@ -151,7 +151,7 @@ export function GeneralSettingsTab({
       toast.error('Class already applied');
       return;
     }
-    
+
     setProp((props: Record<string, unknown>) => {
       const metadata = (props.elementMetadata || { elementId: elementId, appliedClasses: [] }) as ElementMetadata;
       props.elementMetadata = {
@@ -200,7 +200,7 @@ export function GeneralSettingsTab({
 
     // Apply it to the element
     handleAddClass(sanitized);
-    
+
     setNewClassName('');
     setNewClassDialogOpen(false);
     toast.success(`Class "${sanitized}" created and applied`);
@@ -228,7 +228,7 @@ export function GeneralSettingsTab({
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     });
-    
+
     setExportClassName('');
     setExportDialogOpen(false);
     toast.success(`Class "${sanitized}" exported successfully`);
@@ -258,7 +258,7 @@ export function GeneralSettingsTab({
               </TooltipContent>
             </Tooltip>
           </div>
-          
+
           {/* Export Styling as Class */}
           <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
             <DialogTrigger asChild>
@@ -332,7 +332,7 @@ export function GeneralSettingsTab({
             </SelectContent>
           </Select>
           <p className="text-xs text-muted-foreground">
-            {activePseudoState === 'default' 
+            {activePseudoState === 'default'
               ? 'Editing default styles'
               : `Editing styles for ${PSEUDO_CLASS_OPTIONS.find(o => o.value === activePseudoState)?.label || activePseudoState} state`
             }
@@ -342,194 +342,194 @@ export function GeneralSettingsTab({
         <Separator />
 
         {/* Custom Name */}
-      <div className="space-y-2">
-        <Label className="text-xs">Element Name</Label>
-        <Input
-          value={localName}
-          onChange={(e) => handleNameChange(e.target.value)}
-          placeholder={displayName}
-          className="h-8 text-sm"
-        />
-        <p className="text-xs text-muted-foreground">
-          Give this element a custom name for easier identification
-        </p>
-      </div>
-
-      {/* Element ID (readonly) */}
-      <div className="space-y-2">
-        <Label className="text-xs">Element ID</Label>
-        <div className="flex gap-1">
+        <div className="space-y-2">
+          <Label className="text-xs">Element Name</Label>
           <Input
-            value={elementId}
-            readOnly
-            className="h-8 text-sm font-mono bg-muted text-muted-foreground"
+            value={localName}
+            onChange={(e) => handleNameChange(e.target.value)}
+            placeholder={displayName}
+            className="h-8 text-sm"
           />
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8 shrink-0"
-            onClick={handleCopyId}
-          >
-            <Copy className="h-3.5 w-3.5" />
-          </Button>
+          <p className="text-xs text-muted-foreground">
+            Give this element a custom name for easier identification
+          </p>
         </div>
-        <p className="text-xs text-muted-foreground">
-          Unique identifier for this element (read-only)
-        </p>
-      </div>
 
-      <Separator />
+        {/* Element ID (readonly) */}
+        <div className="space-y-2">
+          <Label className="text-xs">Element ID</Label>
+          <div className="flex gap-1">
+            <Input
+              value={elementId}
+              readOnly
+              className="h-8 text-sm font-mono bg-muted text-muted-foreground"
+            />
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              onClick={handleCopyId}
+            >
+              <Copy className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Unique identifier for this element (read-only)
+          </p>
+        </div>
 
-      {/* CSS Classes Section */}
-      <Collapsible open={classListOpen} onOpenChange={setClassListOpen}>
-        <div className="flex items-center justify-between">
-          <CollapsibleTrigger className="flex items-center gap-1 text-sm font-medium hover:text-foreground">
-            <ChevronDown className={cn(
-              'h-4 w-4 transition-transform',
-              !classListOpen && '-rotate-90'
-            )} />
-            CSS Classes
-          </CollapsibleTrigger>
-          <Dialog open={newClassDialogOpen} onOpenChange={setNewClassDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="h-7 text-xs gap-1">
-                <Plus className="h-3 w-3" />
-                Create Class
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create New CSS Class</DialogTitle>
-                <DialogDescription>
-                  Create a new CSS class from the current element's styling settings.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label>Class Name</Label>
-                  <Input
-                    value={newClassName}
-                    onChange={(e) => setNewClassName(e.target.value)}
-                    placeholder="e.g., primary-button, hero-section"
-                  />
-                  {newClassName && (
+        <Separator />
+
+        {/* CSS Classes Section */}
+        <Collapsible open={classListOpen} onOpenChange={setClassListOpen}>
+          <div className="flex items-center justify-between">
+            <CollapsibleTrigger className="flex items-center gap-1 text-sm font-medium hover:text-foreground">
+              <ChevronDown className={cn(
+                'h-4 w-4 transition-transform',
+                !classListOpen && '-rotate-90'
+              )} />
+              CSS Classes
+            </CollapsibleTrigger>
+            <Dialog open={newClassDialogOpen} onOpenChange={setNewClassDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1">
+                  <Plus className="h-3 w-3" />
+                  Create Class
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create New CSS Class</DialogTitle>
+                  <DialogDescription>
+                    Create a new CSS class from the current element's styling settings.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label>Class Name</Label>
+                    <Input
+                      value={newClassName}
+                      onChange={(e) => setNewClassName(e.target.value)}
+                      placeholder="e.g., primary-button, hero-section"
+                    />
+                    {newClassName && (
+                      <p className="text-xs text-muted-foreground">
+                        Will be saved as: <code className="bg-muted px-1 rounded">{sanitizeClassName(newClassName)}</code>
+                      </p>
+                    )}
+                  </div>
+                  <div className="p-3 bg-muted rounded-md">
                     <p className="text-xs text-muted-foreground">
-                      Will be saved as: <code className="bg-muted px-1 rounded">{sanitizeClassName(newClassName)}</code>
+                      <Palette className="h-3.5 w-3.5 inline mr-1" />
+                      This class will include all current style settings from the Layout, Typography, Background, Border, and Effects tabs.
                     </p>
-                  )}
+                  </div>
                 </div>
-                <div className="p-3 bg-muted rounded-md">
-                  <p className="text-xs text-muted-foreground">
-                    <Palette className="h-3.5 w-3.5 inline mr-1" />
-                    This class will include all current style settings from the Layout, Typography, Background, Border, and Effects tabs.
-                  </p>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setNewClassDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleCreateClass}>
-                  <Check className="h-4 w-4 mr-1" />
-                  Create & Apply
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setNewClassDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleCreateClass}>
+                    <Check className="h-4 w-4 mr-1" />
+                    Create & Apply
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
 
-        <CollapsibleContent className="mt-3 space-y-3">
-          {/* Applied Classes */}
-          {appliedClasses.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {appliedClasses.map((className) => (
-                <Badge
-                  key={className}
-                  variant="secondary"
-                  className="text-xs gap-1 pr-1"
-                >
-                  <span className="text-blue-600 dark:text-blue-400">.</span>
-                  {className}
-                  <button
-                    onClick={() => handleRemoveClass(className)}
-                    className="ml-0.5 hover:bg-destructive/20 rounded-full p-0.5"
+          <CollapsibleContent className="mt-3 space-y-3">
+            {/* Applied Classes */}
+            {appliedClasses.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {appliedClasses.map((className) => (
+                  <Badge
+                    key={className}
+                    variant="secondary"
+                    className="text-xs gap-1 pr-1"
                   >
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              ))}
-            </div>
-          )}
-
-          {/* Add Class Dropdown */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="w-full h-8 justify-start text-xs gap-1">
-                <Plus className="h-3 w-3" />
-                Add existing class...
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-64 p-0" align="start">
-              <div className="p-2 border-b">
-                <Input
-                  value={classSearch}
-                  onChange={(e) => setClassSearch(e.target.value)}
-                  placeholder="Search classes..."
-                  className="h-8 text-sm"
-                />
+                    <span className="text-blue-600 dark:text-blue-400">.</span>
+                    {className}
+                    <button
+                      onClick={() => handleRemoveClass(className)}
+                      className="ml-0.5 hover:bg-destructive/20 rounded-full p-0.5"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
               </div>
-              <ScrollArea className="h-48">
-                {filteredClasses.length > 0 ? (
-                  <div className="p-1">
-                    {filteredClasses.map((cls) => (
-                      <button
-                        key={cls.name}
-                        onClick={() => handleAddClass(cls.name)}
-                        disabled={appliedClasses.includes(cls.name)}
-                        className={cn(
-                          'w-full text-left px-2 py-1.5 text-sm rounded-md transition-colors',
-                          'hover:bg-muted',
-                          appliedClasses.includes(cls.name) && 'opacity-50 cursor-not-allowed'
-                        )}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-mono text-xs">
-                            <span className="text-blue-600 dark:text-blue-400">.</span>
-                            {cls.name}
-                          </span>
-                          {appliedClasses.includes(cls.name) && (
-                            <Check className="h-3 w-3 text-green-600" />
-                          )}
-                        </div>
-                        {cls.label && cls.label !== cls.name && (
-                          <p className="text-xs text-muted-foreground truncate">
-                            {cls.label}
-                          </p>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="p-4 text-center text-sm text-muted-foreground">
-                    {classSearch ? 'No classes found' : 'No classes created yet'}
-                  </div>
-                )}
-              </ScrollArea>
-            </PopoverContent>
-          </Popover>
+            )}
 
-          {/* Property source indicator info */}
-          {appliedClasses.length > 0 && (
-            <div className="p-2 bg-blue-50 dark:bg-blue-950 rounded-md">
-              <p className="text-xs text-blue-700 dark:text-blue-300">
-                <span className="inline-block w-2 h-2 rounded-full bg-blue-500 mr-1.5" />
-                Properties from classes are shown with a blue indicator in style tabs
-              </p>
-            </div>
-          )}
-        </CollapsibleContent>
-      </Collapsible>
-    </div>
-  </TooltipProvider>
+            {/* Add Class Dropdown */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="w-full h-8 justify-start text-xs gap-1">
+                  <Plus className="h-3 w-3" />
+                  Add existing class...
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64 p-0" align="start">
+                <div className="p-2 border-b">
+                  <Input
+                    value={classSearch}
+                    onChange={(e) => setClassSearch(e.target.value)}
+                    placeholder="Search classes..."
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <ScrollArea className="h-48">
+                  {filteredClasses.length > 0 ? (
+                    <div className="p-1">
+                      {filteredClasses.map((cls) => (
+                        <button
+                          key={cls.name}
+                          onClick={() => handleAddClass(cls.name)}
+                          disabled={appliedClasses.includes(cls.name)}
+                          className={cn(
+                            'w-full text-left px-2 py-1.5 text-sm rounded-md transition-colors',
+                            'hover:bg-muted',
+                            appliedClasses.includes(cls.name) && 'opacity-50 cursor-not-allowed'
+                          )}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-mono text-xs">
+                              <span className="text-blue-600 dark:text-blue-400">.</span>
+                              {cls.name}
+                            </span>
+                            {appliedClasses.includes(cls.name) && (
+                              <Check className="h-3 w-3 text-green-600" />
+                            )}
+                          </div>
+                          {cls.label && cls.label !== cls.name && (
+                            <p className="text-xs text-muted-foreground truncate">
+                              {cls.label}
+                            </p>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-4 text-center text-sm text-muted-foreground">
+                      {classSearch ? 'No classes found' : 'No classes created yet'}
+                    </div>
+                  )}
+                </ScrollArea>
+              </PopoverContent>
+            </Popover>
+
+            {/* Property source indicator info */}
+            {appliedClasses.length > 0 && (
+              <div className="p-2 bg-green-50 dark:bg-green-950 rounded-md">
+                <p className="text-xs text-green-700 dark:text-green-300">
+                  <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-1.5" />
+                  Properties from classes are shown with a green indicator in style tabs
+                </p>
+              </div>
+            )}
+          </CollapsibleContent>
+        </Collapsible>
+      </div>
+    </TooltipProvider>
   );
 }

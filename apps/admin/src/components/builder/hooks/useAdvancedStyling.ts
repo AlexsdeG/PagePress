@@ -4,7 +4,7 @@
 import { useMemo, useEffect, useRef } from 'react';
 import { useNode } from '@craftjs/core';
 import { generateStyles, type GeneratedStyles } from '../utils/styleGenerator';
-import type { AdvancedStyling } from '../inspector/styles/types';
+import type { AdvancedStyling, BreakpointStyling } from '../inspector/styles/types';
 import type { ElementMetadata, PseudoClass } from '../inspector/sidebar/types';
 import { useGlobalSettingsStore } from '../global/globalSettingsStore';
 
@@ -63,11 +63,13 @@ export function useAdvancedStyling(
   const {
     advancedStyling,
     pseudoStateStyling,
+    breakpointStyling,
     metadata,
     nodeId,
   } = useNode((node) => ({
     advancedStyling: node.data.props.advancedStyling as AdvancedStyling | undefined,
     pseudoStateStyling: node.data.props.pseudoStateStyling as Partial<Record<PseudoClass, Partial<AdvancedStyling>>> | undefined,
+    breakpointStyling: node.data.props.breakpointStyling as BreakpointStyling | undefined,
     metadata: node.data.props.metadata as ElementMetadata | undefined,
     nodeId: node.id,
   }));
@@ -79,12 +81,13 @@ export function useAdvancedStyling(
   const generatedStyles = useMemo<GeneratedStyles>(() => {
     return generateStyles(
       advancedStyling,
-      pseudoStateStyling, // Now properly passing pseudo state styling
+      pseudoStateStyling,
+      breakpointStyling,
       elementId,
       metadata?.customCSS,
       metadata?.customAttributes
     );
-  }, [advancedStyling, pseudoStateStyling, elementId, metadata?.customCSS, metadata?.customAttributes]);
+  }, [advancedStyling, pseudoStateStyling, breakpointStyling, elementId, metadata?.customCSS, metadata?.customAttributes]);
 
   // Inject pseudo CSS if present
   const styleTagRef = useRef<HTMLStyleElement | null>(null);
@@ -116,42 +119,13 @@ export function useAdvancedStyling(
   const combinedStyle = useMemo<React.CSSProperties>(() => {
     let globalDefaults: React.CSSProperties = {};
 
-    if (componentType && themeSettings?.elements?.[componentType]) {
-      // Map global settings to CSS properties
-      // We need to be careful about property names matching CSS properties
-      const defaults = themeSettings.elements[componentType];
-
-      // Basic mapping - this might need refinement based on GlobalElementDefaults structure
-      // For container: { maxWidth, padding }
-      // For button: { padding, borderRadius, fontSize }
-      // For link: { color, textDecoration } (hoverColor handled via pseudo)
-
-      if (componentType === 'container') {
-        const containerDefaults = defaults as { maxWidth: string; padding: string };
-        if (containerDefaults.padding) globalDefaults.padding = containerDefaults.padding;
-        // maxWidth usually applies to width or max-width depending on layout
-        // But here we just set maxWidth
-        if (containerDefaults.maxWidth) globalDefaults.maxWidth = containerDefaults.maxWidth;
-      } else if (componentType === 'button') {
-        const btnDefaults = defaults as { padding: string; borderRadius: string; fontSize: string };
-        if (btnDefaults.padding) globalDefaults.padding = btnDefaults.padding;
-        if (btnDefaults.borderRadius) globalDefaults.borderRadius = btnDefaults.borderRadius;
-        if (btnDefaults.fontSize) globalDefaults.fontSize = btnDefaults.fontSize;
-      } else if (componentType === 'link') {
-        const linkDefaults = defaults as { color: string; textDecoration: string };
-        if (linkDefaults.color) globalDefaults.color = linkDefaults.color;
-        if (linkDefaults.textDecoration) globalDefaults.textDecoration = linkDefaults.textDecoration;
-      } else if (componentType === 'heading') {
+    if (componentType && themeSettings) {
+      if (componentType === 'heading') {
         // Apply global heading styles
         if (themeSettings.typography) {
           const typo = themeSettings.typography;
           if (typo.fontFamily?.heading) globalDefaults.fontFamily = typo.fontFamily.heading;
           if (typo.headingLineHeight) globalDefaults.lineHeight = typo.headingLineHeight;
-          // Note: fontSize depends on level, which we don't know here easily without passing it in options
-          // But Heading component handles its own default font size logic via getActualFontSize
-          // However, if we want advanced styling to reflect it, we might need to pass it.
-          // For now, we let Heading component handle the specific level size via its own logic
-          // unless advancedStyling overrides it.
         }
       } else if (componentType === 'text') {
         // Apply global body styles
@@ -160,6 +134,25 @@ export function useAdvancedStyling(
           if (typo.fontFamily?.body) globalDefaults.fontFamily = typo.fontFamily.body;
           if (typo.bodyLineHeight) globalDefaults.lineHeight = typo.bodyLineHeight;
           if (typo.baseFontSize) globalDefaults.fontSize = `${typo.baseFontSize}px`;
+        }
+      } else if (themeSettings.elements && componentType in themeSettings.elements) {
+        // Handle standard elements (button, link, container, form)
+        // We cast to any to avoid TS indexing errors since we verified the key exists
+        const defaults = (themeSettings.elements as any)[componentType];
+
+        if (componentType === 'container') {
+          const containerDefaults = defaults as { maxWidth: string; padding: string };
+          if (containerDefaults.padding) globalDefaults.padding = containerDefaults.padding;
+          if (containerDefaults.maxWidth) globalDefaults.maxWidth = containerDefaults.maxWidth;
+        } else if (componentType === 'button') {
+          const btnDefaults = defaults as { padding: string; borderRadius: string; fontSize: string };
+          if (btnDefaults.padding) globalDefaults.padding = btnDefaults.padding;
+          if (btnDefaults.borderRadius) globalDefaults.borderRadius = btnDefaults.borderRadius;
+          if (btnDefaults.fontSize) globalDefaults.fontSize = btnDefaults.fontSize;
+        } else if (componentType === 'link') {
+          const linkDefaults = defaults as { color: string; textDecoration: string };
+          if (linkDefaults.color) globalDefaults.color = linkDefaults.color;
+          if (linkDefaults.textDecoration) globalDefaults.textDecoration = linkDefaults.textDecoration;
         }
       }
     }

@@ -12,11 +12,19 @@ import { RotateCcw, Copy, ClipboardPaste } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
+import { StyleIndicator } from './inputs/StyleIndicator';
+
 interface SettingsFieldWrapperProps {
   /** The field name (used for tracking modifications) */
   fieldName: string;
   /** Whether this field has been modified from its default */
   isModified?: boolean;
+  /** Whether inherited from class */
+  isClassInherited?: boolean;
+  /** Whether inherited from global settings */
+  isGlobalInherited?: boolean;
+  /** Whether it is a responsive override */
+  isResponsiveOverride?: boolean;
   /** The default value to reset to */
   defaultValue: unknown;
   /** Current value (for copy functionality) */
@@ -33,6 +41,8 @@ interface SettingsFieldWrapperProps {
   className?: string;
   /** Whether to show the modified indicator dot */
   showModifiedIndicator?: boolean;
+  /** Orientation of the style indicators */
+  orientation?: 'horizontal' | 'vertical';
 }
 
 /**
@@ -44,6 +54,9 @@ interface SettingsFieldWrapperProps {
 export function SettingsFieldWrapper({
   fieldName,
   isModified = false,
+  isClassInherited = false,
+  isGlobalInherited = false,
+  isResponsiveOverride = false,
   defaultValue,
   currentValue,
   onReset,
@@ -52,6 +65,7 @@ export function SettingsFieldWrapper({
   label,
   className,
   showModifiedIndicator = true,
+  orientation = 'horizontal',
 }: SettingsFieldWrapperProps) {
   const [isPasting, setIsPasting] = useState(false);
 
@@ -68,8 +82,8 @@ export function SettingsFieldWrapper({
    */
   const handleCopy = useCallback(async () => {
     try {
-      const value = typeof currentValue === 'object' 
-        ? JSON.stringify(currentValue) 
+      const value = typeof currentValue === 'object'
+        ? JSON.stringify(currentValue)
         : String(currentValue);
       await navigator.clipboard.writeText(value);
       toast.success('Value copied to clipboard');
@@ -83,7 +97,7 @@ export function SettingsFieldWrapper({
    */
   const handlePaste = useCallback(async () => {
     if (!onPaste) return;
-    
+
     try {
       setIsPasting(true);
       const text = await navigator.clipboard.readText();
@@ -99,24 +113,27 @@ export function SettingsFieldWrapper({
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
-        <div 
+        <div
           className={cn(
-            'relative group',
+            'relative group pl-6',
             className
           )}
         >
           {/* Modified indicator */}
-          {showModifiedIndicator && isModified && (
-            <div 
-              className="absolute -left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-blue-500"
-              title="Modified from default"
+          {showModifiedIndicator && (
+            <StyleIndicator
+              isModified={isModified}
+              isClassInherited={isClassInherited}
+              isGlobalInherited={isGlobalInherited}
+              isResponsiveOverride={isResponsiveOverride}
+              orientation={orientation}
             />
           )}
           {children}
         </div>
       </ContextMenuTrigger>
       <ContextMenuContent className="w-48">
-        <ContextMenuItem 
+        <ContextMenuItem
           onClick={handleReset}
           disabled={!isModified}
           className={!isModified ? 'text-muted-foreground' : ''}

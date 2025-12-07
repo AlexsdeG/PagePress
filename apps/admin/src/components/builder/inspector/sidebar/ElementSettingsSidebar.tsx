@@ -1,27 +1,24 @@
+
 // PagePress v0.0.9 - 2025-12-04
 // Element Settings Sidebar - Bricks-style icon navigation with all tabs
 
-import { useState, useCallback, useRef, useEffect, type ReactNode } from 'react';
-import { useNode } from '@craftjs/core';
+import { useState, useCallback, type ReactNode } from 'react';
+import { useEditor, useNode } from '@craftjs/core';
 import {
-  Settings,
   LayoutGrid,
   Type,
   Paintbrush,
   Square,
   Sparkles,
   Move3d,
-  FileText,
   Code,
   Braces,
-  X,
-  Check,
-  Pencil,
+  FileText,
+  Settings
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
 import {
   Tooltip,
   TooltipContent,
@@ -29,10 +26,22 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+import { useBuilderStore } from '@/stores/builder';
+
+import {
+  ALL_SETTINGS_TABS,
+  type SettingsTabId,
+  type ElementMetadata,
+  type PseudoClass,
+  type PropertySource,
+  type StyleSourceResult,
+} from './types';
+import type { AdvancedStyling, BreakpointStyling } from '../styles/types';
+import { InspectorHeader } from './InspectorHeader';
+
 import { GeneralSettingsTab } from './GeneralSettingsTab';
 import { CustomCSSTab } from './CustomCSSTab';
-import { AttributesTab } from './AttributesTab';
+import AttributesTab from './AttributesTab';
 import { LayoutSettingsTab } from '../styles/LayoutSettingsTab';
 import { TypographySettingsTab } from '../styles/TypographySettingsTab';
 import { BackgroundSettingsTab } from '../styles/BackgroundSettingsTab';
@@ -41,11 +50,6 @@ import { BoxShadowInput } from '../inputs/BoxShadowInput';
 import { FilterInput, BackdropFilterInput, defaultFilterSettings, defaultBackdropFilterSettings } from '../inputs/FilterInput';
 import { TransformInput, defaultTransformSettings } from '../inputs/TransformInput';
 import { TransitionInput, defaultTransitionSettings } from '../inputs/TransitionInput';
-import type { AdvancedStyling } from '../styles/types';
-import type { SettingsTabId, ElementMetadata, PseudoClass } from './types';
-import { COMPONENT_TYPE_LABELS, getComponentBadgeColor, ALL_SETTINGS_TABS } from './types';
-import { Badge } from '@/components/ui/badge';
-import { useEditor } from '@craftjs/core';
 
 /**
  * Icon mapping for tabs
@@ -120,10 +124,8 @@ export function ElementSettingsSidebar({
 }: ElementSettingsSidebarProps) {
   const [activeTab, setActiveTab] = useState<SettingsTabId>('content');
   const [pseudoState, setPseudoState] = useState<PseudoClass>('default');
-  const [isEditingName, setIsEditingName] = useState(false);
-  const [editingNameValue, setEditingNameValue] = useState('');
-  const nameInputRef = useRef<HTMLInputElement>(null);
 
+  const { activeBreakpoint } = useBuilderStore();
   const { actions: editorActions } = useEditor();
 
   const {
@@ -133,6 +135,7 @@ export function ElementSettingsSidebar({
     customName,
     styling,
     pseudoStateStyling,
+    breakpointStyling,
     nodeId,
   } = useNode((node) => ({
     nodeId: node.id,
@@ -141,90 +144,101 @@ export function ElementSettingsSidebar({
     customName: (node.data.props.metadata as ElementMetadata | undefined)?.customName,
     styling: (node.data.props.advancedStyling || {}) as AdvancedStyling,
     pseudoStateStyling: (node.data.props.pseudoStateStyling || {}) as Partial<Record<PseudoClass, Partial<AdvancedStyling>>>,
+    breakpointStyling: (node.data.props.breakpointStyling || {}) as BreakpointStyling,
   }));
 
-  // Focus input when editing starts
-  useEffect(() => {
-    if (isEditingName && nameInputRef.current) {
-      nameInputRef.current.focus();
-      nameInputRef.current.select();
-    }
-  }, [isEditingName]);
-
-  // Start editing name
-  const handleStartEditName = useCallback(() => {
-    setEditingNameValue(customName || '');
-    setIsEditingName(true);
-  }, [customName]);
-
   // Save the name
-  const handleSaveName = useCallback(() => {
+  const handleRename = useCallback((newName: string) => {
     setProp((props: Record<string, unknown>) => {
       const metadata = (props.metadata || { elementId: nodeId }) as ElementMetadata;
-      props.metadata = { ...metadata, customName: editingNameValue.trim() || undefined };
+      props.metadata = { ...metadata, customName: newName.trim() || undefined };
     });
-    setIsEditingName(false);
-    if (editingNameValue.trim()) {
+    if (newName.trim()) {
       toast.success('Element renamed');
     }
-  }, [setProp, nodeId, editingNameValue]);
+  }, [setProp, nodeId]);
 
-  // Cancel editing
-  const handleCancelEditName = useCallback(() => {
-    setIsEditingName(false);
-    setEditingNameValue('');
-  }, []);
 
-  // Handle keyboard in edit mode
-  const handleNameKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSaveName();
-    } else if (e.key === 'Escape') {
-      handleCancelEditName();
+
+  // Calculate effective styling (cascade)
+  // Desktop -> Tablet -> Mobile
+  const getEffectiveStyling = useCallback((): AdvancedStyling => {
+    // 1. Start with Desktop Base
+    let effective = { ...styling };
+
+    // 2. Apply Desktop Pseudo if active
+    if (activeBreakpoint === 'desktop' && pseudoState !== 'default') {
+      effective = { ...effective, ...(pseudoStateStyling[pseudoState] || {}) };
+      return effective;
     }
-  }, [handleSaveName, handleCancelEditName]);
 
-  // Get the active styling based on current pseudo state
-  const getActiveStyling = useCallback((): AdvancedStyling => {
-    if (pseudoState === 'default') {
-      return styling;
+    // 3. Apply Tablet Base if activeBreakpoint is tablet or mobile
+    if (activeBreakpoint === 'tablet' || activeBreakpoint === 'mobile') {
+      const tabletBase = breakpointStyling.tablet || {};
+      effective = { ...effective, ...tabletBase };
+
+      // Apply Tablet Pseudo if active
+      if (activeBreakpoint === 'tablet' && pseudoState !== 'default') {
+        const tabletPseudo = breakpointStyling.tablet?.pseudoStates?.[pseudoState] || {};
+        effective = { ...effective, ...tabletPseudo };
+        return effective;
+      }
     }
-    // For pseudo states, merge base styling with pseudo-specific overrides
-    const pseudoStyles = pseudoStateStyling[pseudoState] || {};
-    return {
-      ...styling,
-      ...pseudoStyles,
-    };
-  }, [pseudoState, styling, pseudoStateStyling]);
 
-  const activeStyling = getActiveStyling();
+    // 4. Apply Mobile Base if activeBreakpoint is mobile
+    if (activeBreakpoint === 'mobile') {
+      const mobileBase = breakpointStyling.mobile || {};
+      effective = { ...effective, ...mobileBase };
 
-  // Update a specific style category (handles pseudo states)
+      // Apply Mobile Pseudo if active
+      if (activeBreakpoint === 'mobile' && pseudoState !== 'default') {
+        const mobilePseudo = breakpointStyling.mobile?.pseudoStates?.[pseudoState] || {};
+        effective = { ...effective, ...mobilePseudo };
+        return effective;
+      }
+    }
+
+    return effective;
+  }, [activeBreakpoint, pseudoState, styling, pseudoStateStyling, breakpointStyling]);
+
+  const activeStyling = getEffectiveStyling();
+
+  // Update a specific style category
   const handleStyleChange = useCallback(
     <K extends keyof AdvancedStyling>(category: K, value: AdvancedStyling[K]) => {
-      if (pseudoState === 'default') {
-        // Writing to base styling
-        setProp((props: Record<string, unknown>) => {
-          props.advancedStyling = {
-            ...(props.advancedStyling as AdvancedStyling || {}),
-            [category]: value,
-          };
-        });
-      } else {
-        // Writing to pseudo state styling
-        setProp((props: Record<string, unknown>) => {
-          const currentPseudoStyles = (props.pseudoStateStyling || {}) as Partial<Record<PseudoClass, Partial<AdvancedStyling>>>;
-          props.pseudoStateStyling = {
-            ...currentPseudoStyles,
-            [pseudoState]: {
-              ...(currentPseudoStyles[pseudoState] || {}),
-              [category]: value,
-            },
-          };
-        });
-      }
+      setProp((props: Record<string, any>) => {
+
+
+        if (activeBreakpoint === 'desktop') {
+          if (pseudoState === 'default') {
+            // Desktop Base
+            if (!props.advancedStyling) props.advancedStyling = {};
+            props.advancedStyling[category] = value;
+          } else {
+            // Desktop Pseudo
+            if (!props.pseudoStateStyling) props.pseudoStateStyling = {};
+            if (!props.pseudoStateStyling[pseudoState]) props.pseudoStateStyling[pseudoState] = {};
+            props.pseudoStateStyling[pseudoState][category] = value;
+          }
+        } else {
+          // Tablet or Mobile
+          if (!props.breakpointStyling) props.breakpointStyling = {};
+
+          if (pseudoState === 'default') {
+            // Breakpoint Base
+            if (!props.breakpointStyling[activeBreakpoint]) props.breakpointStyling[activeBreakpoint] = {};
+            props.breakpointStyling[activeBreakpoint][category] = value;
+          } else {
+            // Breakpoint Pseudo
+            if (!props.breakpointStyling[activeBreakpoint]) props.breakpointStyling[activeBreakpoint] = {};
+            if (!props.breakpointStyling[activeBreakpoint].pseudoStates) props.breakpointStyling[activeBreakpoint].pseudoStates = {};
+            if (!props.breakpointStyling[activeBreakpoint].pseudoStates[pseudoState]) props.breakpointStyling[activeBreakpoint].pseudoStates[pseudoState] = {};
+            props.breakpointStyling[activeBreakpoint].pseudoStates[pseudoState][category] = value;
+          }
+        }
+      });
     },
-    [setProp, pseudoState]
+    [setProp, activeBreakpoint, pseudoState]
   );
 
   // Get available tabs based on sections
@@ -240,9 +254,102 @@ export function ElementSettingsSidebar({
 
   const visibleTabs = getVisibleTabs();
 
-  const typeLabel = COMPONENT_TYPE_LABELS[componentType] || componentType;
-  const badgeColor = getComponentBadgeColor(componentType);
-  const elementName = customName || displayName;
+
+
+  // Helper to check if a value exists at path
+  const hasValue = (obj: any, path: string): boolean => {
+    if (!obj) return false;
+    const parts = path.split('.');
+    let current = obj;
+    for (const part of parts) {
+      if (current === undefined || current === null) return false;
+      current = current[part];
+    }
+    return current !== undefined && current !== null;
+  };
+
+  // Determine source of a style property
+  const getStyleSource = useCallback((path: string): StyleSourceResult => {
+    // 1. Check current level (User/Manual)
+    let currentStyling: any = {};
+    let source: PropertySource = 'default';
+
+    if (activeBreakpoint === 'desktop') {
+      if (pseudoState === 'default') {
+        currentStyling = styling;
+      } else {
+        currentStyling = pseudoStateStyling[pseudoState] || {};
+      }
+    } else {
+      // Tablet/Mobile
+      const bpStyling = breakpointStyling[activeBreakpoint] || {};
+      if (pseudoState === 'default') {
+        currentStyling = bpStyling;
+      } else {
+        currentStyling = bpStyling.pseudoStates?.[pseudoState] || {};
+      }
+    }
+
+    if (hasValue(currentStyling, path)) {
+      source = 'user';
+    }
+
+    // 2. Check classes (Future)
+    // if (source === 'default' && hasClassValue(path)) source = 'class';
+
+    // 3. Check global theme (Future)
+    // if (source === 'default' && hasGlobalValue(path)) source = 'global';
+
+    // 4. Check other breakpoints (Yellow dot)
+    // If not set in current view, check if it's set in ANY other view
+    let isResponsive = false;
+
+    // Check desktop
+    if (activeBreakpoint !== 'desktop' || pseudoState !== 'default') {
+      if (hasValue(styling, path)) isResponsive = true;
+    }
+
+    // Check desktop pseudo-states
+    if (!isResponsive) {
+      for (const state of Object.keys(pseudoStateStyling)) {
+        if (activeBreakpoint === 'desktop' && pseudoState === state) continue;
+        if (hasValue(pseudoStateStyling[state as PseudoClass], path)) {
+          isResponsive = true;
+          break;
+        }
+      }
+    }
+
+    // Check breakpoints
+    if (!isResponsive) {
+      for (const bp of ['tablet', 'mobile'] as const) {
+        const bpData = breakpointStyling[bp];
+        if (!bpData) continue;
+
+        // Check base breakpoint
+        if (activeBreakpoint !== bp || pseudoState !== 'default') {
+          if (hasValue(bpData, path)) {
+            isResponsive = true;
+            break;
+          }
+        }
+
+        // Check breakpoint pseudo-states
+        if (bpData.pseudoStates) {
+          for (const state of Object.keys(bpData.pseudoStates)) {
+            if (activeBreakpoint === bp && pseudoState === state) continue;
+            if (hasValue(bpData.pseudoStates[state as PseudoClass], path)) {
+              isResponsive = true;
+              break;
+            }
+          }
+        }
+        if (isResponsive) break;
+      }
+    }
+
+    return { source, isResponsive };
+  }, [activeBreakpoint, pseudoState, styling, pseudoStateStyling, breakpointStyling]);
 
   // Deselect element
   const handleDeselect = useCallback(() => {
@@ -254,46 +361,50 @@ export function ElementSettingsSidebar({
     switch (activeTab) {
       case 'content':
         return contentSettings;
-      
+
       case 'general':
         return (
-          <GeneralSettingsTab 
-            styling={activeStyling} 
+          <GeneralSettingsTab
+            styling={activeStyling}
             activePseudoState={pseudoState}
             onPseudoStateChange={setPseudoState}
           />
         );
-      
+
       case 'layout':
         return (
           <LayoutSettingsTab
             value={activeStyling.layout || {}}
             onChange={(layout) => handleStyleChange('layout', layout)}
+            getStyleSource={getStyleSource}
           />
         );
-      
+
       case 'typography':
         return (
           <TypographySettingsTab
             value={activeStyling.typography || {}}
             onChange={(typography) => handleStyleChange('typography', typography)}
+            getStyleSource={getStyleSource}
           />
         );
-      
+
       case 'background':
         return (
           <BackgroundSettingsTab
             value={activeStyling.background || {}}
             onChange={(background) => handleStyleChange('background', background)}
+            getStyleSource={getStyleSource}
           />
         );
-      
+
       case 'border':
         return (
           <div className="space-y-6">
             <BorderInput
               value={{ ...defaultBorderSettings, ...(activeStyling.border || {}) }}
               onChange={(border) => handleStyleChange('border', border)}
+              getStyleSource={(path) => getStyleSource(`border.${path}`)}
             />
             <Separator />
             <div className="space-y-3">
@@ -303,11 +414,13 @@ export function ElementSettingsSidebar({
               <BoxShadowInput
                 value={activeStyling.boxShadow || []}
                 onChange={(boxShadow) => handleStyleChange('boxShadow', boxShadow)}
+                getStyleSource={getStyleSource}
+                path="boxShadow"
               />
             </div>
           </div>
         );
-      
+
       case 'effects':
         return (
           <div className="space-y-6">
@@ -319,6 +432,8 @@ export function ElementSettingsSidebar({
               <TransitionInput
                 value={{ ...defaultTransitionSettings, ...(activeStyling.transition || {}) }}
                 onChange={(transition) => handleStyleChange('transition', transition)}
+                getStyleSource={getStyleSource}
+                path="transition"
               />
             </div>
 
@@ -332,6 +447,8 @@ export function ElementSettingsSidebar({
               <FilterInput
                 value={{ ...defaultFilterSettings, ...(activeStyling.filter || {}) }}
                 onChange={(filter) => handleStyleChange('filter', filter)}
+                getStyleSource={getStyleSource}
+                path="filter"
               />
             </div>
 
@@ -341,10 +458,12 @@ export function ElementSettingsSidebar({
             <BackdropFilterInput
               value={{ ...defaultBackdropFilterSettings, ...(activeStyling.backdropFilter || {}) }}
               onChange={(backdropFilter) => handleStyleChange('backdropFilter', backdropFilter)}
+              getStyleSource={getStyleSource}
+              path="backdropFilter"
             />
           </div>
         );
-      
+
       case 'transform':
         return (
           <div className="space-y-6">
@@ -352,16 +471,18 @@ export function ElementSettingsSidebar({
             <TransformInput
               value={{ ...defaultTransformSettings, ...(activeStyling.transform || {}) }}
               onChange={(transform) => handleStyleChange('transform', transform)}
+              getStyleSource={getStyleSource}
+              path="transform"
             />
           </div>
         );
-      
+
       case 'attributes':
         return <AttributesTab />;
-      
+
       case 'css':
         return <CustomCSSTab />;
-      
+
       default:
         return null;
     }
@@ -381,7 +502,7 @@ export function ElementSettingsSidebar({
           {visibleTabs.map((tabId) => {
             const Icon = TAB_ICONS[tabId];
             const isActive = activeTab === tabId;
-            
+
             return (
               <Tooltip key={tabId}>
                 <TooltipTrigger asChild>
@@ -409,70 +530,15 @@ export function ElementSettingsSidebar({
         {/* Content Area */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           {/* Header */}
-          <div className="px-4 py-3 border-b bg-muted/10 shrink-0">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 min-w-0 flex-1">
-                <Badge className={cn('text-[10px] px-1.5 py-0.5 shrink-0 border', badgeColor)}>
-                  {typeLabel}
-                </Badge>
-                {isEditingName ? (
-                  <div className="flex items-center gap-1 flex-1 min-w-0">
-                    <Input
-                      ref={nameInputRef}
-                      value={editingNameValue}
-                      onChange={(e) => setEditingNameValue(e.target.value)}
-                      onBlur={handleSaveName}
-                      onKeyDown={handleNameKeyDown}
-                      placeholder={displayName}
-                      className="h-6 text-sm flex-1 min-w-0"
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 shrink-0"
-                      onClick={handleSaveName}
-                    >
-                      <Check className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={handleStartEditName}
-                    className="flex items-center gap-1 min-w-0 group hover:text-primary transition-colors"
-                    title="Click to rename element"
-                  >
-                    <span className="text-sm font-medium truncate">{elementName}</span>
-                    <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-50 shrink-0" />
-                  </button>
-                )}
-              </div>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground ml-2"
-                    onClick={handleDeselect}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="left">
-                  Deselect element
-                </TooltipContent>
-              </Tooltip>
-            </div>
-            <div className="flex items-center gap-2 mt-1.5">
-              <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-                {TAB_LABELS[activeTab]}
-              </span>
-              {pseudoState !== 'default' && (
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 font-mono text-purple-600 dark:text-purple-400 border-purple-500/30">
-                  :{pseudoState}
-                </Badge>
-              )}
-            </div>
-          </div>
+          <InspectorHeader
+            elementName={displayName}
+            componentType={componentType}
+            customName={customName}
+            onRename={handleRename}
+            pseudoState={pseudoState}
+            onPseudoStateChange={setPseudoState}
+            onDeselect={handleDeselect}
+          />
 
           {/* Tab Content */}
           <ScrollArea className="flex-1">

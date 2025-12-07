@@ -9,6 +9,8 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { useBuilderStore, type ViewportMode } from '@/stores/builder';
+import { useBuilderContext } from '../context';
 import { useBreakpointStore } from './breakpointStore';
 import { DEFAULT_BREAKPOINTS, type BreakpointId } from './types';
 
@@ -22,11 +24,17 @@ const BREAKPOINT_ICONS: Record<BreakpointId, React.ElementType> = {
   mobilePortrait: Smartphone,
 };
 
-/**
- * Breakpoint selector component for the TopBar
- * Allows switching between desktop, tablet, and mobile views
- */
+// ...
+
 export function BreakpointSelector() {
+  const { save } = useBuilderContext();
+  const {
+    activeBreakpoint,
+    setActiveBreakpoint,
+    setViewport,
+    hasUnsavedChanges
+  } = useBuilderStore();
+
   const {
     currentBreakpoint,
     setBreakpoint,
@@ -35,6 +43,22 @@ export function BreakpointSelector() {
     showDeviceFrame,
     toggleDeviceFrame,
   } = useBreakpointStore();
+
+  const handleBreakpointChange = async (bpId: BreakpointId) => {
+    // Auto-save if needed
+    if (hasUnsavedChanges) {
+      await save();
+    }
+
+    // Update both stores
+    setBreakpoint(bpId);
+
+    // Map BreakpointId to ViewportMode (they share desktop/tablet/mobile)
+    // mobilePortrait maps to mobile for the builder store
+    const viewportMode = (bpId === 'mobilePortrait' ? 'mobile' : bpId) as ViewportMode;
+    setActiveBreakpoint(viewportMode);
+    setViewport(viewportMode);
+  };
 
   // Only show first 3 breakpoints in selector (desktop, tablet, mobile)
   // mobilePortrait is accessible via the mobile breakpoint with portrait orientation
@@ -55,10 +79,10 @@ export function BreakpointSelector() {
                   variant="ghost"
                   size="sm"
                   className={cn(
-                    'h-7 w-7 p-0',
-                    isActive && 'bg-background shadow-sm'
+                    'h-7 w-7 p-0 hover:bg-muted-foreground/20',
+                    isActive && 'bg-background shadow-sm hover:bg-background'
                   )}
-                  onClick={() => setBreakpoint(bp.id)}
+                  onClick={() => handleBreakpointChange(bp.id)}
                 >
                   <Icon className="h-4 w-4" />
                 </Button>
@@ -78,27 +102,27 @@ export function BreakpointSelector() {
       {(currentBreakpoint === 'mobile' ||
         currentBreakpoint === 'mobilePortrait' ||
         currentBreakpoint === 'tablet') && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0"
-              onClick={toggleOrientation}
-            >
-              <RotateCcw
-                className={cn(
-                  'h-4 w-4 transition-transform',
-                  previewOrientation === 'landscape' && 'rotate-90'
-                )}
-              />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            {previewOrientation === 'portrait' ? 'Landscape' : 'Portrait'}
-          </TooltipContent>
-        </Tooltip>
-      )}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0"
+                onClick={toggleOrientation}
+              >
+                <RotateCcw
+                  className={cn(
+                    'h-4 w-4 transition-transform',
+                    previewOrientation === 'landscape' && 'rotate-90'
+                  )}
+                />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {previewOrientation === 'portrait' ? 'Landscape' : 'Portrait'}
+            </TooltipContent>
+          </Tooltip>
+        )}
 
       {/* Device frame toggle */}
       {currentBreakpoint !== 'desktop' && (

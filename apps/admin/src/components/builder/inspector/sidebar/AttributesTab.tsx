@@ -1,7 +1,7 @@
 // PagePress v0.0.11 - 2025-12-04
 // HTML Attributes Tab - Custom name/value pairs with ARIA presets
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { useNode } from '@craftjs/core';
 import { Plus, Trash2, Code2, Info, GripVertical, Accessibility, ChevronDown } from 'lucide-react';
 import { Label } from '@/components/ui/label';
@@ -28,8 +28,9 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 import type { ElementMetadata, CustomAttribute } from './types';
-import { generateAttributeId } from './types';
+import { generateAttributeId, generateElementId } from './types';
 
 interface AttributesTabProps {
   className?: string;
@@ -53,7 +54,7 @@ const COMMON_ATTRIBUTES = [
 
 // ARIA role presets for common UI patterns
 const ARIA_ROLE_PRESETS = [
-  { value: '', label: 'None', description: 'No ARIA role' },
+  { value: 'none', label: 'None', description: 'No ARIA role' },
   { value: 'button', label: 'Button', description: 'Interactive button element' },
   { value: 'link', label: 'Link', description: 'Navigational link' },
   { value: 'navigation', label: 'Navigation', description: 'Navigation landmark' },
@@ -79,145 +80,93 @@ const ARIA_ROLE_PRESETS = [
   { value: 'presentation', label: 'Presentation', description: 'Decorative only' },
 ];
 
-// ARIA state presets
-const ARIA_STATE_PRESETS = {
+const ARIA_STATE_PRESETS: Record<string, { value: string; label: string }[]> = {
   'aria-expanded': [
-    { value: 'true', label: 'Expanded' },
-    { value: 'false', label: 'Collapsed' },
-  ],
-  'aria-selected': [
-    { value: 'true', label: 'Selected' },
-    { value: 'false', label: 'Not Selected' },
-  ],
-  'aria-checked': [
-    { value: 'true', label: 'Checked' },
-    { value: 'false', label: 'Unchecked' },
-    { value: 'mixed', label: 'Mixed' },
-  ],
-  'aria-disabled': [
-    { value: 'true', label: 'Disabled' },
-    { value: 'false', label: 'Enabled' },
-  ],
-  'aria-hidden': [
-    { value: 'true', label: 'Hidden' },
-    { value: 'false', label: 'Visible' },
-  ],
-  'aria-pressed': [
-    { value: 'true', label: 'Pressed' },
-    { value: 'false', label: 'Not Pressed' },
-    { value: 'mixed', label: 'Mixed' },
-  ],
-  'aria-current': [
-    { value: 'page', label: 'Current Page' },
-    { value: 'step', label: 'Current Step' },
-    { value: 'location', label: 'Current Location' },
     { value: 'true', label: 'True' },
     { value: 'false', label: 'False' },
   ],
-  'aria-live': [
-    { value: 'off', label: 'Off' },
-    { value: 'polite', label: 'Polite' },
-    { value: 'assertive', label: 'Assertive' },
+  'aria-pressed': [
+    { value: 'true', label: 'True' },
+    { value: 'false', label: 'False' },
+    { value: 'mixed', label: 'Mixed' },
+  ],
+  'aria-hidden': [
+    { value: 'true', label: 'True' },
+    { value: 'false', label: 'False' },
+  ],
+  'aria-selected': [
+    { value: 'true', label: 'True' },
+    { value: 'false', label: 'False' },
   ],
 };
 
-export function AttributesTab({ className }: AttributesTabProps) {
-  const { metadata, actions, id } = useNode((node) => ({
-    metadata: node.data.props.metadata as ElementMetadata | undefined,
-    id: node.id,
+export default function AttributesTab({ className }: AttributesTabProps) {
+  const {
+    actions: { setProp },
+    attributes,
+  } = useNode((node) => ({
+    attributes: (node.data.props.elementMetadata as ElementMetadata | undefined)?.customAttributes || [],
   }));
 
-  const [attributes, setAttributes] = useState<CustomAttribute[]>(
-    metadata?.customAttributes || []
-  );
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [ariaPresetsOpen, setAriaPresetsOpen] = useState(true);
+  const [ariaStatesOpen, setAriaStatesOpen] = useState(true);
 
-  // Initialize attributes from metadata using ref-based sync
-  const prevAttributesRef = useRef(metadata?.customAttributes);
-  if (prevAttributesRef.current !== metadata?.customAttributes) {
-    prevAttributesRef.current = metadata?.customAttributes;
-    // State will be synced through updateMetadata callback
-  }
+  const updateMetadata = useCallback((newAttributes: CustomAttribute[]) => {
+    setProp((props: Record<string, unknown>) => {
+      const metadata = (props.elementMetadata || { elementId: generateElementId(), appliedClasses: [] }) as ElementMetadata;
+      props.elementMetadata = {
+        ...metadata,
+        customAttributes: newAttributes,
+      };
+    });
+  }, [setProp]);
 
-  const updateMetadata = useCallback(
-    (newAttributes: CustomAttribute[]) => {
-      setAttributes(newAttributes);
-      actions.setProp((props: { metadata?: ElementMetadata }) => {
-        props.metadata = {
-          ...props.metadata,
-          elementId: metadata?.elementId || id,
-          appliedClasses: metadata?.appliedClasses || [],
-          customAttributes: newAttributes,
-        };
-      });
-    },
-    [actions, id, metadata]
-  );
-
-  const handleAddAttribute = useCallback(() => {
-    const newAttribute: CustomAttribute = {
-      id: generateAttributeId(),
-      name: '',
-      value: '',
-    };
-    updateMetadata([...attributes, newAttribute]);
+  const handleUpdateAttribute = useCallback((id: string, field: 'name' | 'value', value: string) => {
+    const newAttributes = attributes.map((attr) =>
+      attr.id === id ? { ...attr, [field]: value } : attr
+    );
+    updateMetadata(newAttributes);
   }, [attributes, updateMetadata]);
 
-  const handleAddCommonAttribute = useCallback(
-    (name: string) => {
-      // Check if attribute already exists
-      if (attributes.some((attr) => attr.name === name)) {
-        return;
-      }
-      const newAttribute: CustomAttribute = {
-        id: generateAttributeId(),
-        name,
-        value: '',
-      };
-      updateMetadata([...attributes, newAttribute]);
-      setShowSuggestions(false);
-    },
-    [attributes, updateMetadata]
-  );
-
-  const handleUpdateAttribute = useCallback(
-    (attributeId: string, field: 'name' | 'value', value: string) => {
-      const newAttributes = attributes.map((attr) =>
-        attr.id === attributeId ? { ...attr, [field]: value } : attr
-      );
-      updateMetadata(newAttributes);
-    },
-    [attributes, updateMetadata]
-  );
-
-  const handleRemoveAttribute = useCallback(
-    (attributeId: string) => {
-      const newAttributes = attributes.filter((attr) => attr.id !== attributeId);
-      updateMetadata(newAttributes);
-    },
-    [attributes, updateMetadata]
-  );
+  const handleRemoveAttribute = useCallback((id: string) => {
+    const newAttributes = attributes.filter((attr) => attr.id !== id);
+    updateMetadata(newAttributes);
+  }, [attributes, updateMetadata]);
 
   const handleClearAll = useCallback(() => {
     updateMetadata([]);
   }, [updateMetadata]);
 
+  const handleAddCommonAttribute = useCallback((name: string) => {
+    if (attributes.some(attr => attr.name === name)) {
+      toast.error(`Attribute "${name}" already exists`);
+      return;
+    }
+    const newAttribute: CustomAttribute = {
+      id: generateAttributeId(),
+      name,
+      value: '',
+    };
+    updateMetadata([...attributes, newAttribute]);
+    toast.success(`Attribute "${name}" added`);
+  }, [attributes, updateMetadata]);
+
   // Handle ARIA role preset change
   const handleAriaRoleChange = useCallback(
     (role: string) => {
+      const realRole = role === 'none' ? '' : role;
       const existingRole = attributes.find((attr) => attr.name === 'role');
       if (existingRole) {
-        if (role) {
-          handleUpdateAttribute(existingRole.id, 'value', role);
+        if (realRole) {
+          handleUpdateAttribute(existingRole.id, 'value', realRole);
         } else {
           handleRemoveAttribute(existingRole.id);
         }
-      } else if (role) {
+      } else if (realRole) {
         const newAttribute: CustomAttribute = {
           id: generateAttributeId(),
           name: 'role',
-          value: role,
+          value: realRole,
         };
         updateMetadata([...attributes, newAttribute]);
       }
@@ -228,18 +177,19 @@ export function AttributesTab({ className }: AttributesTabProps) {
   // Handle ARIA state preset change
   const handleAriaStateChange = useCallback(
     (attributeName: string, value: string) => {
+      const realValue = value === 'none' ? '' : value;
       const existingAttr = attributes.find((attr) => attr.name === attributeName);
       if (existingAttr) {
-        if (value) {
-          handleUpdateAttribute(existingAttr.id, 'value', value);
+        if (realValue) {
+          handleUpdateAttribute(existingAttr.id, 'value', realValue);
         } else {
           handleRemoveAttribute(existingAttr.id);
         }
-      } else if (value) {
+      } else if (realValue) {
         const newAttribute: CustomAttribute = {
           id: generateAttributeId(),
           name: attributeName,
-          value: value,
+          value: realValue,
         };
         updateMetadata([...attributes, newAttribute]);
       }
@@ -247,99 +197,55 @@ export function AttributesTab({ className }: AttributesTabProps) {
     [attributes, handleUpdateAttribute, handleRemoveAttribute, updateMetadata]
   );
 
-  // Get current ARIA role value
-  const currentRole = attributes.find((attr) => attr.name === 'role')?.value || '';
-
-  // Get unused common attributes
   const unusedCommonAttributes = COMMON_ATTRIBUTES.filter(
     (common) => !attributes.some((attr) => attr.name === common.name)
   );
 
   return (
-    <ScrollArea className={cn('h-full', className)}>
-      <div className="p-4 space-y-4">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Code2 className="w-4 h-4 text-muted-foreground" />
-            <Label className="text-sm font-medium">HTML Attributes</Label>
-            {attributes.length > 0 && (
-              <Badge variant="secondary" className="text-[10px]">
-                {attributes.length}
-              </Badge>
-            )}
-          </div>
-          <div className="flex items-center gap-1">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={handleAddAttribute}
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  <p>Add attribute</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
+    <ScrollArea className="h-full">
+      <div className={cn('space-y-4 p-4', className)}>
+        {/* ARIA Role Selector */}
+        <div className="space-y-2">
+          <Label className="text-xs">ARIA Role</Label>
+          <Select
+            value={attributes.find((attr) => attr.name === 'role')?.value || 'none'}
+            onValueChange={handleAriaRoleChange}
+          >
+            <SelectTrigger className="h-8 text-sm">
+              <SelectValue placeholder="Select role..." />
+            </SelectTrigger>
+            <SelectContent>
+              {ARIA_ROLE_PRESETS.map((preset) => (
+                <SelectItem key={preset.value} value={preset.value}>
+                  <div className="flex flex-col">
+                    <span className="text-sm">{preset.label}</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {preset.description}
+                    </span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
-        {/* ARIA Presets Section */}
-        <Collapsible open={ariaPresetsOpen} onOpenChange={setAriaPresetsOpen}>
-          <CollapsibleTrigger asChild>
-            <button className="flex items-center justify-between w-full p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/15 transition-colors">
-              <div className="flex items-center gap-2">
-                <Accessibility className="w-4 h-4 text-blue-500" />
-                <span className="text-sm font-medium">Accessibility Presets</span>
-              </div>
-              <ChevronDown
-                className={cn(
-                  'w-4 h-4 text-muted-foreground transition-transform',
-                  ariaPresetsOpen && 'rotate-180'
-                )}
-              />
-            </button>
+        {/* ARIA States & Properties */}
+        <Collapsible open={ariaStatesOpen} onOpenChange={setAriaStatesOpen}>
+          <CollapsibleTrigger className="flex items-center gap-1 text-sm font-medium hover:text-foreground w-full">
+            <ChevronDown className={cn(
+              'h-4 w-4 transition-transform',
+              !ariaStatesOpen && '-rotate-90'
+            )} />
+            Accessibility (ARIA)
           </CollapsibleTrigger>
-          <CollapsibleContent className="pt-3 space-y-3">
-            {/* ARIA Role Selector */}
-            <div className="space-y-2">
-              <Label className="text-xs">ARIA Role</Label>
-              <Select value={currentRole} onValueChange={handleAriaRoleChange}>
-                <SelectTrigger className="h-8 text-xs">
-                  <SelectValue placeholder="Select role..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {ARIA_ROLE_PRESETS.map((preset) => (
-                    <SelectItem
-                      key={preset.value || 'none'}
-                      value={preset.value}
-                      className="text-xs"
-                    >
-                      <div className="flex flex-col">
-                        <span>{preset.label}</span>
-                        <span className="text-[10px] text-muted-foreground">
-                          {preset.description}
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
+          <CollapsibleContent className="mt-3 space-y-4 pl-2 border-l-2 border-muted ml-1">
             {/* ARIA States */}
             <div className="space-y-2">
               <Label className="text-xs">Common ARIA States</Label>
               <div className="grid grid-cols-2 gap-2">
                 {Object.entries(ARIA_STATE_PRESETS).slice(0, 4).map(([attrName, options]) => {
                   const currentValue =
-                    attributes.find((a) => a.name === attrName)?.value || '';
+                    attributes.find((a) => a.name === attrName)?.value || 'none';
                   return (
                     <div key={attrName} className="space-y-1">
                       <Label className="text-[10px] text-muted-foreground">
@@ -353,7 +259,7 @@ export function AttributesTab({ className }: AttributesTabProps) {
                           <SelectValue placeholder="—" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="" className="text-[10px]">
+                          <SelectItem value="none" className="text-[10px]">
                             None
                           </SelectItem>
                           {options.map((opt) => (
@@ -483,7 +389,7 @@ export function AttributesTab({ className }: AttributesTabProps) {
                 {showSuggestions ? 'Hide' : 'Show all'}
               </Button>
             </div>
-            
+
             <div className="flex flex-wrap gap-1.5">
               {(showSuggestions
                 ? unusedCommonAttributes
@@ -596,5 +502,3 @@ function generateHTMLPreview(attributes: CustomAttribute[]): string {
 
   return `<element\n  ${attrString}\n>`;
 }
-
-export default AttributesTab;

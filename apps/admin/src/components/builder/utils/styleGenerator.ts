@@ -56,14 +56,20 @@ export interface GeneratedStyles {
 /**
  * Convert AdvancedStyling to CSS styles and classes
  */
+import type { BreakpointStyling } from '../inspector/styles/types';
+
+/**
+ * Convert AdvancedStyling to CSS styles and classes
+ */
 export function generateStyles(
   styling?: Partial<AdvancedStyling>,
   pseudoStyles?: Partial<Record<PseudoClass, Partial<AdvancedStyling>>>,
+  breakpointStyling?: BreakpointStyling,
   elementId?: string,
   customCSS?: string,
   customAttributes?: CustomAttribute[]
 ): GeneratedStyles {
-  if (!styling) {
+  if (!styling && !breakpointStyling) {
     return { style: {}, className: '' };
   }
 
@@ -71,27 +77,27 @@ export function generateStyles(
   const classes: string[] = [];
 
   // Generate layout styles
-  if (styling.layout) {
+  if (styling?.layout) {
     Object.assign(style, generateLayoutStyles(styling.layout));
   }
 
   // Generate background styles
-  if (styling.background) {
+  if (styling?.background) {
     Object.assign(style, generateBackgroundStyles(styling.background));
   }
 
   // Generate border styles
-  if (styling.border) {
+  if (styling?.border) {
     Object.assign(style, generateBorderStyles(styling.border));
   }
 
   // Generate typography styles
-  if (styling.typography) {
+  if (styling?.typography) {
     Object.assign(style, generateTypographyStyles(styling.typography));
   }
 
   // Generate transform styles
-  if (styling.transform) {
+  if (styling?.transform) {
     const transformStyle = generateTransformStyles(styling.transform);
     if (transformStyle) {
       style.transform = transformStyle;
@@ -108,25 +114,47 @@ export function generateStyles(
   }
 
   // Generate transition styles
-  if (styling.transition?.enabled) {
+  if (styling?.transition?.enabled) {
     style.transition = generateTransitionStyles(styling.transition);
   }
 
   // Generate box shadow styles
-  if (styling.boxShadow && styling.boxShadow.length > 0) {
+  if (styling?.boxShadow && styling.boxShadow.length > 0) {
     // style.boxShadow = generateBoxShadowStyles(styling.boxShadow);
   }
 
   // Generate pseudo-state CSS
   let pseudoCSS = '';
+
+  // CRITICAL FIX: Move base styles to CSS to allow responsive overrides
+  // Inline styles have higher specificity than classes, so they block responsive styles
+  if (elementId && Object.keys(style).length > 0) {
+    const baseCSS = cssPropsToString(style);
+    if (baseCSS) {
+      pseudoCSS += `#${elementId} {\n${baseCSS}\n}`;
+      // Clear inline styles so they don't conflict
+      // We keep the object reference but empty it, or just reassign
+      for (const key in style) delete style[key as keyof React.CSSProperties];
+    }
+  }
+
   if (elementId && pseudoStyles) {
-    pseudoCSS = generatePseudoStateCSS(elementId, pseudoStyles);
+    const pCss = generatePseudoStateCSS(`#${elementId}`, pseudoStyles);
+    if (pCss) pseudoCSS += (pseudoCSS ? '\n\n' : '') + pCss;
+  }
+
+  // Generate responsive CSS (Media Queries)
+  if (elementId && breakpointStyling) {
+    const mediaCSS = generateResponsiveCSS(elementId, breakpointStyling);
+    if (mediaCSS) {
+      pseudoCSS += (pseudoCSS ? '\n\n' : '') + mediaCSS;
+    }
   }
 
   // Add custom CSS
   if (elementId && customCSS) {
     const scopedCSS = customCSS.replace(/%root%/g, `#${elementId}`);
-    pseudoCSS += '\n' + scopedCSS;
+    pseudoCSS += (pseudoCSS ? '\n' : '') + scopedCSS;
   }
 
   // Generate custom attributes
@@ -140,11 +168,93 @@ export function generateStyles(
   }
 
   return {
-    style,
+    style, // This will be empty if elementId was provided
     className: classes.join(' '),
     pseudoCSS: pseudoCSS.trim() || undefined,
     attributes: Object.keys(attributes).length > 0 ? attributes : undefined,
   };
+}
+
+/**
+ * Generate responsive CSS for breakpoints
+ */
+function generateResponsiveCSS(
+  elementId: string,
+  breakpointStyling: BreakpointStyling
+): string {
+  const cssRules: string[] = [];
+
+  // Tablet (< 992px)
+  if (breakpointStyling.tablet) {
+    const tabletStyles = generateStyles(breakpointStyling.tablet);
+    const tabletCSS = cssPropsToString(tabletStyles.style);
+
+    // Also handle pseudo-states inside tablet
+    if (breakpointStyling.tablet.pseudoStates) {
+      // Standard media query
+      const tabletPseudoCSS = generatePseudoStateCSS(`#${elementId}`, breakpointStyling.tablet.pseudoStates);
+      if (tabletPseudoCSS) {
+        cssRules.push(`@media (max-width: 992px) {\n${tabletPseudoCSS}\n}`);
+      }
+
+      // Simulation class
+      const tabletSimPseudoCSS = generatePseudoStateCSS(`.bp-tablet #${elementId}`, breakpointStyling.tablet.pseudoStates);
+      if (tabletSimPseudoCSS) {
+        cssRules.push(tabletSimPseudoCSS);
+      }
+    }
+
+    if (tabletCSS) {
+      // Standard media query
+      cssRules.push(`@media (max-width: 992px) {\n  #${elementId} {\n${tabletCSS}\n  }\n}`);
+
+      // Simulation class
+      cssRules.push(`.bp-tablet #${elementId} {\n${tabletCSS}\n}`);
+    }
+  }
+
+  // Mobile (< 768px)
+  if (breakpointStyling.mobile) {
+    const mobileStyles = generateStyles(breakpointStyling.mobile);
+    const mobileCSS = cssPropsToString(mobileStyles.style);
+
+    // Also handle pseudo-states inside mobile
+    if (breakpointStyling.mobile.pseudoStates) {
+      // Standard media query
+      const mobilePseudoCSS = generatePseudoStateCSS(`#${elementId}`, breakpointStyling.mobile.pseudoStates);
+      if (mobilePseudoCSS) {
+        cssRules.push(`@media (max-width: 768px) {\n${mobilePseudoCSS}\n}`);
+      }
+
+      // Simulation class
+      const mobileSimPseudoCSS = generatePseudoStateCSS(`.bp-mobile #${elementId}`, breakpointStyling.mobile.pseudoStates);
+      if (mobileSimPseudoCSS) {
+        cssRules.push(mobileSimPseudoCSS);
+      }
+    }
+
+    if (mobileCSS) {
+      // Standard media query
+      cssRules.push(`@media (max-width: 768px) {\n  #${elementId} {\n${mobileCSS}\n  }\n}`);
+
+      // Simulation class
+      cssRules.push(`.bp-mobile #${elementId} {\n${mobileCSS}\n}`);
+    }
+  }
+
+  return cssRules.join('\n\n');
+}
+
+/**
+ * Helper to convert React.CSSProperties to CSS string
+ */
+function cssPropsToString(style: React.CSSProperties): string {
+  return Object.entries(style)
+    .map(([prop, value]) => {
+      const kebabProp = prop.replace(/([A-Z])/g, '-$1').toLowerCase();
+      return `    ${kebabProp}: ${value};`;
+    })
+    .join('\n');
 }
 
 /**
@@ -448,7 +558,7 @@ function generateTransitionStyles(transition: Partial<TransitionSettings>): stri
  * Generate pseudo-state CSS
  */
 function generatePseudoStateCSS(
-  elementId: string,
+  selector: string,
   pseudoStyles: Partial<Record<PseudoClass, Partial<AdvancedStyling>>>
 ): string {
   const cssRules: string[] = [];
@@ -487,7 +597,7 @@ function generatePseudoStateCSS(
       .join('\n');
 
     if (cssProperties) {
-      cssRules.push(`#${elementId}${pseudoSelector} {\n${cssProperties}\n}`);
+      cssRules.push(`${selector}${pseudoSelector} {\n${cssProperties}\n}`);
     }
   }
 

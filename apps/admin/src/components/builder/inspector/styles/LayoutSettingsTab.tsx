@@ -21,11 +21,14 @@ import {
 } from '@/components/ui/accordion';
 import { Link2, Link2Off } from 'lucide-react';
 import { SettingsFieldWrapper } from '../SettingsFieldWrapper';
+import { StyleIndicator } from '../inputs/StyleIndicator';
 import type { LayoutSettings, SpacingValue, PositionSettings, DimensionsSettings, FlexSettings } from '../styles/types';
+import type { StyleSourceResult } from '../sidebar/types';
 
 interface LayoutSettingsTabProps {
   value: Partial<LayoutSettings>;
   onChange: (value: Partial<LayoutSettings>) => void;
+  getStyleSource?: (path: string) => StyleSourceResult;
   className?: string;
 }
 
@@ -137,14 +140,21 @@ const alignItemsOptions: { value: FlexSettings['alignItems']; label: string }[] 
 /**
  * Spacing Control Component
  */
+/**
+ * Spacing Control Component
+ */
 function SpacingControl({
   label,
   value,
   onChange,
+  getStyleSource,
+  path,
 }: {
   label: string;
   value: SpacingValue;
   onChange: (value: SpacingValue) => void;
+  getStyleSource?: (path: string) => StyleSourceResult;
+  path: string;
 }) {
   const handleValueChange = useCallback(
     (side: keyof Omit<SpacingValue, 'linked'>, newValue: string) => {
@@ -184,10 +194,50 @@ function SpacingControl({
     }
   }, [value, onChange]);
 
+  // Helper to get source for a specific side
+  const getSideSource = (side: string) => {
+    if (!getStyleSource) return { source: undefined, isResponsive: false };
+    return getStyleSource(`${path}.${side}`);
+  };
+
+  // For the main label, we check if ANY side is modified
+  const isModified =
+    getSideSource('top').source === 'user' ||
+    getSideSource('right').source === 'user' ||
+    getSideSource('bottom').source === 'user' ||
+    getSideSource('left').source === 'user';
+
+  const isClassInherited =
+    getSideSource('top').source === 'class' ||
+    getSideSource('right').source === 'class' ||
+    getSideSource('bottom').source === 'class' ||
+    getSideSource('left').source === 'class';
+
+  const isGlobalInherited =
+    getSideSource('top').source === 'global' ||
+    getSideSource('right').source === 'global' ||
+    getSideSource('bottom').source === 'global' ||
+    getSideSource('left').source === 'global';
+
+  const isResponsiveOverride =
+    getSideSource('top').isResponsive ||
+    getSideSource('right').isResponsive ||
+    getSideSource('bottom').isResponsive ||
+    getSideSource('left').isResponsive;
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 relative">
       <div className="flex items-center justify-between">
-        <Label className="text-xs text-muted-foreground">{label}</Label>
+        <div className="flex items-center gap-2">
+          <StyleIndicator
+            isModified={isModified}
+            isClassInherited={isClassInherited}
+            isGlobalInherited={isGlobalInherited}
+            isResponsiveOverride={isResponsiveOverride}
+            orientation="vertical"
+          />
+          <Label className="text-xs text-muted-foreground">{label}</Label>
+        </div>
         <Button
           variant="ghost"
           size="sm"
@@ -204,16 +254,27 @@ function SpacingControl({
       </div>
 
       {value.linked ? (
-        <Input
-          value={value.top}
-          onChange={(e) => handleValueChange('top', e.target.value)}
-          placeholder="0px"
-          className="h-8 text-xs"
-        />
+        <div className="relative">
+          <Input
+            value={value.top}
+            onChange={(e) => handleValueChange('top', e.target.value)}
+            placeholder="0px"
+            className="h-8 text-xs"
+          />
+        </div>
       ) : (
         <div className="grid grid-cols-4 gap-1">
-          <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">T</Label>
+          <div className="space-y-1 relative">
+            <div className="flex items-center gap-1">
+              <StyleIndicator
+                isModified={getSideSource('top').source === 'user'}
+                isClassInherited={getSideSource('top').source === 'class'}
+                isGlobalInherited={getSideSource('top').source === 'global'}
+                isResponsiveOverride={getSideSource('top').isResponsive}
+                className="w-1 h-1 -left-1.5"
+              />
+              <Label className="text-[10px] text-muted-foreground">T</Label>
+            </div>
             <Input
               value={value.top}
               onChange={(e) => handleValueChange('top', e.target.value)}
@@ -221,8 +282,17 @@ function SpacingControl({
               className="h-7 text-xs px-2"
             />
           </div>
-          <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">R</Label>
+          <div className="space-y-1 relative">
+            <div className="flex items-center gap-1">
+              <StyleIndicator
+                isModified={getSideSource('right').source === 'user'}
+                isClassInherited={getSideSource('right').source === 'class'}
+                isGlobalInherited={getSideSource('right').source === 'global'}
+                isResponsiveOverride={getSideSource('right').isResponsive}
+                className="w-1 h-1 -left-1.5"
+              />
+              <Label className="text-[10px] text-muted-foreground">R</Label>
+            </div>
             <Input
               value={value.right}
               onChange={(e) => handleValueChange('right', e.target.value)}
@@ -230,8 +300,17 @@ function SpacingControl({
               className="h-7 text-xs px-2"
             />
           </div>
-          <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">B</Label>
+          <div className="space-y-1 relative">
+            <div className="flex items-center gap-1">
+              <StyleIndicator
+                isModified={getSideSource('bottom').source === 'user'}
+                isClassInherited={getSideSource('bottom').source === 'class'}
+                isGlobalInherited={getSideSource('bottom').source === 'global'}
+                isResponsiveOverride={getSideSource('bottom').isResponsive}
+                className="w-1 h-1 -left-1.5"
+              />
+              <Label className="text-[10px] text-muted-foreground">B</Label>
+            </div>
             <Input
               value={value.bottom}
               onChange={(e) => handleValueChange('bottom', e.target.value)}
@@ -239,8 +318,17 @@ function SpacingControl({
               className="h-7 text-xs px-2"
             />
           </div>
-          <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">L</Label>
+          <div className="space-y-1 relative">
+            <div className="flex items-center gap-1">
+              <StyleIndicator
+                isModified={getSideSource('left').source === 'user'}
+                isClassInherited={getSideSource('left').source === 'class'}
+                isGlobalInherited={getSideSource('left').source === 'global'}
+                isResponsiveOverride={getSideSource('left').isResponsive}
+                className="w-1 h-1 -left-1.5"
+              />
+              <Label className="text-[10px] text-muted-foreground">L</Label>
+            </div>
             <Input
               value={value.left}
               onChange={(e) => handleValueChange('left', e.target.value)}
@@ -257,7 +345,7 @@ function SpacingControl({
 /**
  * Layout Settings Tab - Position, display, dimensions, spacing
  */
-export function LayoutSettingsTab({ value, onChange, className }: LayoutSettingsTabProps) {
+export function LayoutSettingsTab({ value, onChange, getStyleSource, className }: LayoutSettingsTabProps) {
   // Helper to update nested values
   const handleChange = useCallback(
     <K extends keyof LayoutSettings>(key: K, newValue: LayoutSettings[K] | undefined) => {
@@ -296,10 +384,16 @@ export function LayoutSettingsTab({ value, onChange, className }: LayoutSettings
     [value, onChange]
   );
 
-  // Check if a field is modified (exists and is not undefined/null/empty)
-  const isModified = useCallback((val: unknown): boolean => {
-    return val !== undefined && val !== null && val !== '';
-  }, []);
+  // Helper to get source flags
+  const getSourceFlags = useCallback((path: string) => {
+    const result = getStyleSource?.(path);
+    return {
+      isModified: result?.source === 'user',
+      isClassInherited: result?.source === 'class',
+      isGlobalInherited: result?.source === 'global',
+      isResponsiveOverride: result?.isResponsive,
+    };
+  }, [getStyleSource]);
 
   // Handle reset
   const handleReset = useCallback((field: string, _defaultValue: unknown) => {
@@ -328,12 +422,6 @@ export function LayoutSettingsTab({ value, onChange, className }: LayoutSettings
   const isFlex = value.display === 'flex' || value.display === 'inline-flex';
   const needsPositionControls = value.position?.position !== 'static';
 
-  // Import SettingsFieldWrapper locally or assume it's available. 
-  // Since I cannot easily import it without knowing the path relative to this file (it's in ../../inspector/SettingsFieldWrapper),
-  // I will use a local wrapper similar to TypographySettingsTab for now to avoid import errors if paths are tricky, 
-  // BUT the best practice is to import it.
-  // The path is `../../inspector/SettingsFieldWrapper`.
-
   return (
     <div className={cn('space-y-4', className)}>
       <Accordion type="multiple" defaultValue={['display', 'dimensions', 'spacing']} className="space-y-1">
@@ -345,11 +433,12 @@ export function LayoutSettingsTab({ value, onChange, className }: LayoutSettings
           <AccordionContent className="pb-3 space-y-3">
             <SettingsFieldWrapper
               fieldName="display"
-              isModified={isModified(value.display)}
+              {...getSourceFlags('layout.display')}
               defaultValue="block"
               currentValue={value.display}
               onReset={handleReset}
               label="Display"
+              orientation="vertical"
             >
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground">Display</Label>
@@ -377,11 +466,12 @@ export function LayoutSettingsTab({ value, onChange, className }: LayoutSettings
                 <div className="grid grid-cols-2 gap-2">
                   <SettingsFieldWrapper
                     fieldName="flex.direction"
-                    isModified={isModified(value.flex?.direction)}
+                    {...getSourceFlags('layout.flex.direction')}
                     defaultValue="row"
                     currentValue={value.flex?.direction}
                     onReset={handleReset}
                     label="Direction"
+                    orientation="vertical"
                   >
                     <div className="space-y-2">
                       <Label className="text-xs text-muted-foreground">Direction</Label>
@@ -405,11 +495,12 @@ export function LayoutSettingsTab({ value, onChange, className }: LayoutSettings
 
                   <SettingsFieldWrapper
                     fieldName="flex.wrap"
-                    isModified={isModified(value.flex?.wrap)}
+                    {...getSourceFlags('layout.flex.wrap')}
                     defaultValue="nowrap"
                     currentValue={value.flex?.wrap}
                     onReset={handleReset}
                     label="Wrap"
+                    orientation="vertical"
                   >
                     <div className="space-y-2">
                       <Label className="text-xs text-muted-foreground">Wrap</Label>
@@ -435,11 +526,12 @@ export function LayoutSettingsTab({ value, onChange, className }: LayoutSettings
                 <div className="grid grid-cols-2 gap-2">
                   <SettingsFieldWrapper
                     fieldName="flex.justifyContent"
-                    isModified={isModified(value.flex?.justifyContent)}
+                    {...getSourceFlags('layout.flex.justifyContent')}
                     defaultValue="flex-start"
                     currentValue={value.flex?.justifyContent}
                     onReset={handleReset}
                     label="Justify"
+                    orientation="vertical"
                   >
                     <div className="space-y-2">
                       <Label className="text-xs text-muted-foreground">Justify</Label>
@@ -463,11 +555,12 @@ export function LayoutSettingsTab({ value, onChange, className }: LayoutSettings
 
                   <SettingsFieldWrapper
                     fieldName="flex.alignItems"
-                    isModified={isModified(value.flex?.alignItems)}
+                    {...getSourceFlags('layout.flex.alignItems')}
                     defaultValue="stretch"
                     currentValue={value.flex?.alignItems}
                     onReset={handleReset}
                     label="Align"
+                    orientation="vertical"
                   >
                     <div className="space-y-2">
                       <Label className="text-xs text-muted-foreground">Align</Label>
@@ -492,11 +585,12 @@ export function LayoutSettingsTab({ value, onChange, className }: LayoutSettings
 
                 <SettingsFieldWrapper
                   fieldName="flex.gap"
-                  isModified={isModified(value.flex?.gap)}
+                  {...getSourceFlags('layout.flex.gap')}
                   defaultValue=""
                   currentValue={value.flex?.gap}
                   onReset={handleReset}
                   label="Gap"
+                  orientation="vertical"
                 >
                   <div className="space-y-2">
                     <Label className="text-xs text-muted-foreground">Gap</Label>
@@ -521,11 +615,12 @@ export function LayoutSettingsTab({ value, onChange, className }: LayoutSettings
           <AccordionContent className="pb-3 space-y-3">
             <SettingsFieldWrapper
               fieldName="position.position"
-              isModified={isModified(value.position?.position)}
+              {...getSourceFlags('layout.position.position')}
               defaultValue="static"
               currentValue={value.position?.position}
               onReset={handleReset}
               label="Position"
+              orientation="vertical"
             >
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground">Position</Label>
@@ -551,11 +646,12 @@ export function LayoutSettingsTab({ value, onChange, className }: LayoutSettings
               <div className="grid grid-cols-2 gap-2">
                 <SettingsFieldWrapper
                   fieldName="position.top"
-                  isModified={isModified(value.position?.top)}
+                  {...getSourceFlags('layout.position.top')}
                   defaultValue=""
                   currentValue={value.position?.top}
                   onReset={handleReset}
                   label="Top"
+                  orientation="vertical"
                 >
                   <div className="space-y-1">
                     <Label className="text-xs text-muted-foreground">Top</Label>
@@ -569,11 +665,12 @@ export function LayoutSettingsTab({ value, onChange, className }: LayoutSettings
                 </SettingsFieldWrapper>
                 <SettingsFieldWrapper
                   fieldName="position.right"
-                  isModified={isModified(value.position?.right)}
+                  {...getSourceFlags('layout.position.right')}
                   defaultValue=""
                   currentValue={value.position?.right}
                   onReset={handleReset}
                   label="Right"
+                  orientation="vertical"
                 >
                   <div className="space-y-1">
                     <Label className="text-xs text-muted-foreground">Right</Label>
@@ -587,11 +684,12 @@ export function LayoutSettingsTab({ value, onChange, className }: LayoutSettings
                 </SettingsFieldWrapper>
                 <SettingsFieldWrapper
                   fieldName="position.bottom"
-                  isModified={isModified(value.position?.bottom)}
+                  {...getSourceFlags('layout.position.bottom')}
                   defaultValue=""
                   currentValue={value.position?.bottom}
                   onReset={handleReset}
                   label="Bottom"
+                  orientation="vertical"
                 >
                   <div className="space-y-1">
                     <Label className="text-xs text-muted-foreground">Bottom</Label>
@@ -605,11 +703,12 @@ export function LayoutSettingsTab({ value, onChange, className }: LayoutSettings
                 </SettingsFieldWrapper>
                 <SettingsFieldWrapper
                   fieldName="position.left"
-                  isModified={isModified(value.position?.left)}
+                  {...getSourceFlags('layout.position.left')}
                   defaultValue=""
                   currentValue={value.position?.left}
                   onReset={handleReset}
                   label="Left"
+                  orientation="vertical"
                 >
                   <div className="space-y-1">
                     <Label className="text-xs text-muted-foreground">Left</Label>
@@ -626,11 +725,12 @@ export function LayoutSettingsTab({ value, onChange, className }: LayoutSettings
 
             <SettingsFieldWrapper
               fieldName="position.zIndex"
-              isModified={isModified(value.position?.zIndex)}
+              {...getSourceFlags('layout.position.zIndex')}
               defaultValue=""
               currentValue={value.position?.zIndex}
               onReset={handleReset}
               label="Z-Index"
+              orientation="vertical"
             >
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground">Z-Index</Label>
@@ -655,11 +755,12 @@ export function LayoutSettingsTab({ value, onChange, className }: LayoutSettings
             <div className="grid grid-cols-2 gap-2">
               <SettingsFieldWrapper
                 fieldName="dimensions.width"
-                isModified={isModified(value.dimensions?.width)}
+                {...getSourceFlags('layout.dimensions.width')}
                 defaultValue=""
                 currentValue={value.dimensions?.width}
                 onReset={handleReset}
                 label="Width"
+                orientation="vertical"
               >
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Width</Label>
@@ -673,11 +774,12 @@ export function LayoutSettingsTab({ value, onChange, className }: LayoutSettings
               </SettingsFieldWrapper>
               <SettingsFieldWrapper
                 fieldName="dimensions.height"
-                isModified={isModified(value.dimensions?.height)}
+                {...getSourceFlags('layout.dimensions.height')}
                 defaultValue=""
                 currentValue={value.dimensions?.height}
                 onReset={handleReset}
                 label="Height"
+                orientation="vertical"
               >
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Height</Label>
@@ -694,11 +796,12 @@ export function LayoutSettingsTab({ value, onChange, className }: LayoutSettings
             <div className="grid grid-cols-2 gap-2">
               <SettingsFieldWrapper
                 fieldName="dimensions.minWidth"
-                isModified={isModified(value.dimensions?.minWidth)}
+                {...getSourceFlags('layout.dimensions.minWidth')}
                 defaultValue=""
                 currentValue={value.dimensions?.minWidth}
                 onReset={handleReset}
                 label="Min Width"
+                orientation="vertical"
               >
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Min Width</Label>
@@ -712,7 +815,7 @@ export function LayoutSettingsTab({ value, onChange, className }: LayoutSettings
               </SettingsFieldWrapper>
               <SettingsFieldWrapper
                 fieldName="dimensions.maxWidth"
-                isModified={isModified(value.dimensions?.maxWidth)}
+                {...getSourceFlags('layout.dimensions.maxWidth')}
                 defaultValue=""
                 currentValue={value.dimensions?.maxWidth}
                 onReset={handleReset}
@@ -733,7 +836,7 @@ export function LayoutSettingsTab({ value, onChange, className }: LayoutSettings
             <div className="grid grid-cols-2 gap-2">
               <SettingsFieldWrapper
                 fieldName="dimensions.minHeight"
-                isModified={isModified(value.dimensions?.minHeight)}
+                {...getSourceFlags('layout.dimensions.minHeight')}
                 defaultValue=""
                 currentValue={value.dimensions?.minHeight}
                 onReset={handleReset}
@@ -751,7 +854,7 @@ export function LayoutSettingsTab({ value, onChange, className }: LayoutSettings
               </SettingsFieldWrapper>
               <SettingsFieldWrapper
                 fieldName="dimensions.maxHeight"
-                isModified={isModified(value.dimensions?.maxHeight)}
+                {...getSourceFlags('layout.dimensions.maxHeight')}
                 defaultValue=""
                 currentValue={value.dimensions?.maxHeight}
                 onReset={handleReset}
@@ -779,7 +882,7 @@ export function LayoutSettingsTab({ value, onChange, className }: LayoutSettings
           <AccordionContent className="pb-3 space-y-3">
             <SettingsFieldWrapper
               fieldName="margin"
-              isModified={isModified(value.margin)}
+              {...getSourceFlags('layout.margin')}
               defaultValue={defaultLayoutSettings.margin}
               currentValue={value.margin}
               onReset={handleReset}
@@ -789,11 +892,13 @@ export function LayoutSettingsTab({ value, onChange, className }: LayoutSettings
                 label="Margin"
                 value={value.margin || defaultLayoutSettings.margin}
                 onChange={(val) => handleChange('margin', val)}
+                getStyleSource={getStyleSource}
+                path="layout.margin"
               />
             </SettingsFieldWrapper>
             <SettingsFieldWrapper
               fieldName="padding"
-              isModified={isModified(value.padding)}
+              {...getSourceFlags('layout.padding')}
               defaultValue={defaultLayoutSettings.padding}
               currentValue={value.padding}
               onReset={handleReset}
@@ -803,6 +908,8 @@ export function LayoutSettingsTab({ value, onChange, className }: LayoutSettings
                 label="Padding"
                 value={value.padding || defaultLayoutSettings.padding}
                 onChange={(val) => handleChange('padding', val)}
+                getStyleSource={getStyleSource}
+                path="layout.padding"
               />
             </SettingsFieldWrapper>
           </AccordionContent>
@@ -816,7 +923,7 @@ export function LayoutSettingsTab({ value, onChange, className }: LayoutSettings
           <AccordionContent className="pb-3 space-y-3">
             <SettingsFieldWrapper
               fieldName="overflow"
-              isModified={isModified(value.overflow)}
+              {...getSourceFlags('layout.overflow')}
               defaultValue="visible"
               currentValue={value.overflow}
               onReset={handleReset}
@@ -845,7 +952,7 @@ export function LayoutSettingsTab({ value, onChange, className }: LayoutSettings
             <div className="grid grid-cols-2 gap-2">
               <SettingsFieldWrapper
                 fieldName="overflowX"
-                isModified={isModified(value.overflowX)}
+                {...getSourceFlags('layout.overflowX')}
                 defaultValue="visible"
                 currentValue={value.overflowX}
                 onReset={handleReset}
@@ -854,7 +961,7 @@ export function LayoutSettingsTab({ value, onChange, className }: LayoutSettings
                 <div className="space-y-2">
                   <Label className="text-xs text-muted-foreground">Overflow X</Label>
                   <Select
-                    value={value.overflowX || value.overflow || 'visible'}
+                    value={value.overflowX || 'visible'}
                     onValueChange={(val) => handleChange('overflowX', val as LayoutSettings['overflowX'])}
                   >
                     <SelectTrigger className="h-8">
@@ -872,7 +979,7 @@ export function LayoutSettingsTab({ value, onChange, className }: LayoutSettings
               </SettingsFieldWrapper>
               <SettingsFieldWrapper
                 fieldName="overflowY"
-                isModified={isModified(value.overflowY)}
+                {...getSourceFlags('layout.overflowY')}
                 defaultValue="visible"
                 currentValue={value.overflowY}
                 onReset={handleReset}
@@ -881,7 +988,7 @@ export function LayoutSettingsTab({ value, onChange, className }: LayoutSettings
                 <div className="space-y-2">
                   <Label className="text-xs text-muted-foreground">Overflow Y</Label>
                   <Select
-                    value={value.overflowY || value.overflow || 'visible'}
+                    value={value.overflowY || 'visible'}
                     onValueChange={(val) => handleChange('overflowY', val as LayoutSettings['overflowY'])}
                   >
                     <SelectTrigger className="h-8">

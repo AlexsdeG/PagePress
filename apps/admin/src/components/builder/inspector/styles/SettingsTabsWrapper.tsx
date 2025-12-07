@@ -19,7 +19,7 @@ import { BoxShadowInput } from '../inputs/BoxShadowInput';
 import { TransformInput, defaultTransformSettings } from '../inputs/TransformInput';
 import { TransitionInput, defaultTransitionSettings } from '../inputs/TransitionInput';
 import { FilterInput, BackdropFilterInput, defaultFilterSettings, defaultBackdropFilterSettings } from '../inputs/FilterInput';
-import type { AdvancedStyling, PseudoState } from './types';
+import type { AdvancedStyling, PseudoClass } from './types';
 
 interface SettingsTabsWrapperProps {
   /** Content-specific settings rendered by each component */
@@ -50,10 +50,10 @@ function PseudoStateSelector({
   value,
   onChange,
 }: {
-  value: PseudoState;
-  onChange: (state: PseudoState) => void;
+  value: PseudoClass;
+  onChange: (state: PseudoClass) => void;
 }) {
-  const states: { value: PseudoState; label: string }[] = [
+  const states: { value: PseudoClass; label: string }[] = [
     { value: 'default', label: 'Default' },
     { value: 'hover', label: ':hover' },
     { value: 'active', label: ':active' },
@@ -99,7 +99,7 @@ export function SettingsTabsWrapper({
   className,
 }: SettingsTabsWrapperProps) {
   const [activeTab, setActiveTab] = useState<'content' | 'style'>('content');
-  const [pseudoState, setPseudoState] = useState<PseudoState>('default');
+  const [pseudoState, setPseudoState] = useState<PseudoClass>('default');
 
   // Update a specific style category
   const handleStyleChange = useCallback(

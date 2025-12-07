@@ -42,8 +42,11 @@ export const BuilderButton: FC<ExtendedButtonProps> & { craft?: Record<string, u
   const {
     connectors: { connect, drag },
     id,
+    actions: { setProp },
+    advancedStyling,
   } = useNode((node) => ({
     id: node.id,
+    advancedStyling: node.data.props.advancedStyling as Partial<AdvancedStyling> | undefined,
   }));
 
   const { isSelected, isHovered } = useEditor((state) => ({

@@ -8,17 +8,23 @@ import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { RotateCcw } from 'lucide-react';
+import { StyleIndicator } from './StyleIndicator';
 import type { FilterSettings, BackdropFilterSettings } from '../styles/types';
+import type { StyleSourceResult } from '../sidebar/types';
 
 interface FilterInputProps {
   value: FilterSettings;
   onChange: (value: FilterSettings) => void;
+  getStyleSource?: (path: string) => StyleSourceResult;
+  path?: string;
   className?: string;
 }
 
 interface BackdropFilterInputProps {
   value: BackdropFilterSettings;
   onChange: (value: BackdropFilterSettings) => void;
+  getStyleSource?: (path: string) => StyleSourceResult;
+  path?: string;
   className?: string;
 }
 
@@ -75,16 +81,16 @@ const filterSliders: {
   unit: string;
   defaultValue: number;
 }[] = [
-  { key: 'blur', label: 'Blur', min: 0, max: 20, step: 0.5, unit: 'px', defaultValue: 0 },
-  { key: 'brightness', label: 'Brightness', min: 0, max: 200, step: 1, unit: '%', defaultValue: 100 },
-  { key: 'contrast', label: 'Contrast', min: 0, max: 200, step: 1, unit: '%', defaultValue: 100 },
-  { key: 'saturate', label: 'Saturate', min: 0, max: 200, step: 1, unit: '%', defaultValue: 100 },
-  { key: 'grayscale', label: 'Grayscale', min: 0, max: 100, step: 1, unit: '%', defaultValue: 0 },
-  { key: 'sepia', label: 'Sepia', min: 0, max: 100, step: 1, unit: '%', defaultValue: 0 },
-  { key: 'hueRotate', label: 'Hue Rotate', min: 0, max: 360, step: 1, unit: '°', defaultValue: 0 },
-  { key: 'invert', label: 'Invert', min: 0, max: 100, step: 1, unit: '%', defaultValue: 0 },
-  { key: 'opacity', label: 'Opacity', min: 0, max: 100, step: 1, unit: '%', defaultValue: 100 },
-];
+    { key: 'blur', label: 'Blur', min: 0, max: 20, step: 0.5, unit: 'px', defaultValue: 0 },
+    { key: 'brightness', label: 'Brightness', min: 0, max: 200, step: 1, unit: '%', defaultValue: 100 },
+    { key: 'contrast', label: 'Contrast', min: 0, max: 200, step: 1, unit: '%', defaultValue: 100 },
+    { key: 'saturate', label: 'Saturate', min: 0, max: 200, step: 1, unit: '%', defaultValue: 100 },
+    { key: 'grayscale', label: 'Grayscale', min: 0, max: 100, step: 1, unit: '%', defaultValue: 0 },
+    { key: 'sepia', label: 'Sepia', min: 0, max: 100, step: 1, unit: '%', defaultValue: 0 },
+    { key: 'hueRotate', label: 'Hue Rotate', min: 0, max: 360, step: 1, unit: '°', defaultValue: 0 },
+    { key: 'invert', label: 'Invert', min: 0, max: 100, step: 1, unit: '%', defaultValue: 0 },
+    { key: 'opacity', label: 'Opacity', min: 0, max: 100, step: 1, unit: '%', defaultValue: 100 },
+  ];
 
 /**
  * Clickable slider value component for filter sliders
@@ -175,7 +181,7 @@ function ClickableFilterSlider({ label, value, min, max, step, unit, onChange }:
 /**
  * Filter Input - CSS filter controls
  */
-export function FilterInput({ value, onChange, className }: FilterInputProps) {
+export function FilterInput({ value, onChange, getStyleSource, path, className }: FilterInputProps) {
   // Update a single property
   const handleChange = useCallback(
     (key: keyof FilterSettings, newValue: number) => {
@@ -206,7 +212,19 @@ export function FilterInput({ value, onChange, className }: FilterInputProps) {
     <div className={cn('space-y-4', className)}>
       {/* Header with reset */}
       <div className="flex items-center justify-between">
-        <Label className="text-sm font-medium">Filters</Label>
+        <div className="flex items-center gap-2">
+          <Label className="text-sm font-medium">Filters</Label>
+          {getStyleSource && path && (
+            <StyleIndicator
+              isModified={getStyleSource(path).source === 'user'}
+              isClassInherited={getStyleSource(path).source === 'class'}
+              isGlobalInherited={getStyleSource(path).source === 'global'}
+              isResponsiveOverride={getStyleSource(path).isResponsive}
+              className="static translate-y-0 ml-1"
+              orientation="vertical"
+            />
+          )}
+        </div>
         {hasChanges && (
           <Button
             variant="ghost"
@@ -266,12 +284,12 @@ const backdropFilterSliders: {
   unit: string;
   defaultValue: number;
 }[] = [
-  { key: 'blur', label: 'Blur', min: 0, max: 30, step: 0.5, unit: 'px', defaultValue: 0 },
-  { key: 'brightness', label: 'Brightness', min: 0, max: 200, step: 1, unit: '%', defaultValue: 100 },
-  { key: 'contrast', label: 'Contrast', min: 0, max: 200, step: 1, unit: '%', defaultValue: 100 },
-  { key: 'saturate', label: 'Saturate', min: 0, max: 200, step: 1, unit: '%', defaultValue: 100 },
-  { key: 'grayscale', label: 'Grayscale', min: 0, max: 100, step: 1, unit: '%', defaultValue: 0 },
-];
+    { key: 'blur', label: 'Blur', min: 0, max: 30, step: 0.5, unit: 'px', defaultValue: 0 },
+    { key: 'brightness', label: 'Brightness', min: 0, max: 200, step: 1, unit: '%', defaultValue: 100 },
+    { key: 'contrast', label: 'Contrast', min: 0, max: 200, step: 1, unit: '%', defaultValue: 100 },
+    { key: 'saturate', label: 'Saturate', min: 0, max: 200, step: 1, unit: '%', defaultValue: 100 },
+    { key: 'grayscale', label: 'Grayscale', min: 0, max: 100, step: 1, unit: '%', defaultValue: 0 },
+  ];
 
 /**
  * Backdrop filter presets
@@ -287,7 +305,7 @@ const backdropFilterPresets: { name: string; values: Partial<BackdropFilterSetti
 /**
  * Backdrop Filter Input - Backdrop filter controls (glass effects)
  */
-export function BackdropFilterInput({ value, onChange, className }: BackdropFilterInputProps) {
+export function BackdropFilterInput({ value, onChange, getStyleSource, path, className }: BackdropFilterInputProps) {
   // Update a single property
   const handleChange = useCallback(
     <K extends keyof BackdropFilterSettings>(key: K, newValue: BackdropFilterSettings[K]) => {
@@ -322,6 +340,16 @@ export function BackdropFilterInput({ value, onChange, className }: BackdropFilt
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Label className="text-sm font-medium">Backdrop Filter</Label>
+          {getStyleSource && path && (
+            <StyleIndicator
+              isModified={getStyleSource(path).source === 'user'}
+              isClassInherited={getStyleSource(path).source === 'class'}
+              isGlobalInherited={getStyleSource(path).source === 'global'}
+              isResponsiveOverride={getStyleSource(path).isResponsive}
+              className="static translate-y-0 ml-1"
+              orientation="vertical"
+            />
+          )}
           <button
             role="switch"
             aria-checked={value.enabled}
