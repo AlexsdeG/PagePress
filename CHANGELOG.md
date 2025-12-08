@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.0.13] - 2025-12-08
+
+### Fixed
+- **Drag & Drop Nesting:** Fixed issue where layout components (Row, Column, Div) could not be dragged or properly nested. Added missing `drag` connector to these components to ensure they function as both drop targets and draggable elements.
+
 ## [v0.0.12] - 2025-12-05
 
 ### Added

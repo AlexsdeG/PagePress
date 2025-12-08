@@ -51,9 +51,9 @@ export const Column: FC<ColumnProps> & { craft?: Record<string, unknown> } = ({
   children,
 }) => {
   const { isPreviewMode } = useBuilderStore();
-  
+
   const {
-    connectors: { connect },
+    connectors: { connect, drag },
     id,
   } = useNode((node) => ({
     id: node.id,
@@ -65,8 +65,8 @@ export const Column: FC<ColumnProps> & { craft?: Record<string, unknown> } = ({
   }));
 
   // Get advanced styling
-  const { 
-    style: advancedStyle, 
+  const {
+    style: advancedStyle,
     className: advancedClassName,
     attributes,
     elementId,
@@ -100,7 +100,7 @@ export const Column: FC<ColumnProps> & { craft?: Record<string, unknown> } = ({
   // Calculate flex properties based on width (legacy - overridden by advanced styling)
   const getFlexStyle = () => {
     if (hasAdvancedStyling) return {};
-    
+
     if (width === 'auto') {
       return { flex: '1 1 0%' };
     }
@@ -108,7 +108,7 @@ export const Column: FC<ColumnProps> & { craft?: Record<string, unknown> } = ({
       const frValue = parseFloat(width);
       return { flex: `${frValue} ${frValue} 0%` };
     }
-    return { 
+    return {
       flex: '0 0 auto',
       width: parseValue(width),
     };
@@ -117,21 +117,21 @@ export const Column: FC<ColumnProps> & { craft?: Record<string, unknown> } = ({
   // Get outline styles based on selection/hover state
   const getOutlineStyles = () => {
     if (isPreviewMode) return {};
-    
+
     if (isSelected) {
       return {
         outline: '2px solid #2563eb',
         outlineOffset: '-2px',
       };
     }
-    
+
     if (isHovered) {
       return {
         outline: '2px dashed #60a5fa',
         outlineOffset: '-2px',
       };
     }
-    
+
     return {
       outline: '1px dashed #d1d5db',
       outlineOffset: '-1px',
@@ -175,7 +175,7 @@ export const Column: FC<ColumnProps> & { craft?: Record<string, unknown> } = ({
   return (
     <div
       ref={(ref) => {
-        if (ref) connect(ref);
+        if (ref) connect(drag(ref));
       }}
       id={elementId}
       className={cn(

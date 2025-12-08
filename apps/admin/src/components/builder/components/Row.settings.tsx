@@ -1,7 +1,7 @@
 // PagePress v0.0.9 - 2025-12-04
 // Row component settings panel with ElementSettingsSidebar
 
-import { useNode, useEditor } from '@craftjs/core';
+import { useNode, useEditor, Element } from '@craftjs/core';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -49,7 +49,7 @@ function RowContentSettings({
     // Get current children
     const node = query.node(nodeId).get();
     const existingChildren = node.data.nodes || [];
-    
+
     // Delete existing children
     existingChildren.forEach((childId: string) => {
       try {
@@ -62,9 +62,9 @@ function RowContentSettings({
     // Add new columns
     columns.forEach((col) => {
       const nodeTree = query.parseReactElement(
-        <Column width={col.width} padding="16px" backgroundColor="transparent" />
+        <Element is={Column} canvas width={col.width} padding="16px" backgroundColor="transparent" />
       ).toNodeTree();
-      
+
       actions.addNodeTree(nodeTree, nodeId);
     });
   };

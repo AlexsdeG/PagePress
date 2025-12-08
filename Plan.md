@@ -71,15 +71,6 @@
     - [x] Create/Edit/Delete dialogs
     - [x] Media library grid with drag-drop upload
     - [x] Settings page
-- [ ] **Missing:**
-    - [ ] Users management page
-    - [ ] Role-based permission display
-    - [ ] invite url, first time setup you can create account, after first time setup, var in a created config file or .env file, for admin backend page "/pp-admin". login page remove create account option.
-    - [ ] users dispaly eg who created which pages, tempalte, logs of all actions
-    - [ ] email and username login, emial code when changing email or for admin first account setup
-    - [ ] forgot pw and jwt token login when saved otherwise username/email and password
-    - [ ] update all backend admin routes to /pp-admin/... (eg /pp-admin/dashboard)
-    - [ ] seperate pages from tempaltes and other, only pages can be dispalyed on the forntend, everything else has to be part or dispalyed on a page
 
 ---
 
@@ -121,11 +112,11 @@
 - [x] **Spacing Visualizer:** Color-coded margin (orange) / padding (green)
 
 ### Drag & Drop Feedback
-- [ ] **Drop Zones:** Blue highlighted areas when dragging
-- [ ] **Drop Indicators:** Line showing insertion point
-- [ ] **Drag Ghost:** Semi-transparent preview of dragged element
-- [ ] **Auto-scroll:** Scroll canvas when dragging near edges
-- [ ] **Cannot Drop:** Red indicator for invalid drop targets
+- [x] **Drop Zones:** Blue highlighted areas when dragging
+- [x] **Drop Indicators:** Line showing insertion point
+- [x] **Drag Ghost:** Semi-transparent preview of dragged element
+- [x] **Auto-scroll:** Scroll canvas when dragging near edges
+- [x] **Cannot Drop:** Red indicator for invalid drop targets
 
 ### Selection & Navigation
 - [x] **Breadcrumb Bar:** Show hierarchy (Section > Container > Heading), click to select parent
@@ -234,15 +225,15 @@
 
 ### Breakpoint Architecture
 - [x] **Store styles per breakpoint:** Desktop (base), Tablet (<992px), Mobile (<768px), Mobile Portrait (<479px)
-- [ ] **Visual Indicator:** yellow dot right side inputs/slider/textarea/others showing if value differs from desktop
-- [ ] **Inheritance:** Values cascade down from larger breakpoints
-- [ ] **Reset to Desktop:** Button to remove breakpoint-specific value (in general setting tab)
+- [x] **Visual Indicator:** yellow dot right side inputs/slider/textarea/others showing if value differs from desktop
+- [x] **Inheritance:** Values cascade down from larger breakpoints
+- [x] **Reset to Desktop:** Button to remove breakpoint-specific value (in general setting tab)
 
 ### Responsive Controls
 - [x] **Device breakpoint toggle:** Toolbar buttons to switch between breakpoints
-- [ ] **Per-property breakpoint toggle:** Click to set mobile-specific value (in general setting tab and in the top tab title bar on the right side same as pseudo state system to allow to change between pseudo states or breakpoints in all of the tabs easily)
-- [ ] **Hide on breakpoint:** Toggle visibility per device (in general setting tab)
-- [ ] **Responsive spacing/typogrpahy/settings:** Different padding/margin per breakpoint. Different font sizes per breakpoint. all element settings tabs options should be allowed to differ from breakpoints. system should work similar to pseudo state system
+- [x] **Per-property breakpoint toggle:** Click to set mobile-specific value (in general setting tab and in the top tab title bar on the right side same as pseudo state system to allow to change between pseudo states or breakpoints in all of the tabs easily)
+- [x] **Hide on breakpoint:** Toggle visibility per device (in general setting tab)
+- [x] **Responsive spacing/typogrpahy/settings:** Different padding/margin per breakpoint. Different font sizes per breakpoint. all element settings tabs options should be allowed to differ from breakpoints. system should work similar to pseudo state system
 
 ### Preview Enhancements
 - [x] **Device Frames:** Visual phone/tablet frame around canvas
@@ -335,6 +326,9 @@
 **Goal:** Reusable headers, footers, sections.
 **Status:** ❌ Not Started
 
+### General
+- [ ] seperate pages from tempaltes and other, only pages can be dispalyed on the forntend, everything else has to be part or dispalyed on a page. create a seperate admin page called templates which hosts all custom tempaltes
+
 ### System Templates
 - [ ] **Header Template:** Auto-inject at page top
 - [ ] **Footer Template:** Auto-inject at page bottom
@@ -399,7 +393,7 @@
 - [ ] `/` → Homepage (configurable)
 - [ ] `/:slug` → Dynamic page routing
 - [ ] `/pp-admin/*` → Admin panel
-- [ ] API at `/api/*` or separate port
+- [ ] API at `/api/*`
 
 ### Render Engine
 - [ ] **JSON to HTML:** Render-only component variants
@@ -424,12 +418,22 @@
 **Goal:** Professional admin experience.
 **Status:** ❌ Not Started
 
+- [ ] **Missing in Admin Dashboard:**
+    - [ ] Users management page
+    - [ ] Role-based permission display. here create a role editor with list where you can also add roles and set permissions for each role in a modal
+    - [ ] invite link send to email in user managment page, also invite link but only one time useable
+    - [ ] first time setup you can create account, after first time setup, var in a created config file or .env file. login page remove create account option. here create good first time setup instructions and steps like revoery phrase, admin email and pw, set website name
+    - [ ] users dispaly eg who created which pages, tempalte, logs of all actions in db table
+    - [ ] email and username login, emial code when changing email or for admin first account setup
+    - [ ] forgot pw and jwt token login when saved otherwise username/email (here both should work in login) and password
+    - [ ] utilize a pp-config.json file for all constants and variables
+
 ### User Management
 - [ ] **Users Page:** List, create, edit, delete users
 - [ ] **Roles:** Admin (full), Editor (pages only), Viewer (read-only)
 - [ ] **Invite System:** Generate invite links (default mode)
 - [ ] **Profile Page:** Change username, email, password, avatar
-
+- [ ] 
 ### Notifications
 - [ ] **Toast System:** Install Sonner
 - [ ] **Success/Error/Info toasts** for all actions

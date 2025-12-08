@@ -47,9 +47,9 @@ export const Div: FC<DivProps> & { craft?: Record<string, unknown> } = ({
   children,
 }) => {
   const { isPreviewMode } = useBuilderStore();
-  
+
   const {
-    connectors: { connect },
+    connectors: { connect, drag },
     id,
   } = useNode((node) => ({
     id: node.id,
@@ -61,8 +61,8 @@ export const Div: FC<DivProps> & { craft?: Record<string, unknown> } = ({
   }));
 
   // Get advanced styling
-  const { 
-    style: advancedStyle, 
+  const {
+    style: advancedStyle,
     className: advancedClassName,
     attributes,
     elementId,
@@ -87,21 +87,21 @@ export const Div: FC<DivProps> & { craft?: Record<string, unknown> } = ({
   // Get outline styles based on selection/hover state
   const getOutlineStyles = () => {
     if (isPreviewMode) return {};
-    
+
     if (isSelected) {
       return {
         outline: '2px solid #2563eb',
         outlineOffset: '-2px',
       };
     }
-    
+
     if (isHovered) {
       return {
         outline: '2px dashed #60a5fa',
         outlineOffset: '-2px',
       };
     }
-    
+
     return {
       outline: '1px dashed #d1d5db',
       outlineOffset: '-1px',
@@ -125,7 +125,9 @@ export const Div: FC<DivProps> & { craft?: Record<string, unknown> } = ({
   return React.createElement(
     Tag,
     {
-      ref: connect,
+      ref: (ref) => {
+        if (ref) connect(drag(ref));
+      },
       id: elementId,
       className: cn(
         'relative',
