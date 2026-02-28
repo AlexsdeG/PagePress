@@ -45,6 +45,7 @@ export const pages = sqliteTable('pages', {
   slug: text('slug').notNull().unique(),
   contentJson: text('content_json', { mode: 'json' }).$type<Record<string, unknown>>(),
   published: integer('published', { mode: 'boolean' }).default(false).notNull(),
+  isHomepage: integer('is_homepage', { mode: 'boolean' }).default(false).notNull(),
   type: text('type', { enum: ['page', 'post', 'template'] }).default('page').notNull(),
   templateType: text('template_type', { enum: ['header', 'footer', 'notfound', 'custom'] }),
   headerTemplateId: text('header_template_id'),

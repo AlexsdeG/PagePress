@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { eq } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 import { db } from '../lib/db.js';
+import { createDefaultHomePage } from '../lib/db.js';
 import { users } from '../lib/schema.js';
 import { hashPassword, verifyPassword, validatePasswordStrength } from '../lib/password.js';
 import { createSession, deleteSession, refreshSession } from '../lib/auth.js';
@@ -121,6 +122,11 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
       createdAt: now,
       updatedAt: now,
     });
+
+    // Create default home page after first user registration
+    if (isFirstUser) {
+      await createDefaultHomePage();
+    }
 
     // Create session with metadata
     const session = await createSession({

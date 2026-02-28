@@ -63,6 +63,7 @@ const pageSchema = z.object({
     .or(z.literal('')),
   type: z.enum(['page', 'post', 'template']),
   published: z.boolean(),
+  isHomepage: z.boolean(),
   contentJson: z.string().optional(),
 });
 
@@ -107,6 +108,7 @@ export function Pages() {
       slug: '',
       type: 'page',
       published: false,
+      isHomepage: false,
       contentJson: '',
     },
   });
@@ -118,6 +120,7 @@ export function Pages() {
       slug: '',
       type: 'page',
       published: false,
+      isHomepage: false,
       contentJson: '',
     },
   });
@@ -177,6 +180,7 @@ export function Pages() {
         title: data.title,
         type: data.type,
         published: data.published,
+        isHomepage: data.isHomepage,
       };
       if (data.slug) createData.slug = data.slug;
       if (parsedContentJson) createData.contentJson = parsedContentJson;
@@ -216,6 +220,7 @@ export function Pages() {
         slug: data.slug || undefined,
         type: data.type,
         published: data.published,
+        isHomepage: data.isHomepage,
         contentJson: parsedContentJson,
       };
       
@@ -306,6 +311,7 @@ export function Pages() {
       slug: page.slug,
       type: page.type,
       published: page.published,
+      isHomepage: page.isHomepage ?? false,
       contentJson: page.contentJson ? JSON.stringify(page.contentJson, null, 2) : '{}',
     });
     setEditDialogOpen(true);
@@ -434,7 +440,14 @@ export function Pages() {
                 <TableBody>
                   {pages.map((page) => (
                     <TableRow key={page.id}>
-                      <TableCell className="font-medium">{page.title}</TableCell>
+                      <TableCell className="font-medium">
+                        <span className="flex items-center gap-2">
+                          {page.title}
+                          {page.isHomepage && (
+                            <Badge variant="outline" className="text-xs">Home</Badge>
+                          )}
+                        </span>
+                      </TableCell>
                       <TableCell className="text-muted-foreground">/{page.slug}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className="capitalize">
@@ -460,6 +473,11 @@ export function Pages() {
                             <DropdownMenuItem onClick={() => navigate(`/pages/${page.id}/edit`)}>
                               Edit in Builder
                             </DropdownMenuItem>
+                            {page.published && (
+                              <DropdownMenuItem onClick={() => window.open(page.isHomepage ? '/' : `/${page.slug}`, '_blank')}>
+                                Show in Frontend
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem onClick={() => openRenameDialog(page)}>
                               Rename
                             </DropdownMenuItem>
@@ -597,6 +615,26 @@ export function Pages() {
                   </FormItem>
                 )}
               />
+              <FormField
+                control={createForm.control}
+                name="isHomepage"
+                render={({ field }) => (
+                  <FormItem className="flex items-center gap-2">
+                    <FormControl>
+                      <input
+                        type="checkbox"
+                        checked={field.value}
+                        onChange={field.onChange}
+                        className="h-4 w-4"
+                      />
+                    </FormControl>
+                    <FormLabel className="!mt-0">Set as Homepage</FormLabel>
+                    <FormDescription className="!mt-0 ml-2">
+                      Only one page can be the homepage
+                    </FormDescription>
+                  </FormItem>
+                )}
+              />
               {createForm.formState.errors.root && (
                 <p className="text-sm text-destructive">
                   {createForm.formState.errors.root.message}
@@ -692,6 +730,26 @@ export function Pages() {
                       />
                     </FormControl>
                     <FormLabel className="!mt-0">Published</FormLabel>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="isHomepage"
+                render={({ field }) => (
+                  <FormItem className="flex items-center gap-2">
+                    <FormControl>
+                      <input
+                        type="checkbox"
+                        checked={field.value}
+                        onChange={field.onChange}
+                        className="h-4 w-4"
+                      />
+                    </FormControl>
+                    <FormLabel className="!mt-0">Set as Homepage</FormLabel>
+                    <FormDescription className="!mt-0 ml-2">
+                      Only one page can be the homepage
+                    </FormDescription>
                   </FormItem>
                 )}
               />

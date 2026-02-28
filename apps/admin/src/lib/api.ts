@@ -181,6 +181,7 @@ export interface Page {
   slug: string;
   contentJson: Record<string, unknown> | null;
   published: boolean;
+  isHomepage: boolean;
   type: 'page' | 'post' | 'template';
   templateType?: 'header' | 'footer' | 'notfound' | 'custom' | null;
   headerTemplateId?: string | null;
@@ -210,6 +211,7 @@ export interface CreatePageData {
   contentJson?: Record<string, unknown>;
   published?: boolean;
   type?: 'page' | 'post' | 'template';
+  isHomepage?: boolean;
 }
 
 export interface UpdatePageData {
@@ -218,6 +220,7 @@ export interface UpdatePageData {
   contentJson?: Record<string, unknown>;
   published?: boolean;
   type?: 'page' | 'post' | 'template';
+  isHomepage?: boolean;
 }
 
 /**

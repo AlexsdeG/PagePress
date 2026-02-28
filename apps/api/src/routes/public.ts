@@ -139,6 +139,7 @@ async function renderPage(
     contentJson: Record<string, unknown> | null;
     headerTemplateId: string | null;
     footerTemplateId: string | null;
+    isHomepage?: boolean;
   },
   siteConfig: SiteSettingsMap,
 ): Promise<string> {
@@ -172,7 +173,7 @@ async function renderPage(
 
   // 5. Build canonical URL
   const baseUrl = siteConfig.siteUrl || '';
-  const canonicalUrl = baseUrl ? `${baseUrl.replace(/\/$/, '')}/${page.slug === 'home' ? '' : page.slug}` : undefined;
+  const canonicalUrl = baseUrl ? `${baseUrl.replace(/\/$/, '')}/${page.isHomepage ? '' : page.slug}` : undefined;
 
   // 6. Build full HTML document
   return buildFullPage({
@@ -262,13 +263,14 @@ export async function publicRendererRoutes(fastify: FastifyInstance): Promise<vo
     const publishedPages = await db
       .select({
         slug: pages.slug,
+        isHomepage: pages.isHomepage,
         updatedAt: pages.updatedAt,
       })
       .from(pages)
       .where(and(eq(pages.published, true), eq(pages.type, 'page')));
 
     const urls = publishedPages.map((page) => {
-      const loc = page.slug === siteConfig.homepageSlug
+      const loc = page.isHomepage
         ? baseUrl
         : `${baseUrl}/${page.slug}`;
       const lastmod = page.updatedAt
@@ -292,9 +294,8 @@ export async function publicRendererRoutes(fastify: FastifyInstance): Promise<vo
    */
   fastify.get('/', async (_request: FastifyRequest, reply: FastifyReply) => {
     const siteConfig = await getSiteSettings();
-    const homepageSlug = siteConfig.homepageSlug || 'home';
 
-    // Find the homepage
+    // Find the homepage by isHomepage flag
     const result = await db
       .select({
         id: pages.id,
@@ -303,9 +304,10 @@ export async function publicRendererRoutes(fastify: FastifyInstance): Promise<vo
         contentJson: pages.contentJson,
         headerTemplateId: pages.headerTemplateId,
         footerTemplateId: pages.footerTemplateId,
+        isHomepage: pages.isHomepage,
       })
       .from(pages)
-      .where(and(eq(pages.slug, homepageSlug), eq(pages.published, true), eq(pages.type, 'page')))
+      .where(and(eq(pages.isHomepage, true), eq(pages.published, true), eq(pages.type, 'page')))
       .limit(1);
 
     const page = result[0];
@@ -343,6 +345,7 @@ export async function publicRendererRoutes(fastify: FastifyInstance): Promise<vo
           contentJson: pages.contentJson,
           headerTemplateId: pages.headerTemplateId,
           footerTemplateId: pages.footerTemplateId,
+          isHomepage: pages.isHomepage,
         })
         .from(pages)
         .where(and(eq(pages.slug, slug), eq(pages.published, true), eq(pages.type, 'page')))

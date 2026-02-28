@@ -6,6 +6,7 @@ import { env } from './env.js';
 import * as schema from './schema.js';
 import * as fs from 'fs';
 import * as path from 'path';
+import { randomUUID } from 'crypto';
 
 export * from './schema.js';
 
@@ -192,6 +193,9 @@ export async function initializeDatabase(): Promise<void> {
   await client.execute(`ALTER TABLE pages ADD COLUMN header_template_id TEXT`).catch(() => {});
   await client.execute(`ALTER TABLE pages ADD COLUMN footer_template_id TEXT`).catch(() => {});
 
+  // Phase 12: Add is_homepage column to pages table (safe migration)
+  await client.execute(`ALTER TABLE pages ADD COLUMN is_homepage INTEGER DEFAULT 0 NOT NULL`).catch(() => {});
+
   // Phase 10: Create section_templates table for reusable saved blocks
   await client.execute(`
     CREATE TABLE IF NOT EXISTS section_templates (
@@ -231,6 +235,117 @@ export async function initializeDatabase(): Promise<void> {
   await client.execute(`
     CREATE INDEX IF NOT EXISTS idx_pages_template_type ON pages(template_type)
   `);
+
+  // Phase 12: Create default home page if no homepage exists
+  await createDefaultHomePage();
+}
+
+/**
+ * Create a default home page if no homepage exists yet.
+ * Uses a system author placeholder — will be reassigned if a user exists.
+ */
+export async function createDefaultHomePage(): Promise<void> {
+  // Check if a homepage already exists
+  const existing = await client.execute(
+    `SELECT id FROM pages WHERE is_homepage = 1 LIMIT 1`
+  );
+  if (existing.rows.length > 0) return;
+
+  // Check if a page with slug "home" already exists — if so, just mark it as homepage
+  const homeSlugPage = await client.execute(
+    `SELECT id FROM pages WHERE slug = 'home' LIMIT 1`
+  );
+  if (homeSlugPage.rows.length > 0) {
+    const pageId = homeSlugPage.rows[0]!.id as string;
+    await client.execute({
+      sql: `UPDATE pages SET is_homepage = 1, published = 1, updated_at = ? WHERE id = ?`,
+      args: [Math.floor(Date.now() / 1000), pageId],
+    });
+    return;
+  }
+
+  // Find the first user to use as author
+  const userResult = await client.execute(
+    `SELECT id FROM users ORDER BY created_at ASC LIMIT 1`
+  );
+  if (userResult.rows.length === 0) {
+    // No users yet — skip; the default home page will be created after first registration
+    return;
+  }
+
+  const authorId = userResult.rows[0]!.id as string;
+  const pageId = randomUUID();
+  const now = Math.floor(Date.now() / 1000);
+
+  // Default Craft.js content: a simple container with a heading and text
+  const defaultContent = JSON.stringify({
+    ROOT: {
+      type: { resolvedName: 'Container' },
+      isCanvas: true,
+      props: {
+        style: {
+          desktop: {
+            maxWidth: '1200px',
+            margin: '0 auto',
+            padding: '80px 40px',
+          },
+        },
+      },
+      displayName: 'Container',
+      custom: {},
+      hidden: false,
+      nodes: ['heading1', 'text1'],
+      linkedNodes: {},
+    },
+    heading1: {
+      type: { resolvedName: 'Heading' },
+      isCanvas: false,
+      props: {
+        text: 'Welcome to PagePress',
+        level: 'h1',
+        style: {
+          desktop: {
+            textAlign: 'center',
+            marginBottom: '24px',
+            fontSize: '48px',
+            fontWeight: '700',
+          },
+        },
+      },
+      displayName: 'Heading',
+      custom: {},
+      hidden: false,
+      nodes: [],
+      linkedNodes: {},
+      parent: 'ROOT',
+    },
+    text1: {
+      type: { resolvedName: 'Text' },
+      isCanvas: false,
+      props: {
+        text: 'This is your homepage. Edit it in the page builder to add your own content.',
+        style: {
+          desktop: {
+            textAlign: 'center',
+            fontSize: '18px',
+            color: '#64748b',
+            lineHeight: '1.6',
+          },
+        },
+      },
+      displayName: 'Text',
+      custom: {},
+      hidden: false,
+      nodes: [],
+      linkedNodes: {},
+      parent: 'ROOT',
+    },
+  });
+
+  await client.execute({
+    sql: `INSERT INTO pages (id, title, slug, content_json, published, is_homepage, type, author_id, created_at, updated_at) VALUES (?, ?, ?, ?, 1, 1, 'page', ?, ?, ?)`,
+    args: [pageId, 'Home', 'home', defaultContent, authorId, now, now],
+  });
 }
 
 /**

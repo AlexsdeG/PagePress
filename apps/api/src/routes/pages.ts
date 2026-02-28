@@ -25,6 +25,7 @@ const createPageSchema = z.object({
   contentJson: z.record(z.string(), z.unknown()).optional(),
   published: z.boolean().optional().default(false),
   type: z.enum(pageTypes).optional().default('page'),
+  isHomepage: z.boolean().optional().default(false),
 });
 
 /**
@@ -36,6 +37,7 @@ const updatePageSchema = z.object({
   contentJson: z.record(z.string(), z.unknown()).optional(),
   published: z.boolean().optional(),
   type: z.enum(pageTypes).optional(),
+  isHomepage: z.boolean().optional(),
 });
 
 /**
@@ -93,6 +95,7 @@ export async function pagesRoutes(fastify: FastifyInstance): Promise<void> {
         slug: pages.slug,
         contentJson: pages.contentJson,
         published: pages.published,
+        isHomepage: pages.isHomepage,
         type: pages.type,
         templateType: pages.templateType,
         headerTemplateId: pages.headerTemplateId,
@@ -131,6 +134,7 @@ export async function pagesRoutes(fastify: FastifyInstance): Promise<void> {
         slug: pages.slug,
         contentJson: pages.contentJson,
         published: pages.published,
+        isHomepage: pages.isHomepage,
         type: pages.type,
         templateType: pages.templateType,
         headerTemplateId: pages.headerTemplateId,
@@ -186,7 +190,7 @@ export async function pagesRoutes(fastify: FastifyInstance): Promise<void> {
    * POST /pages - Create a new page
    */
   fastify.post('/', { preHandler: [requireAuth] }, async (request, reply) => {
-    const { title, slug: requestedSlug, contentJson, published, type } = createPageSchema.parse(request.body);
+    const { title, slug: requestedSlug, contentJson, published, type, isHomepage } = createPageSchema.parse(request.body);
     const user = request.user!;
 
     // Generate or validate slug
@@ -204,6 +208,11 @@ export async function pagesRoutes(fastify: FastifyInstance): Promise<void> {
       slug = await generateUniqueSlug(title);
     }
 
+    // If setting as homepage, clear any existing homepage first
+    if (isHomepage) {
+      await db.update(pages).set({ isHomepage: false, updatedAt: new Date() }).where(eq(pages.isHomepage, true));
+    }
+
     const pageId = randomUUID();
     const now = new Date();
 
@@ -213,6 +222,7 @@ export async function pagesRoutes(fastify: FastifyInstance): Promise<void> {
       slug,
       contentJson: contentJson ?? {},
       published,
+      isHomepage,
       type,
       authorId: user.id,
       createdAt: now,
@@ -225,7 +235,7 @@ export async function pagesRoutes(fastify: FastifyInstance): Promise<void> {
         page: {
           id: pageId, title, slug,
           contentJson: contentJson ?? {},
-          published, type,
+          published, isHomepage, type,
           authorId: user.id,
           createdAt: now, updatedAt: now,
         },
@@ -238,7 +248,7 @@ export async function pagesRoutes(fastify: FastifyInstance): Promise<void> {
    */
   fastify.put('/:id', { preHandler: [requireAuth] }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const { title, slug: requestedSlug, contentJson, published, type } = updatePageSchema.parse(request.body);
+    const { title, slug: requestedSlug, contentJson, published, type, isHomepage } = updatePageSchema.parse(request.body);
 
     // Check if page exists
     const existing = await db
@@ -262,6 +272,11 @@ export async function pagesRoutes(fastify: FastifyInstance): Promise<void> {
       }
     }
 
+    // If setting as homepage, clear any existing homepage first
+    if (isHomepage === true) {
+      await db.update(pages).set({ isHomepage: false, updatedAt: new Date() }).where(eq(pages.isHomepage, true));
+    }
+
     // Build update object
     const updateData: Record<string, unknown> = { updatedAt: new Date() };
     if (title !== undefined) updateData.title = title;
@@ -269,6 +284,7 @@ export async function pagesRoutes(fastify: FastifyInstance): Promise<void> {
     if (contentJson !== undefined) updateData.contentJson = contentJson;
     if (published !== undefined) updateData.published = published;
     if (type !== undefined) updateData.type = type;
+    if (isHomepage !== undefined) updateData.isHomepage = isHomepage;
 
     await db.update(pages).set(updateData).where(eq(pages.id, id));
 
@@ -285,13 +301,17 @@ export async function pagesRoutes(fastify: FastifyInstance): Promise<void> {
     const { id } = request.params as { id: string };
 
     const existing = await db
-      .select({ id: pages.id })
+      .select({ id: pages.id, isHomepage: pages.isHomepage })
       .from(pages)
       .where(eq(pages.id, id))
       .limit(1);
 
     if (existing.length === 0) {
       throw notFound('Page not found');
+    }
+
+    if (existing[0]!.isHomepage) {
+      throw badRequest('Cannot delete the homepage. Set another page as homepage first.');
     }
 
     await db.delete(pages).where(eq(pages.id, id));
@@ -323,6 +343,7 @@ export async function pagesRoutes(fastify: FastifyInstance): Promise<void> {
       slug: newSlug,
       contentJson: original.contentJson,
       published: false,
+      isHomepage: false,
       type: original.type,
       authorId: user.id,
       createdAt: now,
@@ -335,7 +356,7 @@ export async function pagesRoutes(fastify: FastifyInstance): Promise<void> {
         page: {
           id: newId, title: newTitle, slug: newSlug,
           contentJson: original.contentJson,
-          published: false, type: original.type,
+          published: false, isHomepage: false, type: original.type,
           authorId: user.id,
           createdAt: now, updatedAt: now,
         },
