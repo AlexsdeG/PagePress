@@ -22,11 +22,10 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': {
+      '/pp-admin/api': {
         target: 'http://localhost:3000',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
-        // Forward cookies properly
+        // Forward as-is — backend expects /pp-admin/api/* paths
         cookieDomainRewrite: 'localhost',
         secure: false,
       },

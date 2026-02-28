@@ -387,30 +387,30 @@
 
 ## Phase 12: Public Renderer (Frontend)
 **Goal:** Display built pages as fast HTML.
-**Status:** ❌ Not Started
+**Status:** ✅ Complete (v0.0.17)
 
 ### URL Structure
-- [ ] `/` → Homepage (configurable)
-- [ ] `/:slug` → Dynamic page routing
-- [ ] `/pp-admin/*` → Admin panel
-- [ ] API at `/api/*`
+- [x] `/` → Homepage (configurable via `homepageSlug` setting)
+- [x] `/:slug` → Dynamic page routing
+- [x] `/pp-admin/*` → Admin panel (React SPA with `basename: '/pp-admin'`)
+- [x] API at `/pp-admin/api/*` (all admin API routes behind this prefix)
 
 ### Render Engine
-- [ ] **JSON to HTML:** Render-only component variants
-- [ ] **Server-Side Render:** React `renderToString`
-- [ ] **Inject Templates:** Header/Footer auto-insertion
+- [x] **JSON to HTML:** Server-side Craft.js JSON → HTML renderer (`renderer.ts`)
+- [x] **Server-Side Style Generator:** AdvancedStyling → CSS conversion (`style-generator.ts`)
+- [x] **Inject Templates:** Header/Footer auto-insertion (per-page and system templates)
 - [ ] **Static Export (Optional):** Pre-render to HTML files
 
 ### SEO & Meta
-- [ ] **Per-Page SEO:** Title, meta description in page settings
-- [ ] **OG Tags:** Image, title, description for social
-- [ ] **Canonical URLs:** Prevent duplicate content
-- [ ] **Robots.txt & Sitemap.xml:** Auto-generation
+- [x] **Per-Page SEO:** Title, meta description from pageSettings
+- [x] **OG Tags:** Image, title, description for social sharing
+- [x] **Canonical URLs:** Auto-generated from siteUrl + slug
+- [x] **Robots.txt & Sitemap.xml:** Auto-generation routes
 
 ### Performance
-- [ ] **Critical CSS:** Inline above-fold styles
-- [ ] **Lazy Loading:** Images load on scroll
-- [ ] **Asset Optimization:** Minify CSS/JS
+- [x] **Critical CSS:** Inline styles in `<style>` tag (no external CSS requests)
+- [x] **Lazy Loading:** Images rendered with `loading="lazy" decoding="async"`
+- [ ] **Asset Optimization:** Minify CSS/JS (deferred)
 
 ---
 

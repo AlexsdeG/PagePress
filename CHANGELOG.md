@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.0.17] - 2026-02-28
+
+### Public Renderer (Phase 12)
+- [Feature] **JSON to HTML Renderer:** Server-side Craft.js JSON to HTML conversion engine for all builder components
+- [Feature] **Public Page Routing:** `/` serves configurable homepage, `/:slug` serves dynamic pages
+- [Feature] **Admin Panel Routing:** Admin SPA at `/pp-admin/*` with basename, API at `/pp-admin/api/*`
+- [Feature] **Template Injection:** Automatic header/footer template insertion with per-page overrides
+- [Feature] **Server-Side Style Generation:** Full advanced styling, pseudo-states, 4 responsive breakpoints (desktop/tablet/mobile/portrait) rendered as CSS
+- [Feature] **Per-Page SEO:** Meta title, description, noIndex/noFollow robots directives from page settings
+- [Feature] **OG Tags:** Open Graph image, title, description for social sharing
+- [Feature] **Canonical URLs:** Prevent duplicate content with canonical link tags
+- [Feature] **Robots.txt:** Auto-generated `/robots.txt` with sitemap reference
+- [Feature] **Sitemap.xml:** Auto-generated `/sitemap.xml` listing all published pages
+- [Feature] **Critical CSS:** All element styles inlined in `<style>` tag for fast first paint
+- [Feature] **Lazy Loading:** Images use `loading="lazy"` and `decoding="async"` attributes
+- [Feature] **Custom Code Injection:** Per-page and global custom head/footer code support
+- [Feature] **404 Page:** Custom 404 template rendering for unknown slugs
+
 ## [v0.0.16] - 2026-02-28
 
 ### Dynamic Data & Conditions (Phase 11)

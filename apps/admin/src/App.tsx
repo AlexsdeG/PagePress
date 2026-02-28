@@ -216,7 +216,9 @@ const router = createBrowserRouter([
     path: '*',
     element: <Navigate to="/dashboard" replace />,
   },
-]);
+], {
+  basename: '/pp-admin',
+});
 
 /**
  * Main App component with routing

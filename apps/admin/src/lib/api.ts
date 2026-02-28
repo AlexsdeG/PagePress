@@ -5,7 +5,7 @@
  * Base API URL - In development, use the Vite proxy to avoid CORS/cookie issues
  * The proxy is configured in vite.config.ts to forward /api/* to localhost:3000
  */
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/pp-admin/api';
 
 /**
  * Default request timeout in milliseconds

@@ -1,4 +1,4 @@
-// PagePress v0.0.16 - 2026-02-28
+// PagePress v0.0.17 - 2026-02-28
 
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
@@ -23,6 +23,7 @@ import { templatesRoutes } from './routes/templates.js';
 import { sectionTemplatesRoutes } from './routes/section-templates.js';
 import { globalElementsRoutes } from './routes/global-elements.js';
 import { dynamicDataRoutes } from './routes/dynamic-data.js';
+import { publicRendererRoutes } from './routes/public.js';
 
 /**
  * Create and configure Fastify server
@@ -107,11 +108,18 @@ function registerErrorHandlers(): void {
     });
   });
 
-  // Not found handler — consistent JSON 404
-  server.setNotFoundHandler((_request, reply) => {
-    reply.status(404).send({
+  // Not found handler — JSON for API routes, HTML for public routes
+  server.setNotFoundHandler(async (request, reply) => {
+    if (request.url.startsWith('/pp-admin/api/')) {
+      return reply.status(404).send({
+        success: false,
+        error: 'Route not found',
+      });
+    }
+    // For non-API routes, let the public renderer handle it
+    return reply.status(404).send({
       success: false,
-      error: 'Route not found',
+      error: 'Not found',
     });
   });
 }
@@ -166,27 +174,22 @@ async function registerPlugins(): Promise<void> {
  * Register routes
  */
 async function registerRoutes(): Promise<void> {
-  await server.register(healthRoutes);
-  await server.register(authRoutes, { prefix: '/auth' });
-  await server.register(pagesRoutes, { prefix: '/pages' });
-  await server.register(mediaRoutes, { prefix: '/media' });
-  await server.register(settingsRoutes, { prefix: '/settings' });
-  await server.register(themeRoutes, { prefix: '/theme' });
-  await server.register(templatesRoutes, { prefix: '/templates' });
-  await server.register(sectionTemplatesRoutes, { prefix: '/section-templates' });
-  await server.register(globalElementsRoutes, { prefix: '/global-elements' });
-  await server.register(dynamicDataRoutes, { prefix: '/dynamic-data' });
+  // Admin API routes — all behind /pp-admin/api prefix
+  await server.register(async function adminApiRoutes(adminApi) {
+    await adminApi.register(healthRoutes);
+    await adminApi.register(authRoutes, { prefix: '/auth' });
+    await adminApi.register(pagesRoutes, { prefix: '/pages' });
+    await adminApi.register(mediaRoutes, { prefix: '/media' });
+    await adminApi.register(settingsRoutes, { prefix: '/settings' });
+    await adminApi.register(themeRoutes, { prefix: '/theme' });
+    await adminApi.register(templatesRoutes, { prefix: '/templates' });
+    await adminApi.register(sectionTemplatesRoutes, { prefix: '/section-templates' });
+    await adminApi.register(globalElementsRoutes, { prefix: '/global-elements' });
+    await adminApi.register(dynamicDataRoutes, { prefix: '/dynamic-data' });
+  }, { prefix: '/pp-admin/api' });
 
-  // Root route
-  server.get('/', async (_request, _reply) => {
-    return {
-      success: true,
-      data: {
-        name: 'PagePress API',
-        version: '0.0.16',
-      },
-    };
-  });
+  // Public renderer — catches / and /:slug for frontend pages
+  await server.register(publicRendererRoutes);
 }
 
 /**
@@ -233,7 +236,7 @@ async function start(): Promise<void> {
     // Start session cleanup cron after server is listening
     startSessionCleanup(server.log);
 
-    server.log.info(`🚀 PagePress API v0.0.15 running on port ${env.PORT}`);
+    server.log.info(`🚀 PagePress API v0.0.17 running on port ${env.PORT}`);
     server.log.info(`📊 Environment: ${env.NODE_ENV}`);
 
   } catch (err) {

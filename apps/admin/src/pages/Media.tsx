@@ -54,9 +54,8 @@ function MediaCard({
   selected: boolean;
 }) {
   const category = getFileCategory(media.mimeType);
-  // Use /api prefix which is proxied to the API server by Vite
-  const apiUrl = import.meta.env.VITE_API_URL || '/api';
-  const imageUrl = `${apiUrl}${media.url}`;
+  // Uploads are served at /uploads/* directly (not behind /pp-admin/api)
+  const imageUrl = media.url;
 
   return (
     <div
@@ -245,7 +244,7 @@ export function MediaPage() {
   };
 
   // Use /api prefix which is proxied to the API server by Vite
-  const apiUrl = import.meta.env.VITE_API_URL || '/api';
+  // Uploads are served at /uploads/* directly (not behind /pp-admin/api)
 
   return (
     <div className="space-y-6">
@@ -398,7 +397,7 @@ export function MediaPage() {
               <div className="aspect-video bg-muted rounded-lg overflow-hidden flex items-center justify-center">
                 {getFileCategory(selectedMedia.mimeType) === 'image' ? (
                   <img
-                    src={`${apiUrl}${selectedMedia.url}`}
+                    src={selectedMedia.url}
                     alt={selectedMedia.altText || selectedMedia.originalName}
                     className="max-w-full max-h-full object-contain"
                   />
@@ -437,13 +436,13 @@ export function MediaPage() {
                 <p className="text-sm text-muted-foreground mb-1">URL</p>
                 <div className="flex gap-2">
                   <Input
-                    value={`${apiUrl}${selectedMedia.url}`}
+                    value={selectedMedia.url}
                     readOnly
                     className="font-mono text-sm"
                   />
                   <Button
                     variant="outline"
-                    onClick={() => navigator.clipboard.writeText(`${apiUrl}${selectedMedia.url}`)}
+                    onClick={() => navigator.clipboard.writeText(selectedMedia.url)}
                   >
                     Copy
                   </Button>
