@@ -1,7 +1,7 @@
-// PagePress v0.0.12 - 2025-12-05
+// PagePress v0.0.15 - 2026-02-28
 // Right-click context menu for builder elements
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useEditor } from '@craftjs/core';
 import {
   ContextMenu,
@@ -14,9 +14,21 @@ import {
   ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useBuilderStore } from '@/stores/builder';
 import { toast } from 'sonner';
 import { duplicateNode } from '../utils/duplicateNode';
+import { api, type SectionTemplateCategory } from '@/lib/api';
 
 interface BuilderContextMenuProps {
   children: React.ReactNode;
@@ -27,6 +39,12 @@ interface BuilderContextMenuProps {
  */
 export function BuilderContextMenu({ children }: BuilderContextMenuProps) {
   const { setClipboard, clipboard, isPreviewMode, editingNodeId } = useBuilderStore();
+  const [saveAsTemplateOpen, setSaveAsTemplateOpen] = useState(false);
+  const [templateName, setTemplateName] = useState('');
+  const [templateCategory, setTemplateCategory] = useState<SectionTemplateCategory>('other');
+  const [templateDescription, setTemplateDescription] = useState('');
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [nodeToSave, setNodeToSave] = useState<string | null>(null);
 
   const {
     selected,
@@ -34,6 +52,7 @@ export function BuilderContextMenu({ children }: BuilderContextMenuProps) {
     siblings,
     actions,
     query,
+    isGlobal,
   } = useEditor((state) => {
     const [selectedId] = state.events.selected;
     const node = selectedId ? state.nodes[selectedId] : null;
@@ -45,6 +64,7 @@ export function BuilderContextMenu({ children }: BuilderContextMenuProps) {
       selected: selectedId,
       parentId: pId,
       siblings: sibs,
+      isGlobal: !!(node?.data.custom?.globalElementId),
     };
   });
 
@@ -152,6 +172,66 @@ export function BuilderContextMenu({ children }: BuilderContextMenuProps) {
     }
   }, [parentId, actions]);
 
+  const handleSaveAsTemplate = useCallback(() => {
+    if (!selected || isRoot) return;
+    setNodeToSave(selected);
+    const node = query.node(selected).get();
+    setTemplateName(node.data.custom?.displayName || node.data.displayName || node.data.name || 'My Template');
+    setTemplateCategory('other');
+    setTemplateDescription('');
+    setSaveAsTemplateOpen(true);
+  }, [selected, isRoot, query]);
+
+  const handleConfirmSaveAsTemplate = useCallback(async () => {
+    if (!nodeToSave || !templateName.trim()) return;
+    try {
+      setSavingTemplate(true);
+      const serialized = query.node(nodeToSave).toSerializedNode();
+      await api.sectionTemplates.create({
+        name: templateName.trim(),
+        description: templateDescription.trim() || null,
+        category: templateCategory,
+        contentJson: serialized as unknown as Record<string, unknown>,
+      });
+      toast.success('Saved as section template');
+      setSaveAsTemplateOpen(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save template');
+    } finally {
+      setSavingTemplate(false);
+    }
+  }, [nodeToSave, templateName, templateDescription, templateCategory, query]);
+
+  const handleMarkAsGlobal = useCallback(async () => {
+    if (!selected || isRoot) return;
+    try {
+      const node = query.node(selected).get();
+      const serialized = query.node(selected).toSerializedNode();
+      const name = node.data.custom?.displayName || node.data.displayName || node.data.name || 'Global Element';
+      const result = await api.globalElements.create({
+        name,
+        contentJson: serialized as unknown as Record<string, unknown>,
+      });
+      // Mark the node with globalElementId in custom data
+      actions.setCustom(selected, (custom: Record<string, unknown>) => {
+        custom.globalElementId = result.id;
+        custom.globalElementName = name;
+      });
+      toast.success(`Marked "${name}" as global element`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to mark as global');
+    }
+  }, [selected, isRoot, query, actions]);
+
+  const handleUnlinkGlobal = useCallback(() => {
+    if (!selected || isRoot) return;
+    actions.setCustom(selected, (custom: Record<string, unknown>) => {
+      delete custom.globalElementId;
+      delete custom.globalElementName;
+    });
+    toast.success('Element unlinked from global');
+  }, [selected, isRoot, actions]);
+
   // In preview mode, just render children
   if (isPreviewMode) {
     return <>{children}</>;
@@ -165,6 +245,7 @@ export function BuilderContextMenu({ children }: BuilderContextMenuProps) {
   }
 
   return (
+    <>
     <ContextMenu>
       <ContextMenuTrigger asChild className="context-menu-trigger">
         {children}
@@ -223,6 +304,24 @@ export function BuilderContextMenu({ children }: BuilderContextMenuProps) {
 
             <ContextMenuSeparator />
 
+            {/* Save as Template */}
+            <ContextMenuItem onClick={handleSaveAsTemplate}>
+              Save as Template
+            </ContextMenuItem>
+
+            {/* Global Element */}
+            {isGlobal ? (
+              <ContextMenuItem onClick={handleUnlinkGlobal}>
+                Unlink Global Element
+              </ContextMenuItem>
+            ) : (
+              <ContextMenuItem onClick={handleMarkAsGlobal}>
+                Mark as Global
+              </ContextMenuItem>
+            )}
+
+            <ContextMenuSeparator />
+
             {/* Delete */}
             <ContextMenuItem
               onClick={handleDelete}
@@ -245,5 +344,64 @@ export function BuilderContextMenu({ children }: BuilderContextMenuProps) {
         )}
       </ContextMenuContent>
     </ContextMenu>
+
+      {/* Save as Template Dialog */}
+      <Dialog open={saveAsTemplateOpen} onOpenChange={setSaveAsTemplateOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Save as Template</DialogTitle>
+            <DialogDescription>Save this element as a reusable section template.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="template-name">Name</Label>
+              <Input
+                id="template-name"
+                value={templateName}
+                onChange={(e) => setTemplateName(e.target.value)}
+                placeholder="Template name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="template-category">Category</Label>
+              <select
+                id="template-category"
+                className="w-full h-9 border rounded-md px-3 text-sm bg-background"
+                value={templateCategory}
+                onChange={(e) => setTemplateCategory(e.target.value as SectionTemplateCategory)}
+              >
+                <option value="hero">Hero</option>
+                <option value="features">Features</option>
+                <option value="cta">Call to Action</option>
+                <option value="contact">Contact</option>
+                <option value="testimonials">Testimonials</option>
+                <option value="pricing">Pricing</option>
+                <option value="faq">FAQ</option>
+                <option value="footer">Footer</option>
+                <option value="header">Header</option>
+                <option value="content">Content</option>
+                <option value="gallery">Gallery</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="template-desc">Description (optional)</Label>
+              <Input
+                id="template-desc"
+                value={templateDescription}
+                onChange={(e) => setTemplateDescription(e.target.value)}
+                placeholder="Brief description"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSaveAsTemplateOpen(false)}>Cancel</Button>
+            <Button onClick={handleConfirmSaveAsTemplate} disabled={savingTemplate || !templateName.trim()}>
+              {savingTemplate ? 'Saving...' : 'Save Template'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

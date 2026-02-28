@@ -16,7 +16,7 @@ export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 /**
  * Builder sidebar panel
  */
-export type SidebarPanel = 'components' | 'layers' | 'settings';
+export type SidebarPanel = 'components' | 'layers' | 'settings' | 'templates';
 
 /**
  * Viewport dimensions

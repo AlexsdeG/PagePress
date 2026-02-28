@@ -1,4 +1,4 @@
-// PagePress v0.0.14 - 2026-02-28
+// PagePress v0.0.15 - 2026-02-28
 
 import { useEffect, Suspense, lazy } from 'react';
 import { 
@@ -24,6 +24,7 @@ const Pages = lazy(() => import('./pages/Pages').then(m => ({ default: m.Pages }
 const MediaPage = lazy(() => import('./pages/Media').then(m => ({ default: m.MediaPage })));
 const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })));
 const BuilderPage = lazy(() => import('./pages/Builder').then(m => ({ default: m.BuilderPage })));
+const Templates = lazy(() => import('./pages/Templates').then(m => ({ default: m.Templates })));
 
 /**
  * Suspense fallback for lazy-loaded routes
@@ -66,6 +67,7 @@ const queryClient = new QueryClient({
 const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: '📊' },
   { path: '/pages', label: 'Pages', icon: '📄' },
+  { path: '/templates', label: 'Templates', icon: '🧩' },
   { path: '/media', label: 'Media', icon: '🖼️' },
   { path: '/settings', label: 'Settings', icon: '⚙️' },
 ];
@@ -194,6 +196,7 @@ const router = createBrowserRouter([
     children: [
       { path: '/dashboard', element: <RouteErrorBoundary><Suspense fallback={<PageLoader />}><DashboardPage /></Suspense></RouteErrorBoundary> },
       { path: '/pages', element: <RouteErrorBoundary><Suspense fallback={<PageLoader />}><Pages /></Suspense></RouteErrorBoundary> },
+      { path: '/templates', element: <RouteErrorBoundary><Suspense fallback={<PageLoader />}><Templates /></Suspense></RouteErrorBoundary> },
       { path: '/media', element: <RouteErrorBoundary><Suspense fallback={<PageLoader />}><MediaPage /></Suspense></RouteErrorBoundary> },
       { path: '/settings', element: <RouteErrorBoundary><Suspense fallback={<PageLoader />}><Settings /></Suspense></RouteErrorBoundary> },
     ],

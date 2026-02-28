@@ -1,9 +1,9 @@
-// PagePress v0.0.14 - 2026-02-28
+// PagePress v0.0.15 - 2026-02-28
 // Pages CRUD routes — hardened with consistent responses, thrown errors
 
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { eq, desc, asc, like, and } from 'drizzle-orm';
+import { eq, desc, asc, like, and, ne } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 import { db } from '../lib/db.js';
 import { pages, users } from '../lib/schema.js';
@@ -62,9 +62,14 @@ export async function pagesRoutes(fastify: FastifyInstance): Promise<void> {
     const { page, limit, type, published, search, sortBy, sortOrder } = querySchema.parse(request.query);
     const offset = (page - 1) * limit;
 
-    // Build conditions
+    // Build conditions — exclude templates unless type='template' is explicitly requested
     const conditions = [];
-    if (type) conditions.push(eq(pages.type, type));
+    if (type) {
+      conditions.push(eq(pages.type, type));
+    } else {
+      // By default, exclude templates from pages listing
+      conditions.push(ne(pages.type, 'template'));
+    }
     if (published !== undefined) conditions.push(eq(pages.published, published));
     if (search) conditions.push(like(pages.title, `%${search}%`));
 
@@ -89,6 +94,9 @@ export async function pagesRoutes(fastify: FastifyInstance): Promise<void> {
         contentJson: pages.contentJson,
         published: pages.published,
         type: pages.type,
+        templateType: pages.templateType,
+        headerTemplateId: pages.headerTemplateId,
+        footerTemplateId: pages.footerTemplateId,
         authorId: pages.authorId,
         authorUsername: users.username,
         createdAt: pages.createdAt,
@@ -124,6 +132,9 @@ export async function pagesRoutes(fastify: FastifyInstance): Promise<void> {
         contentJson: pages.contentJson,
         published: pages.published,
         type: pages.type,
+        templateType: pages.templateType,
+        headerTemplateId: pages.headerTemplateId,
+        footerTemplateId: pages.footerTemplateId,
         authorId: pages.authorId,
         authorUsername: users.username,
         createdAt: pages.createdAt,

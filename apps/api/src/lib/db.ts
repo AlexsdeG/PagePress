@@ -1,4 +1,4 @@
-// PagePress v0.0.14 - 2026-02-28
+// PagePress v0.0.15 - 2026-02-28
 
 import { createClient, type Client } from '@libsql/client';
 import { drizzle, type LibSQLDatabase } from 'drizzle-orm/libsql';
@@ -185,6 +185,51 @@ export async function initializeDatabase(): Promise<void> {
   await client.execute(`
     INSERT OR IGNORE INTO theme_settings (id, settings) 
     VALUES ('default', '${JSON.stringify(getDefaultThemeSettings())}')
+  `);
+
+  // Phase 10: Add template columns to pages table (safe migration)
+  await client.execute(`ALTER TABLE pages ADD COLUMN template_type TEXT`).catch(() => {});
+  await client.execute(`ALTER TABLE pages ADD COLUMN header_template_id TEXT`).catch(() => {});
+  await client.execute(`ALTER TABLE pages ADD COLUMN footer_template_id TEXT`).catch(() => {});
+
+  // Phase 10: Create section_templates table for reusable saved blocks
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS section_templates (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT,
+      category TEXT DEFAULT 'other' NOT NULL,
+      content_json TEXT NOT NULL,
+      thumbnail TEXT,
+      created_by TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at INTEGER DEFAULT (unixepoch()) NOT NULL,
+      updated_at INTEGER DEFAULT (unixepoch()) NOT NULL
+    )
+  `);
+
+  await client.execute(`
+    CREATE INDEX IF NOT EXISTS idx_section_templates_category ON section_templates(category)
+  `);
+
+  await client.execute(`
+    CREATE INDEX IF NOT EXISTS idx_section_templates_created_at ON section_templates(created_at)
+  `);
+
+  // Phase 10: Create global_elements table for synced elements
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS global_elements (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      content_json TEXT NOT NULL,
+      created_by TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at INTEGER DEFAULT (unixepoch()) NOT NULL,
+      updated_at INTEGER DEFAULT (unixepoch()) NOT NULL
+    )
+  `);
+
+  // Phase 10: Create index on pages for template type lookups
+  await client.execute(`
+    CREATE INDEX IF NOT EXISTS idx_pages_template_type ON pages(template_type)
   `);
 }
 

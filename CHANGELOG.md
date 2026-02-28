@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.0.15] - 2026-02-28
+
+### Template System (Phase 10)
+- **Templates Admin Page:** Separate admin page for managing templates (header, footer, 404, custom)
+- **System Templates:** Header and footer templates auto-injected at page top/bottom, per-page template assignment
+- **404 Template:** Custom not-found page template support
+- **Section Template Library:** Save any element/group as a reusable section template with categories (Hero, Features, CTA, Contact, etc.)
+- **Template Library Panel:** Browse, search, and insert saved section templates from builder sidebar
+- **Save as Template:** Right-click context menu action to save selected elements as reusable templates
+- **Import/Export:** JSON-based template import and export for section templates
+- **Template Variables:** `{{variable_name}}` syntax in text with variable editor UI, default values, and image variable support
+- **Global Elements:** Mark elements as global to sync changes across all page instances, with visual indicator badge and unlink option
+- **Template Selector:** Assign header/footer/custom template per page in page settings
+- **Schema Updates:** New `section_templates` and `global_elements` tables, template fields on pages table
+
 ## [v0.0.14] - 2026-02-28
 
 ### Security & Hardening

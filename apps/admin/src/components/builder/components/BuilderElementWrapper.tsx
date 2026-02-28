@@ -1,4 +1,4 @@
-// PagePress v0.0.6 - 2025-12-03
+// PagePress v0.0.15 - 2026-02-28
 // Shared builder element utilities for visual feedback
 
 import { useNode, useEditor } from '@craftjs/core';
@@ -11,8 +11,10 @@ import { useBuilderStore } from '@/stores/builder';
 export function useBuilderElementStyles(displayName: string = 'Element') {
   const { isPreviewMode } = useBuilderStore();
   
-  const { id } = useNode((node) => ({
+  const { id, isGlobal, globalName } = useNode((node) => ({
     id: node.id,
+    isGlobal: !!(node.data.custom?.globalElementId),
+    globalName: node.data.custom?.globalElementName as string | undefined,
   }));
 
   const { isSelected, isHovered } = useEditor((state) => ({
@@ -39,6 +41,13 @@ export function useBuilderElementStyles(displayName: string = 'Element') {
         outlineOffset: '-2px',
       };
     }
+
+    if (isGlobal) {
+      return {
+        outline: '1px dashed #9333ea',
+        outlineOffset: '-1px',
+      };
+    }
     
     return {};
   };
@@ -56,6 +65,8 @@ export function useBuilderElementStyles(displayName: string = 'Element') {
     isSelected,
     isHovered,
     displayName,
+    isGlobal,
+    globalName,
     getOutlineStyles,
     getElementClasses,
   };
@@ -67,17 +78,30 @@ export function useBuilderElementStyles(displayName: string = 'Element') {
 export function SelectionLabel({ 
   displayName, 
   isSelected, 
-  isPreviewMode 
+  isPreviewMode,
+  isGlobal,
 }: { 
   displayName: string; 
   isSelected: boolean; 
   isPreviewMode: boolean;
+  isGlobal?: boolean;
 }) {
-  if (!isSelected || isPreviewMode) return null;
+  if (isPreviewMode) return null;
+  
+  // Global badge shown even when not selected
+  if (!isSelected && isGlobal) {
+    return (
+      <span className="absolute -top-5 right-0 text-[10px] text-white bg-purple-600 px-1.5 py-0.5 rounded-t-lg font-medium z-10 whitespace-nowrap">
+        🌐 Global
+      </span>
+    );
+  }
+  
+  if (!isSelected) return null;
   
   return (
-    <span className="absolute -top-5 left-0 text-xs text-white bg-blue-600 px-1.5 py-0.5 rounded-t font-medium z-10 whitespace-nowrap">
-      {displayName}
+    <span className="absolute -top-5 left-0 text-xs text-white bg-blue-600 px-1.5 py-0.5 rounded-t-lg font-medium z-10 whitespace-nowrap">
+      {isGlobal ? '🌐 ' : ''}{displayName}
     </span>
   );
 }

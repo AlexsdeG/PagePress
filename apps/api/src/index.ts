@@ -1,4 +1,4 @@
-// PagePress v0.0.14 - 2026-02-28
+// PagePress v0.0.15 - 2026-02-28
 
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
@@ -19,6 +19,9 @@ import { pagesRoutes } from './routes/pages.js';
 import { mediaRoutes } from './routes/media.js';
 import { settingsRoutes } from './routes/settings.js';
 import { themeRoutes } from './routes/theme.js';
+import { templatesRoutes } from './routes/templates.js';
+import { sectionTemplatesRoutes } from './routes/section-templates.js';
+import { globalElementsRoutes } from './routes/global-elements.js';
 
 /**
  * Create and configure Fastify server
@@ -168,6 +171,9 @@ async function registerRoutes(): Promise<void> {
   await server.register(mediaRoutes, { prefix: '/media' });
   await server.register(settingsRoutes, { prefix: '/settings' });
   await server.register(themeRoutes, { prefix: '/theme' });
+  await server.register(templatesRoutes, { prefix: '/templates' });
+  await server.register(sectionTemplatesRoutes, { prefix: '/section-templates' });
+  await server.register(globalElementsRoutes, { prefix: '/global-elements' });
 
   // Root route
   server.get('/', async (_request, _reply) => {
@@ -175,7 +181,7 @@ async function registerRoutes(): Promise<void> {
       success: true,
       data: {
         name: 'PagePress API',
-        version: '0.0.14',
+        version: '0.0.15',
       },
     };
   });
@@ -225,7 +231,7 @@ async function start(): Promise<void> {
     // Start session cleanup cron after server is listening
     startSessionCleanup(server.log);
 
-    server.log.info(`🚀 PagePress API v0.0.14 running on port ${env.PORT}`);
+    server.log.info(`🚀 PagePress API v0.0.15 running on port ${env.PORT}`);
     server.log.info(`📊 Environment: ${env.NODE_ENV}`);
 
   } catch (err) {

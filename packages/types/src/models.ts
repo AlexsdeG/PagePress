@@ -1,4 +1,4 @@
-// PagePress v0.0.14 - 2026-02-28
+// PagePress v0.0.15 - 2026-02-28
 
 /**
  * User roles in the system
@@ -96,6 +96,28 @@ export interface SessionInfo {
 }
 
 /**
+ * Template type for system templates
+ */
+export type TemplateType = 'header' | 'footer' | 'notfound' | 'custom';
+
+/**
+ * Section template category
+ */
+export type SectionTemplateCategory =
+  | 'hero'
+  | 'features'
+  | 'cta'
+  | 'contact'
+  | 'testimonials'
+  | 'pricing'
+  | 'faq'
+  | 'footer'
+  | 'header'
+  | 'content'
+  | 'gallery'
+  | 'other';
+
+/**
  * Page summary (for list views)
  */
 export interface PageSummary {
@@ -104,6 +126,9 @@ export interface PageSummary {
   slug: string;
   published: boolean;
   type: 'page' | 'post' | 'template';
+  templateType?: TemplateType | null;
+  headerTemplateId?: string | null;
+  footerTemplateId?: string | null;
   authorId: string;
   authorUsername?: string;
   createdAt: Date | string;
@@ -159,4 +184,41 @@ export interface HealthCheckResponse {
     heapTotal: number;
     rss: number;
   };
+}
+
+/**
+ * Section template (library item)
+ */
+export interface SectionTemplateItem {
+  id: string;
+  name: string;
+  description: string | null;
+  category: SectionTemplateCategory;
+  contentJson: Record<string, unknown>;
+  thumbnail: string | null;
+  createdBy: string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
+/**
+ * Global element (synced across pages)
+ */
+export interface GlobalElementItem {
+  id: string;
+  name: string;
+  contentJson: Record<string, unknown>;
+  createdBy: string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
+/**
+ * Template variable definition
+ */
+export interface TemplateVariable {
+  name: string;
+  defaultValue: string;
+  type: 'text' | 'image' | 'url' | 'number';
+  description?: string;
 }

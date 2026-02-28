@@ -100,6 +100,10 @@ export interface PageSettings {
   backgroundColor?: string;
   customBodyClass?: string;
   
+  // Template assignment
+  headerTemplateId?: string;
+  footerTemplateId?: string;
+  
   // SEO settings
   metaTitle?: string;
   metaDescription?: string;

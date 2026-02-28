@@ -182,6 +182,9 @@ export interface Page {
   contentJson: Record<string, unknown> | null;
   published: boolean;
   type: 'page' | 'post' | 'template';
+  templateType?: 'header' | 'footer' | 'notfound' | 'custom' | null;
+  headerTemplateId?: string | null;
+  footerTemplateId?: string | null;
   authorId: string;
   createdAt: string;
   updatedAt: string;
@@ -215,6 +218,94 @@ export interface UpdatePageData {
   contentJson?: Record<string, unknown>;
   published?: boolean;
   type?: 'page' | 'post' | 'template';
+}
+
+/**
+ * Template types
+ */
+export type TemplateType = 'header' | 'footer' | 'notfound' | 'custom';
+
+export interface TemplateListResponse {
+  templates: Page[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface CreateTemplateData {
+  title: string;
+  slug?: string;
+  contentJson?: Record<string, unknown>;
+  published?: boolean;
+  templateType?: TemplateType;
+}
+
+export interface UpdateTemplateData {
+  title?: string;
+  slug?: string;
+  contentJson?: Record<string, unknown>;
+  published?: boolean;
+  templateType?: TemplateType;
+}
+
+/**
+ * Section template types
+ */
+export type SectionTemplateCategory =
+  | 'hero' | 'features' | 'cta' | 'contact' | 'testimonials'
+  | 'pricing' | 'faq' | 'footer' | 'header' | 'content' | 'gallery' | 'other';
+
+export interface SectionTemplate {
+  id: string;
+  name: string;
+  description: string | null;
+  category: SectionTemplateCategory;
+  contentJson: Record<string, unknown>;
+  thumbnail: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SectionTemplateListResponse {
+  sectionTemplates: SectionTemplate[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface CreateSectionTemplateData {
+  name: string;
+  description?: string;
+  category?: SectionTemplateCategory;
+  contentJson: Record<string, unknown>;
+  thumbnail?: string;
+}
+
+export interface UpdateSectionTemplateData {
+  name?: string;
+  description?: string | null;
+  category?: SectionTemplateCategory;
+  contentJson?: Record<string, unknown>;
+  thumbnail?: string | null;
+}
+
+/**
+ * Global element types
+ */
+export interface GlobalElement {
+  id: string;
+  name: string;
+  contentJson: Record<string, unknown>;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 /**
@@ -498,6 +589,134 @@ export const api = {
       fetchApi<PageSettingsResponse>(`/theme/page/${pageId}`, {
         method: 'PUT',
         body: JSON.stringify(data),
+      }),
+  },
+
+  /**
+   * Template endpoints — page-level templates (header, footer, 404, custom)
+   */
+  templates: {
+    list: (params?: { page?: number; limit?: number; templateType?: string; search?: string }) => {
+      const searchParams = new URLSearchParams();
+      if (params?.page) searchParams.set('page', params.page.toString());
+      if (params?.limit) searchParams.set('limit', params.limit.toString());
+      if (params?.templateType) searchParams.set('templateType', params.templateType);
+      if (params?.search) searchParams.set('search', params.search);
+      const query = searchParams.toString();
+      return fetchApi<TemplateListResponse>(`/templates${query ? `?${query}` : ''}`);
+    },
+
+    get: (id: string) => fetchApi<{ template: Page }>(`/templates/${id}`),
+
+    create: (data: CreateTemplateData) =>
+      fetchApi<{ template: Page }>('/templates', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    update: (id: string, data: UpdateTemplateData) =>
+      fetchApi<{ template: Page }>(`/templates/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+
+    delete: (id: string) =>
+      fetchApi<{ message: string }>(`/templates/${id}`, {
+        method: 'DELETE',
+      }),
+
+    duplicate: (id: string) =>
+      fetchApi<{ template: Page }>(`/templates/${id}/duplicate`, {
+        method: 'POST',
+      }),
+
+    assign: (pageId: string, data: { headerTemplateId?: string | null; footerTemplateId?: string | null }) =>
+      fetchApi<{ message: string }>(`/templates/assign/${pageId}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+
+    getSystem: () =>
+      fetchApi<{ systemTemplates: Record<string, Page | null> }>('/templates/system'),
+  },
+
+  /**
+   * Section template endpoints — reusable saved blocks/sections
+   */
+  sectionTemplates: {
+    list: (params?: { page?: number; limit?: number; category?: string; search?: string }) => {
+      const searchParams = new URLSearchParams();
+      if (params?.page) searchParams.set('page', params.page.toString());
+      if (params?.limit) searchParams.set('limit', params.limit.toString());
+      if (params?.category) searchParams.set('category', params.category);
+      if (params?.search) searchParams.set('search', params.search);
+      const query = searchParams.toString();
+      return fetchApi<SectionTemplateListResponse>(`/section-templates${query ? `?${query}` : ''}`);
+    },
+
+    getCategories: () =>
+      fetchApi<{ categories: Record<string, number> }>('/section-templates/categories'),
+
+    get: (id: string) => fetchApi<{ sectionTemplate: SectionTemplate }>(`/section-templates/${id}`),
+
+    create: (data: CreateSectionTemplateData) =>
+      fetchApi<{ sectionTemplate: SectionTemplate }>('/section-templates', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    update: (id: string, data: UpdateSectionTemplateData) =>
+      fetchApi<{ sectionTemplate: SectionTemplate }>(`/section-templates/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+
+    delete: (id: string) =>
+      fetchApi<{ message: string }>(`/section-templates/${id}`, {
+        method: 'DELETE',
+      }),
+
+    import: (templates: Array<{ name: string; description?: string; category?: string; contentJson: Record<string, unknown> }>) =>
+      fetchApi<{ imported: Array<{ id: string; name: string }>; count: number }>('/section-templates/import', {
+        method: 'POST',
+        body: JSON.stringify({ templates }),
+      }),
+
+    export: (params?: { ids?: string[]; category?: string }) =>
+      fetchApi<{ templates: Array<{ name: string; description: string | null; category: string; contentJson: Record<string, unknown> }>; count: number }>('/section-templates/export', {
+        method: 'POST',
+        body: JSON.stringify(params ?? {}),
+      }),
+  },
+
+  /**
+   * Global element endpoints — elements synced across all page instances
+   */
+  globalElements: {
+    list: (params?: { search?: string }) => {
+      const searchParams = new URLSearchParams();
+      if (params?.search) searchParams.set('search', params.search);
+      const query = searchParams.toString();
+      return fetchApi<{ globalElements: GlobalElement[] }>(`/global-elements${query ? `?${query}` : ''}`);
+    },
+
+    get: (id: string) => fetchApi<{ globalElement: GlobalElement }>(`/global-elements/${id}`),
+
+    create: (data: { name: string; contentJson: Record<string, unknown> }) =>
+      fetchApi<{ globalElement: GlobalElement }>('/global-elements', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    update: (id: string, data: { name?: string; contentJson?: Record<string, unknown> }) =>
+      fetchApi<{ globalElement: GlobalElement }>(`/global-elements/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+
+    delete: (id: string) =>
+      fetchApi<{ message: string }>(`/global-elements/${id}`, {
+        method: 'DELETE',
       }),
   },
 };

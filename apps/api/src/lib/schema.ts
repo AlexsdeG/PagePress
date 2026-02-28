@@ -1,4 +1,4 @@
-// PagePress v0.0.14 - 2026-02-28
+// PagePress v0.0.15 - 2026-02-28
 
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
@@ -46,6 +46,9 @@ export const pages = sqliteTable('pages', {
   contentJson: text('content_json', { mode: 'json' }).$type<Record<string, unknown>>(),
   published: integer('published', { mode: 'boolean' }).default(false).notNull(),
   type: text('type', { enum: ['page', 'post', 'template'] }).default('page').notNull(),
+  templateType: text('template_type', { enum: ['header', 'footer', 'notfound', 'custom'] }),
+  headerTemplateId: text('header_template_id'),
+  footerTemplateId: text('footer_template_id'),
   authorId: text('author_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   createdAt: integer('created_at', { mode: 'timestamp' })
     .default(sql`(unixepoch())`)
@@ -122,3 +125,46 @@ export type ThemeSetting = typeof themeSettings.$inferSelect;
 export type NewThemeSetting = typeof themeSettings.$inferInsert;
 export type PageSetting = typeof pageSettings.$inferSelect;
 export type NewPageSetting = typeof pageSettings.$inferInsert;
+
+/**
+ * Section Templates table - Reusable saved element/group templates for the template library
+ */
+export const sectionTemplates = sqliteTable('section_templates', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  category: text('category', {
+    enum: ['hero', 'features', 'cta', 'contact', 'testimonials', 'pricing', 'faq', 'footer', 'header', 'content', 'gallery', 'other'],
+  }).default('other').notNull(),
+  contentJson: text('content_json', { mode: 'json' }).$type<Record<string, unknown>>().notNull(),
+  thumbnail: text('thumbnail'),
+  createdBy: text('created_by').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .default(sql`(unixepoch())`)
+    .notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .default(sql`(unixepoch())`)
+    .notNull(),
+});
+
+/**
+ * Global Elements table - Elements synced across all page instances
+ */
+export const globalElements = sqliteTable('global_elements', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  contentJson: text('content_json', { mode: 'json' }).$type<Record<string, unknown>>().notNull(),
+  createdBy: text('created_by').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .default(sql`(unixepoch())`)
+    .notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .default(sql`(unixepoch())`)
+    .notNull(),
+});
+
+// Template and global element type exports
+export type SectionTemplate = typeof sectionTemplates.$inferSelect;
+export type NewSectionTemplate = typeof sectionTemplates.$inferInsert;
+export type GlobalElement = typeof globalElements.$inferSelect;
+export type NewGlobalElement = typeof globalElements.$inferInsert;
