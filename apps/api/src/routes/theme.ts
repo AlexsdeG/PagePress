@@ -1,5 +1,5 @@
-// PagePress v0.0.10 - 2025-12-04
-// Theme and page settings routes
+// PagePress v0.0.14 - 2026-02-28
+// Theme and page settings routes — hardened with consistent responses, removed manual try/catch
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
@@ -208,36 +208,24 @@ export async function themeRoutes(fastify: FastifyInstance): Promise<void> {
     '/',
     { preHandler: [requireAuth] },
     async (_request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        const result = await db
-          .select()
-          .from(themeSettings)
-          .where(eq(themeSettings.id, 'default'));
+      const result = await db
+        .select()
+        .from(themeSettings)
+        .where(eq(themeSettings.id, 'default'));
 
-        let settings = result[0];
-        
-        // Create default settings if none exist
-        if (!settings) {
-          await db.insert(themeSettings).values({
-            id: 'default',
-            settings: DEFAULT_THEME_SETTINGS,
-            updatedAt: new Date(),
-          });
-          
-          return reply.send({
-            settings: DEFAULT_THEME_SETTINGS,
-          });
-        }
+      let settings = result[0];
 
-        return reply.send({
-          settings: settings.settings,
+      if (!settings) {
+        await db.insert(themeSettings).values({
+          id: 'default',
+          settings: DEFAULT_THEME_SETTINGS,
+          updatedAt: new Date(),
         });
-      } catch (error) {
-        fastify.log.error(error, 'Failed to get theme settings');
-        return reply.status(500).send({
-          error: 'Failed to get theme settings',
-        });
+
+        return reply.send({ success: true, data: { settings: DEFAULT_THEME_SETTINGS } });
       }
+
+      return reply.send({ success: true, data: { settings: settings.settings } });
     }
   );
 
@@ -248,46 +236,23 @@ export async function themeRoutes(fastify: FastifyInstance): Promise<void> {
     '/',
     { preHandler: [requireAuth] },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        const parseResult = themeSettingsUpdateSchema.safeParse(request.body);
+      const parsed = themeSettingsUpdateSchema.parse(request.body);
 
-        if (!parseResult.success) {
-          return reply.status(400).send({
-            error: 'Invalid settings',
-            details: parseResult.error.flatten(),
-          });
-        }
+      // Get existing settings
+      const existing = await db
+        .select()
+        .from(themeSettings)
+        .where(eq(themeSettings.id, 'default'));
 
-        // Get existing settings
-        const existing = await db
-          .select()
-          .from(themeSettings)
-          .where(eq(themeSettings.id, 'default'));
+      const currentSettings = (existing[0]?.settings as Record<string, unknown>) || {};
+      const newSettings = deepMerge(currentSettings, parsed);
 
-        const currentSettings = (existing[0]?.settings as Record<string, unknown>) || {};
-        
-        // Deep merge settings
-        const newSettings = deepMerge(currentSettings, parseResult.data);
+      await db
+        .update(themeSettings)
+        .set({ settings: newSettings, updatedAt: new Date() })
+        .where(eq(themeSettings.id, 'default'));
 
-        // Update settings
-        await db
-          .update(themeSettings)
-          .set({
-            settings: newSettings,
-            updatedAt: new Date(),
-          })
-          .where(eq(themeSettings.id, 'default'));
-
-        return reply.send({
-          message: 'Theme settings updated',
-          settings: newSettings,
-        });
-      } catch (error) {
-        fastify.log.error(error, 'Failed to update theme settings');
-        return reply.status(500).send({
-          error: 'Failed to update theme settings',
-        });
-      }
+      return reply.send({ success: true, data: { settings: newSettings } });
     }
   );
 
@@ -298,23 +263,17 @@ export async function themeRoutes(fastify: FastifyInstance): Promise<void> {
     '/page/:pageId',
     { preHandler: [requireAuth] },
     async (request: FastifyRequest<{ Params: { pageId: string } }>, reply: FastifyReply) => {
-      try {
-        const { pageId } = request.params;
+      const { pageId } = request.params;
 
-        const result = await db
-          .select()
-          .from(pageSettings)
-          .where(eq(pageSettings.pageId, pageId));
+      const result = await db
+        .select()
+        .from(pageSettings)
+        .where(eq(pageSettings.pageId, pageId));
 
-        return reply.send({
-          settings: result[0]?.settings || {},
-        });
-      } catch (error) {
-        fastify.log.error(error, 'Failed to get page settings');
-        return reply.status(500).send({
-          error: 'Failed to get page settings',
-        });
-      }
+      return reply.send({
+        success: true,
+        data: { settings: result[0]?.settings || {} },
+      });
     }
   );
 
@@ -325,54 +284,31 @@ export async function themeRoutes(fastify: FastifyInstance): Promise<void> {
     '/page/:pageId',
     { preHandler: [requireAuth] },
     async (request: FastifyRequest<{ Params: { pageId: string } }>, reply: FastifyReply) => {
-      try {
-        const { pageId } = request.params;
+      const { pageId } = request.params;
+      const parsed = pageSettingsUpdateSchema.parse(request.body);
 
-        const parseResult = pageSettingsUpdateSchema.safeParse(request.body);
+      const existing = await db
+        .select()
+        .from(pageSettings)
+        .where(eq(pageSettings.pageId, pageId));
 
-        if (!parseResult.success) {
-          return reply.status(400).send({
-            error: 'Invalid settings',
-            details: parseResult.error.flatten(),
-          });
-        }
+      const currentSettings = (existing[0]?.settings as Record<string, unknown>) || {};
+      const newSettings = { ...currentSettings, ...parsed };
 
-        // Get existing settings
-        const existing = await db
-          .select()
-          .from(pageSettings)
-          .where(eq(pageSettings.pageId, pageId));
-
-        const currentSettings = (existing[0]?.settings as Record<string, unknown>) || {};
-        const newSettings = { ...currentSettings, ...parseResult.data };
-
-        // Upsert settings
-        if (existing.length === 0) {
-          await db.insert(pageSettings).values({
-            pageId,
-            settings: newSettings,
-            updatedAt: new Date(),
-          });
-        } else {
-          await db
-            .update(pageSettings)
-            .set({
-              settings: newSettings,
-              updatedAt: new Date(),
-            })
-            .where(eq(pageSettings.pageId, pageId));
-        }
-
-        return reply.send({
-          message: 'Page settings updated',
+      if (existing.length === 0) {
+        await db.insert(pageSettings).values({
+          pageId,
           settings: newSettings,
+          updatedAt: new Date(),
         });
-      } catch (error) {
-        fastify.log.error(error, 'Failed to update page settings');
-        return reply.status(500).send({
-          error: 'Failed to update page settings',
-        });
+      } else {
+        await db
+          .update(pageSettings)
+          .set({ settings: newSettings, updatedAt: new Date() })
+          .where(eq(pageSettings.pageId, pageId));
       }
+
+      return reply.send({ success: true, data: { settings: newSettings } });
     }
   );
 }

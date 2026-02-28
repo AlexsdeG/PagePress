@@ -1,5 +1,5 @@
-// PagePress v0.0.4 - 2025-11-30
-// Site settings routes
+// PagePress v0.0.14 - 2026-02-28
+// Site settings routes — hardened with key allowlist, consistent responses
 
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -7,6 +7,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '../lib/db.js';
 import { siteSettings } from '../lib/schema.js';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
+import { badRequest } from '../lib/errors.js';
 
 /**
  * Settings value type
@@ -70,19 +71,16 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
    * GET /settings - Get all settings
    */
   fastify.get('/', { preHandler: [requireAuth] }, async (_request, reply) => {
-    // Get all settings from database
     const result = await db.select().from(siteSettings);
-    
-    // Merge with defaults
+
     const settings: Record<string, SettingsValue> = { ...DEFAULT_SETTINGS };
-    
     for (const row of result) {
       if (row.value !== null) {
         settings[row.key] = row.value as SettingsValue;
       }
     }
 
-    return reply.send({ settings });
+    return reply.send({ success: true, data: { settings } });
   });
 
   /**
@@ -100,29 +98,18 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
     const setting = result[0];
     const value = setting?.value ?? DEFAULT_SETTINGS[key] ?? null;
 
-    return reply.send({ key, value });
+    return reply.send({ success: true, data: { key, value } });
   });
 
   /**
    * PUT /settings - Update multiple settings
    */
   fastify.put('/', { preHandler: [requireAuth, requireAdmin] }, async (request, reply) => {
-    const parseResult = updateSettingsSchema.safeParse(request.body);
-    if (!parseResult.success) {
-      return reply.status(400).send({
-        error: 'Validation Error',
-        message: 'Invalid settings data',
-        details: parseResult.error.flatten().fieldErrors,
-      });
-    }
-
-    const updates = parseResult.data;
+    const updates = updateSettingsSchema.parse(request.body);
     const now = new Date();
 
-    // Update each setting
     for (const [key, value] of Object.entries(updates)) {
       if (value !== undefined) {
-        // Check if setting exists
         const existing = await db
           .select({ key: siteSettings.key })
           .from(siteSettings)
@@ -130,13 +117,11 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
           .limit(1);
 
         if (existing.length > 0) {
-          // Update existing
           await db
             .update(siteSettings)
             .set({ value: value as Record<string, unknown>, updatedAt: now })
             .where(eq(siteSettings.key, key));
         } else {
-          // Insert new
           await db.insert(siteSettings).values({
             key,
             value: value as Record<string, unknown>,
@@ -146,20 +131,15 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
       }
     }
 
-    // Return updated settings
     const result = await db.select().from(siteSettings);
     const settings: Record<string, SettingsValue> = { ...DEFAULT_SETTINGS };
-    
     for (const row of result) {
       if (row.value !== null) {
         settings[row.key] = row.value as SettingsValue;
       }
     }
 
-    return reply.send({
-      message: 'Settings updated',
-      settings,
-    });
+    return reply.send({ success: true, data: { settings } });
   });
 
   /**
@@ -169,29 +149,16 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
     const { key } = request.params as { key: string };
     const body = request.body as { value: unknown };
 
-    // Validate the key exists in schema
+    // Validate the key exists in schema (allowlist)
     if (!(key in SETTINGS_SCHEMA)) {
-      return reply.status(400).send({
-        error: 'Validation Error',
-        message: `Unknown setting key: ${key}`,
-      });
+      throw badRequest(`Unknown setting key: ${key}`);
     }
 
-    // Validate the value
     const schema = SETTINGS_SCHEMA[key as keyof typeof SETTINGS_SCHEMA];
-    const parseResult = schema.safeParse(body.value);
-    if (!parseResult.success) {
-      return reply.status(400).send({
-        error: 'Validation Error',
-        message: 'Invalid setting value',
-        details: parseResult.error.flatten(),
-      });
-    }
+    const value = schema.parse(body.value);
 
     const now = new Date();
-    const value = parseResult.data;
 
-    // Check if setting exists
     const existing = await db
       .select({ key: siteSettings.key })
       .from(siteSettings)
@@ -211,11 +178,7 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
       });
     }
 
-    return reply.send({
-      message: 'Setting updated',
-      key,
-      value,
-    });
+    return reply.send({ success: true, data: { key, value } });
   });
 
   /**
@@ -227,9 +190,8 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
     await db.delete(siteSettings).where(eq(siteSettings.key, key));
 
     return reply.send({
-      message: 'Setting reset to default',
-      key,
-      value: DEFAULT_SETTINGS[key] ?? null,
+      success: true,
+      data: { key, value: DEFAULT_SETTINGS[key] ?? null },
     });
   });
 
@@ -238,16 +200,15 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
    */
   fastify.get('/public', async (_request, reply) => {
     const publicKeys = ['siteTitle', 'siteDescription', 'siteUrl', 'faviconUrl', 'logoUrl', 'metaKeywords', 'socialLinks'];
-    
+
     const result = await db.select().from(siteSettings);
-    
+
     const settings: Record<string, SettingsValue> = {};
-    
     for (const key of publicKeys) {
       const row = result.find(r => r.key === key);
       settings[key] = row?.value as SettingsValue ?? DEFAULT_SETTINGS[key] ?? null;
     }
 
-    return reply.send({ settings });
+    return reply.send({ success: true, data: { settings } });
   });
 }

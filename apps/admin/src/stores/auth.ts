@@ -1,8 +1,8 @@
-// PagePress v0.0.6 - 2025-12-03
+// PagePress v0.0.14 - 2026-02-28
 // Zustand auth store for managing authentication state
 
 import { create } from 'zustand';
-import { api, type User, ApiError } from '../lib/api';
+import { api, type User, ApiError, setOnUnauthorized } from '../lib/api';
 
 /**
  * Auth store state
@@ -68,7 +68,19 @@ const initialState: AuthState = {
 /**
  * Auth store combining state and actions
  */
-export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
+export const useAuthStore = create<AuthState & AuthActions>((set, get) => {
+  // Register the 401 interceptor so expired sessions auto-redirect
+  setOnUnauthorized(() => {
+    set({
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+      error: null,
+      _authCheckInProgress: false,
+    });
+  });
+
+  return {
   ...initialState,
   
   checkAuth: async () => {
@@ -118,7 +130,7 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
       });
     } catch (error) {
       const message = error instanceof ApiError
-        ? error.data?.message as string || 'Login failed'
+        ? error.message || 'Login failed'
         : 'An unexpected error occurred';
       set({
         error: message,
@@ -139,7 +151,7 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
       });
     } catch (error) {
       const message = error instanceof ApiError
-        ? error.data?.message as string || 'Registration failed'
+        ? error.message || 'Registration failed'
         : 'An unexpected error occurred';
       set({
         error: message,
@@ -167,4 +179,5 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
   clearError: () => set({ error: null }),
   
   reset: () => set(initialState),
-}));
+};
+});

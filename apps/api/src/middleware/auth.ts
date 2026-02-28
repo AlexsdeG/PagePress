@@ -1,8 +1,8 @@
-// PagePress v0.0.3 - 2025-11-30
+// PagePress v0.0.14 - 2026-02-28
 // Authentication middleware for protected routes
 
 import type { FastifyRequest, FastifyReply, preHandlerHookHandler } from 'fastify';
-import { getSessionUser, type SessionUser } from '../lib/auth.js';
+import { getSessionUser, refreshSession, type SessionUser } from '../lib/auth.js';
 
 /**
  * Cookie name for session ID
@@ -10,51 +10,49 @@ import { getSessionUser, type SessionUser } from '../lib/auth.js';
 export const SESSION_COOKIE_NAME = 'pagepress_session';
 
 /**
- * Extend FastifyRequest to include user data
+ * Extend FastifyRequest to include user data and session ID
  */
 declare module 'fastify' {
   interface FastifyRequest {
     user?: SessionUser;
+    sessionId?: string;
   }
 }
 
 /**
- * Authentication middleware that requires a valid session
- * Attaches user data to request.user if authenticated
+ * Authentication middleware that requires a valid session.
+ * On valid session: refreshes sliding window expiry, attaches SafeUser to request.
  */
 export const requireAuth: preHandlerHookHandler = async (
   request: FastifyRequest,
   reply: FastifyReply
 ) => {
   const sessionId = request.cookies[SESSION_COOKIE_NAME];
-  
-  // Debug: log incoming cookies
-  request.log.info({ 
-    cookieHeader: request.headers.cookie,
-    parsedCookies: Object.keys(request.cookies),
-    hasSessionCookie: !!sessionId,
-  }, 'Auth middleware - checking cookies');
-  
+
   if (!sessionId) {
     return reply.status(401).send({
-      error: 'Unauthorized',
-      message: 'Authentication required',
+      success: false,
+      error: 'Authentication required',
     });
   }
-  
+
   const user = await getSessionUser(sessionId);
-  
+
   if (!user) {
     // Clear invalid/expired session cookie
-    reply.clearCookie(SESSION_COOKIE_NAME);
+    reply.clearCookie(SESSION_COOKIE_NAME, { path: '/' });
     return reply.status(401).send({
-      error: 'Unauthorized',
-      message: 'Session expired or invalid',
+      success: false,
+      error: 'Session expired or invalid',
     });
   }
-  
-  // Attach user to request for use in route handlers
+
+  // Sliding window: refresh session expiry on each authenticated request
+  await refreshSession(sessionId);
+
+  // Attach safe user data (never password hash) to request
   request.user = user;
+  request.sessionId = sessionId;
 };
 
 /**
@@ -65,19 +63,17 @@ export const requireAdmin: preHandlerHookHandler = async (
   request: FastifyRequest,
   reply: FastifyReply
 ) => {
-  // First check if user is authenticated
   if (!request.user) {
     return reply.status(401).send({
-      error: 'Unauthorized',
-      message: 'Authentication required',
+      success: false,
+      error: 'Authentication required',
     });
   }
-  
-  // Then check if user is admin
+
   if (request.user.role !== 'admin') {
     return reply.status(403).send({
-      error: 'Forbidden',
-      message: 'Admin access required',
+      success: false,
+      error: 'Admin access required',
     });
   }
 };
@@ -91,11 +87,12 @@ export const optionalAuth: preHandlerHookHandler = async (
   _reply: FastifyReply
 ) => {
   const sessionId = request.cookies[SESSION_COOKIE_NAME];
-  
+
   if (sessionId) {
     const user = await getSessionUser(sessionId);
     if (user) {
       request.user = user;
+      request.sessionId = sessionId;
     }
   }
 };

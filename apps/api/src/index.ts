@@ -1,4 +1,4 @@
-// PagePress v0.0.10 - 2025-12-04
+// PagePress v0.0.14 - 2026-02-28
 
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
@@ -8,8 +8,11 @@ import cookie from '@fastify/cookie';
 import multipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
 import * as path from 'path';
+import { z } from 'zod';
 import { env } from './lib/env.js';
 import { initializeDatabase, closeDatabase, getUploadsDir } from './lib/db.js';
+import { AppError, formatZodError } from './lib/errors.js';
+import { startSessionCleanup, stopSessionCleanup } from './lib/session-cleanup.js';
 import { healthRoutes } from './routes/health.js';
 import { authRoutes } from './routes/auth.js';
 import { pagesRoutes } from './routes/pages.js';
@@ -33,8 +36,81 @@ const server = Fastify({
           },
         }
       : undefined,
+    serializers: {
+      // Redact sensitive fields from logs
+      req(request) {
+        return {
+          method: request.method,
+          url: request.url,
+          hostname: request.hostname,
+          remoteAddress: request.ip,
+        };
+      },
+    },
   },
+  trustProxy: env.TRUST_PROXY,
 });
+
+/**
+ * Register global error handlers
+ */
+function registerErrorHandlers(): void {
+  // Global error handler — consistent JSON error responses
+  server.setErrorHandler((error: Error & { statusCode?: number; validation?: unknown }, request, reply) => {
+    // Zod validation errors
+    if (error instanceof z.ZodError) {
+      return reply.status(400).send({
+        success: false,
+        error: formatZodError(error),
+        details: error.flatten().fieldErrors,
+      });
+    }
+
+    // App-level errors
+    if (error instanceof AppError) {
+      return reply.status(error.statusCode).send({
+        success: false,
+        error: error.message,
+        ...(error.details ? { details: error.details } : {}),
+      });
+    }
+
+    // Rate limit errors
+    if (error.statusCode === 429) {
+      return reply.status(429).send({
+        success: false,
+        error: 'Too many requests. Please try again later.',
+      });
+    }
+
+    // Fastify validation errors
+    if (error.validation) {
+      return reply.status(400).send({
+        success: false,
+        error: error.message,
+      });
+    }
+
+    // Log unexpected errors (don't expose internals in production)
+    request.log.error(error, 'Unhandled error');
+    const message = env.NODE_ENV === 'development'
+      ? error.message
+      : 'Internal server error';
+
+    return reply.status(error.statusCode ?? 500).send({
+      success: false,
+      error: message,
+    });
+  });
+
+  // Not found handler — consistent JSON 404
+  server.setNotFoundHandler((_request, reply) => {
+    reply.status(404).send({
+      success: false,
+      error: 'Route not found',
+    });
+  });
+}
 
 /**
  * Register plugins
@@ -47,9 +123,8 @@ async function registerPlugins(): Promise<void> {
 
   // Rate limiting - Prevent abuse
   await server.register(rateLimit, {
-    max: 100, // Max 100 requests per window
+    max: 100,
     timeWindow: '1 minute',
-    // More strict limits for auth routes
     keyGenerator: (request) => {
       return request.ip;
     },
@@ -65,7 +140,7 @@ async function registerPlugins(): Promise<void> {
   await server.register(multipart, {
     limits: {
       fileSize: 10 * 1024 * 1024, // 10MB max file size
-      files: 1, // Single file upload
+      files: 1,
     },
   });
 
@@ -87,31 +162,21 @@ async function registerPlugins(): Promise<void> {
  * Register routes
  */
 async function registerRoutes(): Promise<void> {
-  // Health check routes
   await server.register(healthRoutes);
-
-  // Authentication routes
   await server.register(authRoutes, { prefix: '/auth' });
-
-  // Pages routes
   await server.register(pagesRoutes, { prefix: '/pages' });
-
-  // Media routes
   await server.register(mediaRoutes, { prefix: '/media' });
-
-  // Settings routes
   await server.register(settingsRoutes, { prefix: '/settings' });
-
-  // Theme routes
   await server.register(themeRoutes, { prefix: '/theme' });
 
   // Root route
   server.get('/', async (_request, _reply) => {
     return {
-      status: 'ok',
-      message: 'PagePress API Running',
-      version: '0.0.10',
-      documentation: '/docs',
+      success: true,
+      data: {
+        name: 'PagePress API',
+        version: '0.0.14',
+      },
     };
   });
 }
@@ -121,8 +186,9 @@ async function registerRoutes(): Promise<void> {
  */
 async function gracefulShutdown(signal: string): Promise<void> {
   server.log.info(`Received ${signal}. Shutting down gracefully...`);
-  
+
   try {
+    stopSessionCleanup();
     await server.close();
     closeDatabase();
     server.log.info('Server closed successfully');
@@ -138,6 +204,9 @@ async function gracefulShutdown(signal: string): Promise<void> {
  */
 async function start(): Promise<void> {
   try {
+    // Register global error handlers first
+    registerErrorHandlers();
+
     // Initialize database
     server.log.info('Initializing database...');
     await initializeDatabase();
@@ -153,7 +222,10 @@ async function start(): Promise<void> {
       host: '0.0.0.0',
     });
 
-    server.log.info(`🚀 PagePress API v0.0.10 running on port ${env.PORT}`);
+    // Start session cleanup cron after server is listening
+    startSessionCleanup(server.log);
+
+    server.log.info(`🚀 PagePress API v0.0.14 running on port ${env.PORT}`);
     server.log.info(`📊 Environment: ${env.NODE_ENV}`);
 
   } catch (err) {

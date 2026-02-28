@@ -1,14 +1,15 @@
-// PagePress v0.0.5 - 2025-11-30
-// Pages CRUD routes
+// PagePress v0.0.14 - 2026-02-28
+// Pages CRUD routes — hardened with consistent responses, thrown errors
 
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { eq, desc, asc, like, and } from 'drizzle-orm';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import { db } from '../lib/db.js';
 import { pages, users } from '../lib/schema.js';
 import { requireAuth } from '../middleware/auth.js';
 import { generateUniqueSlug, isValidSlug, isSlugUnique } from '../lib/slug.js';
+import { notFound, badRequest, conflict } from '../lib/errors.js';
 
 /**
  * Page type enum values - Fixed: unified with frontend types
@@ -58,16 +59,7 @@ export async function pagesRoutes(fastify: FastifyInstance): Promise<void> {
    * GET /pages - List all pages with pagination and filtering
    */
   fastify.get('/', { preHandler: [requireAuth] }, async (request, reply) => {
-    const parseResult = querySchema.safeParse(request.query);
-    if (!parseResult.success) {
-      return reply.status(400).send({
-        error: 'Validation Error',
-        message: 'Invalid query parameters',
-        details: parseResult.error.flatten().fieldErrors,
-      });
-    }
-
-    const { page, limit, type, published, search, sortBy, sortOrder } = parseResult.data;
+    const { page, limit, type, published, search, sortBy, sortOrder } = querySchema.parse(request.query);
     const offset = (page - 1) * limit;
 
     // Build conditions
@@ -76,11 +68,13 @@ export async function pagesRoutes(fastify: FastifyInstance): Promise<void> {
     if (published !== undefined) conditions.push(eq(pages.published, published));
     if (search) conditions.push(like(pages.title, `%${search}%`));
 
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
     // Get total count
     const countResult = await db
       .select({ id: pages.id })
       .from(pages)
-      .where(conditions.length > 0 ? and(...conditions) : undefined);
+      .where(whereClause);
     const total = countResult.length;
 
     // Get pages with author info
@@ -102,18 +96,16 @@ export async function pagesRoutes(fastify: FastifyInstance): Promise<void> {
       })
       .from(pages)
       .leftJoin(users, eq(pages.authorId, users.id))
-      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .where(whereClause)
       .orderBy(sortFn(sortColumn))
       .limit(limit)
       .offset(offset);
 
     return reply.send({
-      pages: result,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
+      success: true,
+      data: {
+        pages: result,
+        pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
       },
     });
   });
@@ -144,13 +136,10 @@ export async function pagesRoutes(fastify: FastifyInstance): Promise<void> {
 
     const page = result[0];
     if (!page) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Page not found',
-      });
+      throw notFound('Page not found');
     }
 
-    return reply.send({ page });
+    return reply.send({ success: true, data: { page } });
   });
 
   /**
@@ -176,53 +165,35 @@ export async function pagesRoutes(fastify: FastifyInstance): Promise<void> {
 
     const page = result[0];
     if (!page) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Page not found',
-      });
+      throw notFound('Page not found');
     }
 
-    return reply.send({ page });
+    return reply.send({ success: true, data: { page } });
   });
 
   /**
    * POST /pages - Create a new page
    */
   fastify.post('/', { preHandler: [requireAuth] }, async (request, reply) => {
-    const parseResult = createPageSchema.safeParse(request.body);
-    if (!parseResult.success) {
-      return reply.status(400).send({
-        error: 'Validation Error',
-        message: 'Invalid page data',
-        details: parseResult.error.flatten().fieldErrors,
-      });
-    }
-
-    const { title, slug: requestedSlug, contentJson, published, type } = parseResult.data;
+    const { title, slug: requestedSlug, contentJson, published, type } = createPageSchema.parse(request.body);
     const user = request.user!;
 
     // Generate or validate slug
     let slug: string;
     if (requestedSlug) {
       if (!isValidSlug(requestedSlug)) {
-        return reply.status(400).send({
-          error: 'Validation Error',
-          message: 'Invalid slug format. Use lowercase letters, numbers, and hyphens only.',
-        });
+        throw badRequest('Invalid slug format. Use lowercase letters, numbers, and hyphens only.');
       }
       const isUnique = await isSlugUnique(requestedSlug);
       if (!isUnique) {
-        return reply.status(409).send({
-          error: 'Conflict',
-          message: 'Slug already in use',
-        });
+        throw conflict('Slug already in use');
       }
       slug = requestedSlug;
     } else {
       slug = await generateUniqueSlug(title);
     }
 
-    const pageId = uuidv4();
+    const pageId = randomUUID();
     const now = new Date();
 
     await db.insert(pages).values({
@@ -238,17 +209,15 @@ export async function pagesRoutes(fastify: FastifyInstance): Promise<void> {
     });
 
     return reply.status(201).send({
-      message: 'Page created',
-      page: {
-        id: pageId,
-        title,
-        slug,
-        contentJson: contentJson ?? {},
-        published,
-        type,
-        authorId: user.id,
-        createdAt: now,
-        updatedAt: now,
+      success: true,
+      data: {
+        page: {
+          id: pageId, title, slug,
+          contentJson: contentJson ?? {},
+          published, type,
+          authorId: user.id,
+          createdAt: now, updatedAt: now,
+        },
       },
     });
   });
@@ -258,15 +227,7 @@ export async function pagesRoutes(fastify: FastifyInstance): Promise<void> {
    */
   fastify.put('/:id', { preHandler: [requireAuth] }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    
-    const parseResult = updatePageSchema.safeParse(request.body);
-    if (!parseResult.success) {
-      return reply.status(400).send({
-        error: 'Validation Error',
-        message: 'Invalid page data',
-        details: parseResult.error.flatten().fieldErrors,
-      });
-    }
+    const { title, slug: requestedSlug, contentJson, published, type } = updatePageSchema.parse(request.body);
 
     // Check if page exists
     const existing = await db
@@ -276,35 +237,22 @@ export async function pagesRoutes(fastify: FastifyInstance): Promise<void> {
       .limit(1);
 
     if (existing.length === 0) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Page not found',
-      });
+      throw notFound('Page not found');
     }
-
-    const { title, slug: requestedSlug, contentJson, published, type } = parseResult.data;
 
     // Validate slug if provided
     if (requestedSlug) {
       if (!isValidSlug(requestedSlug)) {
-        return reply.status(400).send({
-          error: 'Validation Error',
-          message: 'Invalid slug format. Use lowercase letters, numbers, and hyphens only.',
-        });
+        throw badRequest('Invalid slug format. Use lowercase letters, numbers, and hyphens only.');
       }
       const isUnique = await isSlugUnique(requestedSlug, id);
       if (!isUnique) {
-        return reply.status(409).send({
-          error: 'Conflict',
-          message: 'Slug already in use',
-        });
+        throw conflict('Slug already in use');
       }
     }
 
     // Build update object
-    const updateData: Record<string, unknown> = {
-      updatedAt: new Date(),
-    };
+    const updateData: Record<string, unknown> = { updatedAt: new Date() };
     if (title !== undefined) updateData.title = title;
     if (requestedSlug !== undefined) updateData.slug = requestedSlug;
     if (contentJson !== undefined) updateData.contentJson = contentJson;
@@ -314,16 +262,9 @@ export async function pagesRoutes(fastify: FastifyInstance): Promise<void> {
     await db.update(pages).set(updateData).where(eq(pages.id, id));
 
     // Fetch updated page
-    const result = await db
-      .select()
-      .from(pages)
-      .where(eq(pages.id, id))
-      .limit(1);
+    const result = await db.select().from(pages).where(eq(pages.id, id)).limit(1);
 
-    return reply.send({
-      message: 'Page updated',
-      page: result[0],
-    });
+    return reply.send({ success: true, data: { page: result[0] } });
   });
 
   /**
@@ -332,7 +273,6 @@ export async function pagesRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.delete('/:id', { preHandler: [requireAuth] }, async (request, reply) => {
     const { id } = request.params as { id: string };
 
-    // Check if page exists
     const existing = await db
       .select({ id: pages.id })
       .from(pages)
@@ -340,17 +280,12 @@ export async function pagesRoutes(fastify: FastifyInstance): Promise<void> {
       .limit(1);
 
     if (existing.length === 0) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Page not found',
-      });
+      throw notFound('Page not found');
     }
 
     await db.delete(pages).where(eq(pages.id, id));
 
-    return reply.send({
-      message: 'Page deleted',
-    });
+    return reply.send({ success: true, data: { message: 'Page deleted' } });
   });
 
   /**
@@ -360,25 +295,15 @@ export async function pagesRoutes(fastify: FastifyInstance): Promise<void> {
     const { id } = request.params as { id: string };
     const user = request.user!;
 
-    // Get original page
-    const result = await db
-      .select()
-      .from(pages)
-      .where(eq(pages.id, id))
-      .limit(1);
-
+    const result = await db.select().from(pages).where(eq(pages.id, id)).limit(1);
     const original = result[0];
     if (!original) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Page not found',
-      });
+      throw notFound('Page not found');
     }
 
-    // Generate new slug
     const newTitle = `${original.title} (Copy)`;
     const newSlug = await generateUniqueSlug(newTitle);
-    const newId = uuidv4();
+    const newId = randomUUID();
     const now = new Date();
 
     await db.insert(pages).values({
@@ -386,7 +311,7 @@ export async function pagesRoutes(fastify: FastifyInstance): Promise<void> {
       title: newTitle,
       slug: newSlug,
       contentJson: original.contentJson,
-      published: false, // Always unpublished
+      published: false,
       type: original.type,
       authorId: user.id,
       createdAt: now,
@@ -394,17 +319,15 @@ export async function pagesRoutes(fastify: FastifyInstance): Promise<void> {
     });
 
     return reply.status(201).send({
-      message: 'Page duplicated',
-      page: {
-        id: newId,
-        title: newTitle,
-        slug: newSlug,
-        contentJson: original.contentJson,
-        published: false,
-        type: original.type,
-        authorId: user.id,
-        createdAt: now,
-        updatedAt: now,
+      success: true,
+      data: {
+        page: {
+          id: newId, title: newTitle, slug: newSlug,
+          contentJson: original.contentJson,
+          published: false, type: original.type,
+          authorId: user.id,
+          createdAt: now, updatedAt: now,
+        },
       },
     });
   });

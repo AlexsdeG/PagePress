@@ -1,6 +1,6 @@
-// PagePress v0.0.6 - 2025-12-03
+// PagePress v0.0.14 - 2026-02-28
 
-import { useEffect } from 'react';
+import { useEffect, Suspense, lazy } from 'react';
 import { 
   createBrowserRouter, 
   RouterProvider, 
@@ -13,14 +13,28 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { useAuthStore } from './stores/auth';
 import { ProtectedRoute, PublicOnlyRoute } from './components/ProtectedRoute';
-import { LoginPage } from './pages/Login';
-import { RegisterPage } from './pages/Register';
-import { DashboardPage } from './pages/Dashboard';
-import { Pages } from './pages/Pages';
-import { MediaPage } from './pages/Media';
-import { Settings } from './pages/Settings';
-import { BuilderPage } from './pages/Builder';
+import { AppErrorBoundary, RouteErrorBoundary } from './components/ErrorBoundary';
 import { Button } from './components/ui/button';
+
+// Lazy-loaded route components
+const LoginPage = lazy(() => import('./pages/Login').then(m => ({ default: m.LoginPage })));
+const RegisterPage = lazy(() => import('./pages/Register').then(m => ({ default: m.RegisterPage })));
+const DashboardPage = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.DashboardPage })));
+const Pages = lazy(() => import('./pages/Pages').then(m => ({ default: m.Pages })));
+const MediaPage = lazy(() => import('./pages/Media').then(m => ({ default: m.MediaPage })));
+const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })));
+const BuilderPage = lazy(() => import('./pages/Builder').then(m => ({ default: m.BuilderPage })));
+
+/**
+ * Suspense fallback for lazy-loaded routes
+ */
+function PageLoader() {
+  return (
+    <div className="flex min-h-[400px] items-center justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+    </div>
+  );
+}
 
 // Create a React Query client with smart retry logic
 const queryClient = new QueryClient({
@@ -168,26 +182,26 @@ const router = createBrowserRouter([
   // Public routes
   {
     path: '/login',
-    element: <PublicOnlyRouteWrapper><LoginPage /></PublicOnlyRouteWrapper>,
+    element: <PublicOnlyRouteWrapper><Suspense fallback={<PageLoader />}><LoginPage /></Suspense></PublicOnlyRouteWrapper>,
   },
   {
     path: '/register',
-    element: <PublicOnlyRouteWrapper><RegisterPage /></PublicOnlyRouteWrapper>,
+    element: <PublicOnlyRouteWrapper><Suspense fallback={<PageLoader />}><RegisterPage /></Suspense></PublicOnlyRouteWrapper>,
   },
   // Protected admin routes with sidebar
   {
     element: <ProtectedRouteWrapper><AdminLayout /></ProtectedRouteWrapper>,
     children: [
-      { path: '/dashboard', element: <DashboardPage /> },
-      { path: '/pages', element: <Pages /> },
-      { path: '/media', element: <MediaPage /> },
-      { path: '/settings', element: <Settings /> },
+      { path: '/dashboard', element: <RouteErrorBoundary><Suspense fallback={<PageLoader />}><DashboardPage /></Suspense></RouteErrorBoundary> },
+      { path: '/pages', element: <RouteErrorBoundary><Suspense fallback={<PageLoader />}><Pages /></Suspense></RouteErrorBoundary> },
+      { path: '/media', element: <RouteErrorBoundary><Suspense fallback={<PageLoader />}><MediaPage /></Suspense></RouteErrorBoundary> },
+      { path: '/settings', element: <RouteErrorBoundary><Suspense fallback={<PageLoader />}><Settings /></Suspense></RouteErrorBoundary> },
     ],
   },
   // Builder route - full screen, no sidebar
   {
     path: '/pages/:id/edit',
-    element: <ProtectedRouteWrapper><BuilderPage /></ProtectedRouteWrapper>,
+    element: <ProtectedRouteWrapper><RouteErrorBoundary><Suspense fallback={<PageLoader />}><BuilderPage /></Suspense></RouteErrorBoundary></ProtectedRouteWrapper>,
   },
   // Default redirect
   {
@@ -206,12 +220,14 @@ const router = createBrowserRouter([
  */
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthInitializer>
-        <Toaster position="top-right" richColors closeButton />
-        <RouterProvider router={router} />
-      </AuthInitializer>
-    </QueryClientProvider>
+    <AppErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthInitializer>
+          <Toaster position="top-right" richColors closeButton />
+          <RouterProvider router={router} />
+        </AuthInitializer>
+      </QueryClientProvider>
+    </AppErrorBoundary>
   );
 }
 

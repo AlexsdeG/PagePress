@@ -1,15 +1,11 @@
-// PagePress v0.0.3 - 2025-11-30
+// PagePress v0.0.14 - 2026-02-28
 // Authentication session management utilities
 
-import { v4 as uuidv4 } from 'uuid';
-import { eq, and, gt, lt } from 'drizzle-orm';
+import { randomUUID } from 'crypto';
+import { eq, lt } from 'drizzle-orm';
 import { db } from './db.js';
 import { sessions, users } from './schema.js';
-
-/**
- * Session duration in milliseconds (7 days)
- */
-const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
+import { env } from './env.js';
 
 /**
  * Session data returned to clients
@@ -21,7 +17,7 @@ export interface SessionData {
 }
 
 /**
- * User data returned with session (without password)
+ * Safe user data returned with session (never includes passwordHash)
  */
 export interface SessionUser {
   id: string;
@@ -32,50 +28,67 @@ export interface SessionUser {
 }
 
 /**
- * Create a new session for a user
- * @param userId - User ID to create session for
- * @returns Session data
+ * Options for creating a session
  */
-export async function createSession(userId: string): Promise<SessionData> {
-  const sessionId = uuidv4();
-  const expiresAt = new Date(Date.now() + SESSION_DURATION_MS);
-  
+interface CreateSessionOptions {
+  userId: string;
+  userAgent?: string;
+  ipAddress?: string;
+}
+
+/**
+ * Get session max age in milliseconds from env config
+ */
+function getSessionMaxAgeMs(): number {
+  return env.SESSION_MAX_AGE_SECONDS * 1000;
+}
+
+/**
+ * Create a new session for a user
+ * Uses crypto.randomUUID() for cryptographically secure token generation
+ */
+export async function createSession(options: CreateSessionOptions): Promise<SessionData> {
+  const sessionId = randomUUID();
+  const expiresAt = new Date(Date.now() + getSessionMaxAgeMs());
+
   await db.insert(sessions).values({
     id: sessionId,
-    userId,
+    userId: options.userId,
+    userAgent: options.userAgent ?? null,
+    ipAddress: options.ipAddress ?? null,
     expiresAt,
     createdAt: new Date(),
   });
-  
+
   return {
     id: sessionId,
-    userId,
+    userId: options.userId,
     expiresAt,
   };
 }
 
 /**
  * Get a valid session by ID (checks expiration)
- * @param sessionId - Session ID to lookup
- * @returns Session data or null if not found/expired
+ * If expired, deletes the session and returns null
  */
 export async function getSession(sessionId: string): Promise<SessionData | null> {
   const result = await db
     .select()
     .from(sessions)
-    .where(
-      and(
-        eq(sessions.id, sessionId),
-        gt(sessions.expiresAt, new Date())
-      )
-    )
+    .where(eq(sessions.id, sessionId))
     .limit(1);
-  
+
   const session = result[0];
   if (!session) {
     return null;
   }
-  
+
+  // Check if expired
+  if (session.expiresAt <= new Date()) {
+    await db.delete(sessions).where(eq(sessions.id, sessionId));
+    return null;
+  }
+
   return {
     id: session.id,
     userId: session.userId,
@@ -84,16 +97,14 @@ export async function getSession(sessionId: string): Promise<SessionData | null>
 }
 
 /**
- * Get session with associated user data
- * @param sessionId - Session ID to lookup
- * @returns User data or null if session not found/expired
+ * Get session with associated user data (safe — no password hash)
  */
 export async function getSessionUser(sessionId: string): Promise<SessionUser | null> {
   const session = await getSession(sessionId);
   if (!session) {
     return null;
   }
-  
+
   const result = await db
     .select({
       id: users.id,
@@ -105,18 +116,40 @@ export async function getSessionUser(sessionId: string): Promise<SessionUser | n
     .from(users)
     .where(eq(users.id, session.userId))
     .limit(1);
-  
+
   const user = result[0];
   if (!user) {
     return null;
   }
-  
+
   return user;
 }
 
 /**
+ * Refresh a session's expiration (sliding window)
+ * Extends session by the configured max age from now
+ */
+export async function refreshSession(sessionId: string): Promise<SessionData | null> {
+  const session = await getSession(sessionId);
+  if (!session) {
+    return null;
+  }
+
+  const newExpiresAt = new Date(Date.now() + getSessionMaxAgeMs());
+
+  await db
+    .update(sessions)
+    .set({ expiresAt: newExpiresAt })
+    .where(eq(sessions.id, sessionId));
+
+  return {
+    ...session,
+    expiresAt: newExpiresAt,
+  };
+}
+
+/**
  * Delete a session (logout)
- * @param sessionId - Session ID to delete
  */
 export async function deleteSession(sessionId: string): Promise<void> {
   await db.delete(sessions).where(eq(sessions.id, sessionId));
@@ -124,7 +157,6 @@ export async function deleteSession(sessionId: string): Promise<void> {
 
 /**
  * Delete all sessions for a user (logout everywhere)
- * @param userId - User ID to delete all sessions for
  */
 export async function deleteAllUserSessions(userId: string): Promise<void> {
   await db.delete(sessions).where(eq(sessions.userId, userId));
@@ -132,36 +164,15 @@ export async function deleteAllUserSessions(userId: string): Promise<void> {
 
 /**
  * Clean up expired sessions
- * Should be called periodically (e.g., on a cron job)
+ * Should be called periodically via cron
  */
 export async function cleanupExpiredSessions(): Promise<number> {
   const result = await db
     .delete(sessions)
     .where(lt(sessions.expiresAt, new Date()));
-  
+
   return result.rowsAffected ?? 0;
 }
 
-/**
- * Extend a session's expiration time
- * @param sessionId - Session ID to extend
- * @returns Updated session data or null if not found
- */
-export async function extendSession(sessionId: string): Promise<SessionData | null> {
-  const session = await getSession(sessionId);
-  if (!session) {
-    return null;
-  }
-  
-  const newExpiresAt = new Date(Date.now() + SESSION_DURATION_MS);
-  
-  await db
-    .update(sessions)
-    .set({ expiresAt: newExpiresAt })
-    .where(eq(sessions.id, sessionId));
-  
-  return {
-    ...session,
-    expiresAt: newExpiresAt,
-  };
-}
+// Keep old extendSession as alias for backwards compat
+export const extendSession = refreshSession;

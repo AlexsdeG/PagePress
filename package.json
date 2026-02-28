@@ -1,6 +1,6 @@
 {
   "name": "pagepress",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "description": "High-performance, self-hosted static site builder",
   "homepage": "https://github.com/AlexsdeG/PagePress#readme",
   "bugs": {
@@ -24,7 +24,13 @@
     "clean": "pnpm --recursive exec rm -rf dist node_modules",
     "db:generate": "pnpm --filter @pagepress/db db:generate",
     "db:migrate": "pnpm --filter @pagepress/db db:migrate",
-    "db:studio": "pnpm --filter @pagepress/db db:studio"
+    "db:studio": "pnpm --filter @pagepress/db db:studio",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@vitest/coverage-v8": "^4.0.18",
+    "vitest": "^4.0.18"
+  }
 }

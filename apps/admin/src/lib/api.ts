@@ -1,11 +1,16 @@
-// PagePress v0.0.10 - 2025-12-04
-// API client for communicating with the backend
+// PagePress v0.0.14 - 2026-02-28
+// API client for communicating with the backend — hardened with 401 interceptor, timeout, abort
 
 /**
  * Base API URL - In development, use the Vite proxy to avoid CORS/cookie issues
  * The proxy is configured in vite.config.ts to forward /api/* to localhost:3000
  */
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+
+/**
+ * Default request timeout in milliseconds
+ */
+const DEFAULT_TIMEOUT_MS = 30_000;
 
 /**
  * API Error class for handling API errors
@@ -16,9 +21,34 @@ export class ApiError extends Error {
     public statusText: string,
     public data?: Record<string, unknown>
   ) {
-    super(data?.message as string || statusText);
+    super((data?.error as string) || (data?.message as string) || statusText);
     this.name = 'ApiError';
   }
+}
+
+/**
+ * Callback invoked when a 401 response is received (session expired).
+ * Set by the auth store to trigger logout & redirect.
+ */
+let onUnauthorized: (() => void) | null = null;
+
+/**
+ * Register a callback to be invoked on 401 responses.
+ */
+export function setOnUnauthorized(cb: (() => void) | null): void {
+  onUnauthorized = cb;
+}
+
+/**
+ * Unwrap the `{ success, data }` envelope. If the response contains a
+ * `success: true` wrapper, return `data`; otherwise return the raw body.
+ * This provides backward compatibility during the migration.
+ */
+function unwrapResponse<T>(body: Record<string, unknown>): T {
+  if (body.success === true && 'data' in body) {
+    return body.data as T;
+  }
+  return body as T;
 }
 
 /**
@@ -29,25 +59,39 @@ async function fetchApi<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
-  
+
   // Only set Content-Type for requests with a body
   const headers: HeadersInit = options.body
     ? { 'Content-Type': 'application/json', ...options.headers }
     : { ...options.headers };
-  
-  const response = await fetch(url, {
-    ...options,
-    credentials: 'include', // Include cookies for session auth
-    headers,
-  });
-  
-  const data = await response.json().catch(() => ({}));
-  
-  if (!response.ok) {
-    throw new ApiError(response.status, response.statusText, data);
+
+  // Timeout via AbortController
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      credentials: 'include',
+      headers,
+      signal: options.signal ?? controller.signal,
+    });
+
+    const data = await response.json().catch(() => ({})) as Record<string, unknown>;
+
+    if (!response.ok) {
+      // 401 interceptor — notify auth store to clear session
+      if (response.status === 401 && onUnauthorized && !endpoint.startsWith('/auth/')) {
+        onUnauthorized();
+      }
+
+      throw new ApiError(response.status, response.statusText, data);
+    }
+
+    return unwrapResponse<T>(data);
+  } finally {
+    clearTimeout(timeoutId);
   }
-  
-  return data as T;
 }
 
 /**
@@ -58,21 +102,31 @@ async function fetchApiFormData<T>(
   formData: FormData
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
-  
-  const response = await fetch(url, {
-    method: 'POST',
-    credentials: 'include',
-    body: formData,
-    // Don't set Content-Type header - browser will set it with boundary
-  });
-  
-  const data = await response.json().catch(() => ({}));
-  
-  if (!response.ok) {
-    throw new ApiError(response.status, response.statusText, data);
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS * 2); // double for uploads
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+      signal: controller.signal,
+    });
+
+    const data = await response.json().catch(() => ({})) as Record<string, unknown>;
+
+    if (!response.ok) {
+      if (response.status === 401 && onUnauthorized) {
+        onUnauthorized();
+      }
+      throw new ApiError(response.status, response.statusText, data);
+    }
+
+    return unwrapResponse<T>(data);
+  } finally {
+    clearTimeout(timeoutId);
   }
-  
-  return data as T;
 }
 
 /**
@@ -104,6 +158,9 @@ export interface MeResponse {
 export interface HealthResponse {
   status: string;
   timestamp: string;
+  version: string;
+  uptime: number;
+  responseTimeMs: number;
   database: {
     connected: boolean;
     type: string;

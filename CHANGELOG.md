@@ -2,6 +2,47 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.0.14] - 2026-02-28
+
+### Security & Hardening
+- **Session Security:** Sessions now use `crypto.randomUUID()` for token generation, sliding window expiry, and automatic cleanup via cron
+- **Account Lockout:** Brute-force protection with configurable failed login attempt limits and lockout duration
+- **Password Policy:** Server-side password strength validation (min 8 chars, mixed case, number)
+- **Cookie Hardening:** `SameSite=Strict`, `HttpOnly`, `Secure` (in prod), proper `Path` settings
+- **Input Sanitization:** Filename sanitization for uploads (stripped path traversal, UUID prefix), MIME type allowlist enforcement
+- **Safe User Responses:** `passwordHash` never exposed in API responses; new `SafeUser` type across the stack
+- **Rate Limiting:** Stricter limits on auth routes (10/min for login/register)
+
+### Error Handling
+- **Centralized Error System:** New `AppError` class with `formatZodError()` and route error handler for consistent `{ success, error }` responses
+- **Global Error Handlers:** Fastify `setErrorHandler` and `setNotFoundHandler` for consistent JSON error responses (no HTML 404s)
+- **Frontend Error Boundaries:** `AppErrorBoundary` and `BuilderErrorBoundary` using `react-error-boundary` with recovery UI
+- **API Client Hardening:** 401 auto-redirect to login, 30s request timeout, retry with exponential backoff, AbortController support
+
+### Type Safety
+- **Shared Types:** New `ApiSuccessResponse<T>`, `ApiErrorResponse`, `PaginatedResponse<T>`, `SafeUser`, `PageSummary`, `MediaItem` in `packages/types`
+- **Fastify Type Augmentation:** `request.user` typed as `SafeUser`, `request.sessionId` available on all authenticated routes
+- **Typed API Hooks:** New `api-hooks.ts` with TanStack Query hooks for all endpoints with proper generics and cache invalidation
+
+### Performance
+- **SQLite WAL Mode:** Enabled Write-Ahead Logging for better concurrent read performance
+- **Database Indexes:** Added indexes on `sessions.expires_at`, `pages.created_at`, `media.created_at`
+- **Lazy Loading:** Builder, Media, and Settings pages lazy-loaded with `React.lazy` + `Suspense`
+- **Session Cleanup Cron:** Automatic expired session purge every 15 minutes
+
+### Infrastructure
+- **Testing Foundation:** Vitest workspace configuration for both API and admin packages
+- **Backend Tests:** Auth route tests (login, register, lockout, session expiry) and pages route tests (CRUD, pagination, slug uniqueness)
+- **Frontend Tests:** API client interceptor tests
+- **Graceful Shutdown:** Server properly closes DB connections and stops cron on SIGTERM/SIGINT
+- **Health Check:** `/health/ready` now includes response time metrics and verified DB connectivity
+- **Structured Logging:** Pino logger redacts sensitive fields (password, cookie)
+
+### Code Quality
+- **Consistent Error Shapes:** All routes use `{ success: true, data }` / `{ success: false, error }` pattern
+- **Environment Config:** New env vars `SESSION_MAX_AGE_SECONDS`, `MAX_FAILED_LOGINS`, `LOCKOUT_DURATION_SECONDS`, `TRUST_PROXY`
+- **DB Connection Check:** `checkConnection()` function with WAL mode for health endpoints
+
 ## [v0.0.13] - 2025-12-08
 
 ### Fixed

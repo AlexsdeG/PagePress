@@ -1,4 +1,4 @@
-// PagePress v0.0.2 - 2025-11-30
+// PagePress v0.0.14 - 2026-02-28
 
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
@@ -9,9 +9,15 @@ import { sql } from 'drizzle-orm';
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
   email: text('email').notNull().unique(),
+  username: text('username').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
   role: text('role', { enum: ['admin', 'editor'] }).default('editor').notNull(),
+  failedLoginAttempts: integer('failed_login_attempts').default(0).notNull(),
+  lockedAt: integer('locked_at', { mode: 'timestamp' }),
   createdAt: integer('created_at', { mode: 'timestamp' })
+    .default(sql`(unixepoch())`)
+    .notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' })
     .default(sql`(unixepoch())`)
     .notNull(),
 });

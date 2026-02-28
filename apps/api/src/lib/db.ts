@@ -1,4 +1,4 @@
-// PagePress v0.0.10 - 2025-12-04
+// PagePress v0.0.14 - 2026-02-28
 
 import { createClient, type Client } from '@libsql/client';
 import { drizzle, type LibSQLDatabase } from 'drizzle-orm/libsql';
@@ -49,6 +49,10 @@ export function getUploadsDir(): string {
  * Initialize database tables
  */
 export async function initializeDatabase(): Promise<void> {
+  // Enable WAL mode for better concurrent read performance
+  await client.execute('PRAGMA journal_mode=WAL');
+  await client.execute('PRAGMA busy_timeout=5000');
+
   // Create users table
   await client.execute(`
     CREATE TABLE IF NOT EXISTS users (
@@ -57,20 +61,32 @@ export async function initializeDatabase(): Promise<void> {
       email TEXT NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
       role TEXT DEFAULT 'editor' NOT NULL,
+      failed_login_attempts INTEGER DEFAULT 0 NOT NULL,
+      locked_at INTEGER,
       created_at INTEGER DEFAULT (unixepoch()) NOT NULL,
       updated_at INTEGER DEFAULT (unixepoch()) NOT NULL
     )
   `);
+
+  // Add new columns to existing users table (safe migration)
+  await client.execute(`ALTER TABLE users ADD COLUMN failed_login_attempts INTEGER DEFAULT 0 NOT NULL`).catch(() => {});
+  await client.execute(`ALTER TABLE users ADD COLUMN locked_at INTEGER`).catch(() => {});
 
   // Create sessions table
   await client.execute(`
     CREATE TABLE IF NOT EXISTS sessions (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      user_agent TEXT,
+      ip_address TEXT,
       expires_at INTEGER NOT NULL,
       created_at INTEGER DEFAULT (unixepoch()) NOT NULL
     )
   `);
+
+  // Add new columns to existing sessions table (safe migration)
+  await client.execute(`ALTER TABLE sessions ADD COLUMN user_agent TEXT`).catch(() => {});
+  await client.execute(`ALTER TABLE sessions ADD COLUMN ip_address TEXT`).catch(() => {});
 
   // Create index on sessions for faster lookups
   await client.execute(`
@@ -127,6 +143,15 @@ export async function initializeDatabase(): Promise<void> {
   // Create index on media for faster lookups
   await client.execute(`
     CREATE INDEX IF NOT EXISTS idx_media_uploaded_by ON media(uploaded_by)
+  `);
+
+  await client.execute(`
+    CREATE INDEX IF NOT EXISTS idx_media_created_at ON media(created_at)
+  `);
+
+  // Create index on pages.created_at
+  await client.execute(`
+    CREATE INDEX IF NOT EXISTS idx_pages_created_at ON pages(created_at)
   `);
 
   // Create site_settings table
