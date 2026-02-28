@@ -1,4 +1,4 @@
-// PagePress v0.0.15 - 2026-02-28
+// PagePress v0.0.16 - 2026-02-28
 
 /**
  * User roles in the system
@@ -221,4 +221,129 @@ export interface TemplateVariable {
   defaultValue: string;
   type: 'text' | 'image' | 'url' | 'number';
   description?: string;
+}
+
+// ─── Dynamic Data & Conditions (Phase 11) ──────────────────────────────
+
+/**
+ * Categories of dynamic data sources
+ */
+export type DynamicDataSourceCategory = 'site' | 'page' | 'user' | 'custom';
+
+/**
+ * Available dynamic data field keys
+ */
+export type DynamicDataField =
+  // Site fields
+  | 'site.title'
+  | 'site.description'
+  | 'site.url'
+  // Page fields
+  | 'page.title'
+  | 'page.slug'
+  | 'page.date'
+  | 'page.author'
+  // User fields
+  | 'user.name'
+  | 'user.email'
+  | 'user.role'
+  // Custom field (extensible)
+  | `custom.${string}`;
+
+/**
+ * A dynamic data binding attached to a component prop
+ */
+export interface DynamicBinding {
+  /** The dynamic data field to resolve */
+  field: DynamicDataField;
+  /** Fallback value if the dynamic data is empty/unavailable */
+  fallback: string;
+}
+
+/**
+ * Map of prop names to their dynamic bindings
+ */
+export type DynamicBindings = Record<string, DynamicBinding>;
+
+/**
+ * Resolved dynamic data values returned by the API
+ */
+export type ResolvedDynamicData = Record<DynamicDataField, string>;
+
+/**
+ * Context for resolving dynamic data on the server
+ */
+export interface DynamicDataContext {
+  pageId?: string;
+  userId?: string;
+}
+
+/**
+ * Dynamic data source descriptor (for the picker UI)
+ */
+export interface DynamicDataSource {
+  field: DynamicDataField;
+  label: string;
+  category: DynamicDataSourceCategory;
+  description: string;
+  /** Expected value type — affects rendering */
+  valueType: 'text' | 'url' | 'date' | 'image';
+}
+
+// ─── Conditional Visibility ────────────────────────────────────────────
+
+/**
+ * Condition operators
+ */
+export type ConditionOperator =
+  | 'equals'
+  | 'not_equals'
+  | 'contains'
+  | 'not_contains'
+  | 'is_empty'
+  | 'is_not_empty';
+
+/**
+ * Condition subject — what is being tested
+ */
+export type ConditionSubject =
+  | 'user.logged_in'
+  | 'user.logged_out'
+  | 'user.role'
+  | 'page.is_homepage'
+  | 'device.mobile'
+  | 'device.tablet'
+  | 'device.desktop'
+  | `custom.${string}`;
+
+/**
+ * A single visibility condition
+ */
+export interface VisibilityCondition {
+  id: string;
+  subject: ConditionSubject;
+  operator: ConditionOperator;
+  /** Comparison value (not needed for boolean subjects) */
+  value: string;
+}
+
+/**
+ * A group of conditions joined by AND or OR
+ */
+export interface ConditionGroup {
+  id: string;
+  logic: 'and' | 'or';
+  conditions: VisibilityCondition[];
+}
+
+/**
+ * Complete visibility rules for an element
+ */
+export interface VisibilityRules {
+  /** Whether conditions are enabled */
+  enabled: boolean;
+  /** Logic between groups: 'and' = all groups must pass, 'or' = any group can pass */
+  groupLogic: 'and' | 'or';
+  /** Condition groups */
+  groups: ConditionGroup[];
 }

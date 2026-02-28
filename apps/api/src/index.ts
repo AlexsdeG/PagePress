@@ -1,4 +1,4 @@
-// PagePress v0.0.15 - 2026-02-28
+// PagePress v0.0.16 - 2026-02-28
 
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
@@ -22,6 +22,7 @@ import { themeRoutes } from './routes/theme.js';
 import { templatesRoutes } from './routes/templates.js';
 import { sectionTemplatesRoutes } from './routes/section-templates.js';
 import { globalElementsRoutes } from './routes/global-elements.js';
+import { dynamicDataRoutes } from './routes/dynamic-data.js';
 
 /**
  * Create and configure Fastify server
@@ -174,6 +175,7 @@ async function registerRoutes(): Promise<void> {
   await server.register(templatesRoutes, { prefix: '/templates' });
   await server.register(sectionTemplatesRoutes, { prefix: '/section-templates' });
   await server.register(globalElementsRoutes, { prefix: '/global-elements' });
+  await server.register(dynamicDataRoutes, { prefix: '/dynamic-data' });
 
   // Root route
   server.get('/', async (_request, _reply) => {
@@ -181,7 +183,7 @@ async function registerRoutes(): Promise<void> {
       success: true,
       data: {
         name: 'PagePress API',
-        version: '0.0.15',
+        version: '0.0.16',
       },
     };
   });

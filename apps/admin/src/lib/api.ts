@@ -382,6 +382,17 @@ export interface PageSettingsResponse {
 }
 
 /**
+ * Dynamic data source item (from API)
+ */
+export interface DynamicDataSourceItem {
+  field: string;
+  label: string;
+  category: 'site' | 'page' | 'user' | 'custom';
+  description: string;
+  valueType: 'text' | 'url' | 'date' | 'image';
+}
+
+/**
  * API client object with all endpoints
  */
 export const api = {
@@ -718,5 +729,25 @@ export const api = {
       fetchApi<{ message: string }>(`/global-elements/${id}`, {
         method: 'DELETE',
       }),
+  },
+
+  /**
+   * Dynamic data endpoints — resolve dynamic tags and list available sources
+   */
+  dynamicData: {
+    /**
+     * Resolve dynamic data fields to their current values
+     */
+    resolve: (fields: string[], context?: { pageId?: string; userId?: string }) =>
+      fetchApi<{ resolved: Record<string, string> }>('/dynamic-data/resolve', {
+        method: 'POST',
+        body: JSON.stringify({ fields, context }),
+      }),
+
+    /**
+     * Get available dynamic data sources for the picker UI
+     */
+    sources: () =>
+      fetchApi<{ sources: DynamicDataSourceItem[] }>('/dynamic-data/sources'),
   },
 };

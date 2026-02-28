@@ -1,4 +1,4 @@
-// PagePress v0.0.12 - 2025-12-05
+// PagePress v0.0.16 - 2026-02-28
 // Heading component settings panel with ElementSettingsSidebar
 
 import { useNode } from '@craftjs/core';
@@ -15,6 +15,8 @@ import { RichTextEditor } from '../editor';
 import { ElementSettingsSidebar } from '../inspector/sidebar';
 import { SettingsFieldWrapper } from '../inspector/SettingsFieldWrapper';
 import { useModifiedProps } from '../hooks';
+import { DynamicTagButton } from '../dynamic/DynamicTagButton';
+import type { DynamicBinding, DynamicBindings } from '../dynamic/types';
 import { defaultHeadingFontSizes } from './Heading';
 import type { HeadingProps } from '../types';
 
@@ -24,6 +26,7 @@ interface ExtendedHeadingProps extends HeadingProps {
   _modifiedProps?: string[];
   advancedStyling?: any; // Using any to avoid complex type imports for now, or import AdvancedStyling
   htmlContent?: string;
+  dynamicBindings?: DynamicBindings;
 }
 
 /**
@@ -37,6 +40,20 @@ function HeadingContentSettings({
   setProp: (cb: (props: ExtendedHeadingProps) => void) => void;
 }) {
   const { isModified, resetProp, setModifiedProp } = useModifiedProps();
+
+  const textBinding = props.dynamicBindings?.text;
+  const hasDynamicText = !!textBinding;
+
+  const handleTextBindingChange = (binding: DynamicBinding | undefined) => {
+    setProp((p) => {
+      if (!p.dynamicBindings) p.dynamicBindings = {};
+      if (binding) {
+        p.dynamicBindings.text = binding;
+      } else {
+        delete p.dynamicBindings.text;
+      }
+    });
+  };
 
   // Get the current displayed font size (either user-set or default for level)
   const currentFontSize = props.fontSizeModified && props.fontSize !== undefined
@@ -64,23 +81,43 @@ function HeadingContentSettings({
         label="Text"
       >
         <div className="space-y-2">
-          <Label className="text-xs">Text</Label>
-          <RichTextEditor
-            content={props.htmlContent || props.text || ''}
-            onChange={(html) => {
-              const tempDiv = document.createElement('div');
-              tempDiv.innerHTML = html;
-              const plainText = tempDiv.textContent || '';
+          <div className="flex items-center justify-between">
+            <Label className="text-xs">Text</Label>
+            <DynamicTagButton
+              binding={textBinding}
+              onBindingChange={handleTextBindingChange}
+              valueTypeFilter={['text']}
+            />
+          </div>
+          {hasDynamicText ? (
+            <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3">
+              <p className="text-xs text-amber-600 dark:text-amber-400">
+                Bound to <span className="font-mono font-medium">{textBinding.field}</span>
+              </p>
+              {textBinding.fallback && (
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Fallback: {textBinding.fallback}
+                </p>
+              )}
+            </div>
+          ) : (
+            <RichTextEditor
+              content={props.htmlContent || props.text || ''}
+              onChange={(html) => {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+                const plainText = tempDiv.textContent || '';
 
-              setModifiedProp('text', plainText);
-              setProp((p) => {
-                p.htmlContent = html;
-              });
-            }}
-            placeholder="Enter heading text..."
-            minimalMode={true}
-            className="min-h-[60px] border rounded-md p-2 text-sm"
-          />
+                setModifiedProp('text', plainText);
+                setProp((p) => {
+                  p.htmlContent = html;
+                });
+              }}
+              placeholder="Enter heading text..."
+              minimalMode={true}
+              className="min-h-[60px] border rounded-md p-2 text-sm"
+            />
+          )}
         </div>
       </SettingsFieldWrapper>
 

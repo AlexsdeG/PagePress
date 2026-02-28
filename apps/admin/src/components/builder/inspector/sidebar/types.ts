@@ -62,7 +62,8 @@ export type SettingsTabId =
   | 'effects'
   | 'transform'
   | 'attributes'
-  | 'css';
+  | 'css'
+  | 'conditions';
 
 /**
  * Tab configuration for the icon sidebar
@@ -106,6 +107,7 @@ export const ALL_SETTINGS_TABS: SettingsTab[] = [
   { id: 'transform', label: 'Transform', icon: 'Move3d', description: 'Transform, transitions, animations' },
   { id: 'attributes', label: 'Attributes', icon: 'Code', description: 'Custom HTML attributes' },
   { id: 'css', label: 'CSS', icon: 'Braces', description: 'Custom CSS code' },
+  { id: 'conditions', label: 'Conditions', icon: 'Eye', description: 'Conditional visibility rules' },
 ];
 
 /**

@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.0.16] - 2026-02-28
+
+### Dynamic Data & Conditions (Phase 11)
+- [Feature] **Dynamic Data System:** Lightning icon button on text/image inputs to bind dynamic data tags
+- [Feature] **Data Sources:** Site Title, Description, URL; Page Title, Slug, Date, Author; Current User Name, Email, Role
+- [Feature] **Fallback Values:** Default value when dynamic data is empty
+- [Feature] **Dynamic Data Resolution API:** Backend endpoint to resolve dynamic data tags with context (page, user, site settings)
+- [Feature] **Conditional Visibility:** Show/hide elements based on conditions (user auth, role, homepage, device, custom field)
+- [Feature] **AND/OR Logic:** Multiple conditions with AND/OR grouping for complex visibility rules
+- [Feature] **Conditions Panel:** New "Conditions" tab in element settings sidebar for managing visibility conditions
+- [Feature] **Dynamic Data Store:** Zustand store for caching resolved dynamic data values
+- [Feature] **DynamicText Component:** Renders text with resolved dynamic data bindings
+- [Feature] **DynamicImage Component:** Renders images with resolved dynamic data source URLs
+
 ## [v0.0.15] - 2026-02-28
 
 ### Template System (Phase 10)

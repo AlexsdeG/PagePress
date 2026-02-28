@@ -14,7 +14,8 @@ import {
   Code,
   Braces,
   FileText,
-  Settings
+  Settings,
+  Eye,
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -50,6 +51,7 @@ import { BoxShadowInput } from '../inputs/BoxShadowInput';
 import { FilterInput, BackdropFilterInput, defaultFilterSettings, defaultBackdropFilterSettings } from '../inputs/FilterInput';
 import { TransformInput, defaultTransformSettings } from '../inputs/TransformInput';
 import { TransitionInput, defaultTransitionSettings } from '../inputs/TransitionInput';
+import { ConditionsPanel } from '../../dynamic/ConditionsPanel';
 
 /**
  * Icon mapping for tabs
@@ -65,6 +67,7 @@ const TAB_ICONS: Record<SettingsTabId, React.ElementType> = {
   transform: Move3d,
   attributes: Code,
   css: Braces,
+  conditions: Eye,
 };
 
 /**
@@ -81,6 +84,7 @@ const TAB_LABELS: Record<SettingsTabId, string> = {
   transform: 'Transform',
   attributes: 'Attributes',
   css: 'CSS',
+  conditions: 'Conditions',
 };
 
 interface ElementSettingsSidebarProps {
@@ -98,6 +102,7 @@ interface ElementSettingsSidebarProps {
     transform?: boolean;
     attributes?: boolean;
     css?: boolean;
+    conditions?: boolean;
   };
   /** Additional class name */
   className?: string;
@@ -119,6 +124,7 @@ export function ElementSettingsSidebar({
     transform: true,
     attributes: true,
     css: true,
+    conditions: true,
   },
   className,
 }: ElementSettingsSidebarProps) {
@@ -482,6 +488,9 @@ export function ElementSettingsSidebar({
 
       case 'css':
         return <CustomCSSTab />;
+
+      case 'conditions':
+        return <ConditionsPanel />;
 
       default:
         return null;

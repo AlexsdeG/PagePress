@@ -1,4 +1,4 @@
-// PagePress v0.0.9 - 2025-12-04
+// PagePress v0.0.16 - 2026-02-28
 // Button component settings panel with ElementSettingsSidebar
 
 import { useNode } from '@craftjs/core';
@@ -14,6 +14,8 @@ import {
 import { Slider } from '@/components/ui/slider';
 import { IconPicker } from '../inspector/inputs/IconPicker';
 import { ElementSettingsSidebar } from '../inspector/sidebar';
+import { DynamicTagButton } from '../dynamic/DynamicTagButton';
+import type { DynamicBinding, DynamicBindings } from '../dynamic/types';
 import type { ButtonProps } from '../types';
 
 import { SettingsFieldWrapper } from '../inspector/SettingsFieldWrapper';
@@ -38,12 +40,25 @@ function ButtonContentSettings({
   props,
   setProp,
 }: {
-  props: ButtonProps;
-  setProp: (cb: (props: ButtonProps) => void) => void;
+  props: ButtonProps & { dynamicBindings?: DynamicBindings };
+  setProp: (cb: (props: ButtonProps & { dynamicBindings?: DynamicBindings }) => void) => void;
 }) {
   const handleReset = (fieldName: string, defaultValue: unknown) => {
-    setProp((p: any) => {
+    setProp((p: Record<string, unknown>) => {
       p[fieldName] = defaultValue;
+    });
+  };
+
+  const textBinding = props.dynamicBindings?.text;
+
+  const handleTextBindingChange = (binding: DynamicBinding | undefined) => {
+    setProp((p) => {
+      if (!p.dynamicBindings) p.dynamicBindings = {};
+      if (binding) {
+        p.dynamicBindings.text = binding;
+      } else {
+        delete p.dynamicBindings.text;
+      }
     });
   };
 
@@ -59,12 +74,32 @@ function ButtonContentSettings({
         label="Button Text"
       >
         <div className="space-y-2">
-          <Label className="text-xs">Button Text</Label>
-          <Input
-            value={props.text || ''}
-            onChange={(e) => setProp((p: ButtonProps) => (p.text = e.target.value))}
-            placeholder="Enter button text..."
-          />
+          <div className="flex items-center justify-between">
+            <Label className="text-xs">Button Text</Label>
+            <DynamicTagButton
+              binding={textBinding}
+              onBindingChange={handleTextBindingChange}
+              valueTypeFilter={['text']}
+            />
+          </div>
+          {textBinding ? (
+            <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3">
+              <p className="text-xs text-amber-600 dark:text-amber-400">
+                Bound to <span className="font-mono font-medium">{textBinding.field}</span>
+              </p>
+              {textBinding.fallback && (
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Fallback: {textBinding.fallback}
+                </p>
+              )}
+            </div>
+          ) : (
+            <Input
+              value={props.text || ''}
+              onChange={(e) => setProp((p) => (p.text = e.target.value))}
+              placeholder="Enter button text..."
+            />
+          )}
         </div>
       </SettingsFieldWrapper>
 
