@@ -1,83 +1,156 @@
-# Admin & Builder Instructions (Frontend)
+---
+applyTo: "apps/admin/**"
+---
 
-## State Management (Zustand)
-Do not use Redux. Use Zustand for managing the "Editor State" (e.g., Is the sidebar open? Which element is currently selected? Is the preview mode active?).
+# Frontend Instructions — React Admin (`apps/admin`)
 
-## The Builder Engine (Craft.js)
-The builder is the core of this project.
+## Architecture
 
-### Component Structure
-Each draggable component must have:
-1.  **The Component:** The React code that renders (e.g., `<h2>{text}</h2>`).
-2.  **The Settings:** A React component showing the inputs for the right sidebar.
-3.  **Default Props:** Initial state.
+The admin panel is a **React 19** SPA built with **Vite**, **Tailwind CSS 4**, and **Shadcn/UI**. The page builder uses **Craft.js**.
 
-**Example `Button` Component Wrapper:**
-```tsx
+### File Layout
+```
+apps/admin/src/
+├── App.tsx                 # Router setup with ProtectedRoute
+├── main.tsx                # React root entry
+├── index.css               # Tailwind imports + global styles
+├── components/
+│   ├── builder/            # Craft.js page builder (core feature)
+│   │   ├── components/     # Draggable elements (Button, Container, Text, etc.)
+│   │   ├── editor/         # Editor chrome (toolbar, sidebar frames)
+│   │   ├── inspector/      # Right sidebar settings panels
+│   │   ├── responsive/     # Breakpoint system
+│   │   ├── layout/         # Editor layout wrappers
+│   │   ├── page/           # Page-level settings
+│   │   ├── context/        # BuilderContext for save/state
+│   │   ├── hooks/          # Builder-specific hooks
+│   │   ├── utils/          # Style resolution, serialization helpers
+│   │   ├── types/          # Builder type definitions
+│   │   ├── global/         # Global theme settings
+│   │   ├── resolver.ts     # Craft.js component resolver map
+│   │   ├── types.ts        # Shared builder types
+│   │   └── index.ts        # Barrel exports
+│   └── ui/                 # Shadcn/UI primitives (button, dialog, input, etc.)
+├── hooks/
+│   ├── useAuth.ts          # Auth state hook
+│   └── usePageBuilder.ts   # Builder initialization hook
+├── lib/
+│   ├── api.ts              # Fetch wrapper for API calls
+│   └── utils.ts            # cn() helper and utilities
+├── pages/
+│   ├── Builder.tsx          # Page builder route
+│   ├── Dashboard.tsx        # Home dashboard
+│   ├── Pages.tsx            # Page management list
+│   ├── Media.tsx            # Media library
+│   ├── Settings.tsx         # Site settings
+│   ├── Login.tsx            # Auth
+│   └── Register.tsx         # Auth
+└── stores/
+    ├── auth.ts              # Zustand auth store
+    └── builder.ts           # Zustand builder state store
+```
+
+### Key Patterns
+
+**Imports:** Always use the `@/` path alias (maps to `src/`).
+
+```typescript
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
+import { cn } from '@/lib/utils';
+```
+
+**State Management:** Zustand 5 with flat stores and selectors.
+
+```typescript
+import { create } from 'zustand';
+
+interface AuthStore {
+  user: User | null;
+  setUser: (user: User | null) => void;
+}
+
+export const useAuthStore = create<AuthStore>((set) => ({
+  user: null,
+  setUser: (user) => set({ user }),
+}));
+
+// Usage — always use selectors:
+const user = useAuthStore((s) => s.user);
+```
+
+**Data Fetching:** TanStack React Query 5 with the API client in `lib/api.ts`.
+
+**UI Components:** Use Shadcn/UI from `@/components/ui/`. Use `cn()` from `@/lib/utils` for conditional class merging. Don't build custom versions of components that already exist in Shadcn.
+
+**Forms:** React Hook Form + Zod resolver for validation.
+
+---
+
+## Builder Architecture (Craft.js)
+
+### Component Pattern
+Every builder component has 3 parts:
+
+1. **Component file** (`Button.tsx`) — the rendered element:
+```typescript
 import { useNode } from '@craftjs/core';
 
-export const Button = ({ text, color, ...props }) => {
+export const Button = ({ text, ...props }) => {
   const { connectors: { connect, drag } } = useNode();
   return (
-    <button ref={ref => connect(drag(ref))} className={`btn ${color}`} {...props}>
+    <button ref={(ref) => connect(drag(ref))} {...props}>
       {text}
     </button>
   );
 };
 
 Button.craft = {
-  related: {
-    settings: ButtonSettings, // The Right Sidebar component
-  },
-  props: {
-    text: "Click me",
-    color: "bg-blue-500"
-  }
+  displayName: 'Button',
+  related: { settings: ButtonSettings },
+  props: { text: 'Click me' },
 };
 ```
 
-## Plugin System (Frontend)
-We need a way to inject UI into the Admin without changing core code.
+2. **Settings file** (`Button.settings.tsx`) — right-sidebar property editor.
 
-**Registry Implementation:**
-```typescript
-// lib/plugin-registry.ts
-type PluginComponent = React.ComponentType<any>;
+3. **Craft config** — `ComponentName.craft` defines `displayName`, `related.settings`, and default `props`.
 
-class PluginRegistry {
-    slots: Record<string, PluginComponent[]> = {};
+### Resolver
+All builder components must be registered in `apps/admin/src/components/builder/resolver.ts` — this map tells Craft.js how to deserialize saved pages.
 
-    registerComponent(slotName: string, component: PluginComponent) {
-        if (!this.slots[slotName]) this.slots[slotName] = [];
-        this.slots[slotName].push(component);
-    }
+### Responsive System
+- 4 breakpoints: Desktop (base), Tablet (<992px), Mobile (<768px), Portrait (<479px).
+- Styles cascade downward — smaller breakpoints inherit from larger unless overridden.
+- Visual yellow dot indicators show when a value differs from desktop.
 
-    getComponents(slotName: string) {
-        return this.slots[slotName] || [];
-    }
-}
-export const plugins = new PluginRegistry();
-```
+### Pseudo-State System
+- Elements support hover, active, focus pseudo-state styles.
+- Styles stored per-state and applied via the builder's style resolution system.
 
-**Slots to Implement:**
-1.  `dashboard.widget` (Add widgets to home dashboard).
-2.  `editor.toolbar.action` (Add buttons to the builder top bar).
-3.  `editor.inspector.tab` (Add tabs to the right sidebar).
+### Class System
+- Reusable style classes (like Bricks Builder).
+- Blue dot indicators show which settings come from a class vs. manual overrides.
 
-## Styling & Theme
-- Use **Tailwind CSS** for the Admin UI itself.
-- For the *User's Content* (inside the Canvas), we must ensure Tailwind styles are loaded inside the iframe or shadow DOM.
-- **Global Styles:** Store color palettes in a Zustand store and inject them as CSS Variables (`--primary-color: #ff0000`) into the Canvas wrapper.
+### Key Builder Files
+- `BuilderElementWrapper.tsx` — wraps every element with selection/hover/drag chrome.
+- `resolver.ts` — maps component names to component classes for serialization.
+- `stores/builder.ts` — Zustand store for editor state (sidebar, preview mode, etc.).
+- `context/` — React context for save operations and builder state.
 
-## Folder Structure (Frontend)
-```
-/src
-  /components
-    /builder     # All Craft.js User Components (Text, Image, Container)
-    /editor      # The Editor UI (Sidebar, Topbar, Layers)
-    /ui          # Shadcn UI primitives
-  /hooks         # Custom React Hooks
-  /lib           # Utils, PluginRegistry, API Client
-  /pages         # Admin Routes (Dashboard, Login, Settings)
-  /stores        # Zustand Stores
-```
+### Adding a New Builder Component
+1. Create `apps/admin/src/components/builder/components/{Name}.tsx` with `useNode()`.
+2. Create `apps/admin/src/components/builder/components/{Name}.settings.tsx`.
+3. Define `.craft` config with `displayName`, `related.settings`, default `props`.
+4. Wrap with `React.memo` to prevent re-renders during drag.
+5. Register in `resolver.ts`.
+6. Add to the component panel categories in the left sidebar.
+
+---
+
+## Styling
+
+- **Tailwind CSS 4** for all admin UI.
+- **Shadcn/UI** components use `class-variance-authority` for variants.
+- Builder canvas content uses the responsive style system (not direct Tailwind classes).
+- Global theme settings inject CSS variables into the canvas wrapper.
