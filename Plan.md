@@ -446,7 +446,7 @@
 ### Settings Expansion
 - [ ] **Categories:** General, Appearance, SEO, Advanced
 - [ ] **Appearance:** Logo, favicon, global colors
-- [ ] **Advanced:** Custom head/footer code injection
+- [ ] **Advanced:** Custom head/footer code injection, done in tempaltes
 - [ ] **Apply to Frontend:** Settings used in renderer
 
 ---
