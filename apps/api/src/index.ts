@@ -1,4 +1,4 @@
-// PagePress v0.0.17 - 2026-02-28
+// PagePress v0.0.18 - 2026-03-01
 
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
@@ -24,6 +24,10 @@ import { sectionTemplatesRoutes } from './routes/section-templates.js';
 import { globalElementsRoutes } from './routes/global-elements.js';
 import { dynamicDataRoutes } from './routes/dynamic-data.js';
 import { publicRendererRoutes } from './routes/public.js';
+import { usersRoutes } from './routes/users.js';
+import { rolesRoutes } from './routes/roles.js';
+import { invitesRoutes } from './routes/invites.js';
+import { activityLogsRoutes } from './routes/activity-logs.js';
 
 /**
  * Create and configure Fastify server
@@ -186,6 +190,10 @@ async function registerRoutes(): Promise<void> {
     await adminApi.register(sectionTemplatesRoutes, { prefix: '/section-templates' });
     await adminApi.register(globalElementsRoutes, { prefix: '/global-elements' });
     await adminApi.register(dynamicDataRoutes, { prefix: '/dynamic-data' });
+    await adminApi.register(usersRoutes, { prefix: '/users' });
+    await adminApi.register(rolesRoutes, { prefix: '/roles' });
+    await adminApi.register(invitesRoutes, { prefix: '/invites' });
+    await adminApi.register(activityLogsRoutes, { prefix: '/activity-logs' });
   }, { prefix: '/pp-admin/api' });
 
   // Public renderer — catches / and /:slug for frontend pages
@@ -236,7 +244,7 @@ async function start(): Promise<void> {
     // Start session cleanup cron after server is listening
     startSessionCleanup(server.log);
 
-    server.log.info(`🚀 PagePress API v0.0.17 running on port ${env.PORT}`);
+    server.log.info(`🚀 PagePress API v0.0.18 running on port ${env.PORT}`);
     server.log.info(`📊 Environment: ${env.NODE_ENV}`);
 
   } catch (err) {

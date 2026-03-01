@@ -1,4 +1,4 @@
-// PagePress v0.0.14 - 2026-02-28
+// PagePress v0.0.18 - 2026-03-01
 // API client for communicating with the backend — hardened with 401 interceptor, timeout, abort
 
 /**
@@ -136,8 +136,13 @@ export interface User {
   id: string;
   username: string;
   email: string;
-  role: 'admin' | 'editor';
+  role: 'admin' | 'editor' | 'viewer';
+  roleId?: string | null;
+  avatarUrl?: string | null;
   createdAt?: string;
+  updatedAt?: string;
+  lockedAt?: string | null;
+  failedLoginAttempts?: number;
 }
 
 /**
@@ -396,6 +401,74 @@ export interface DynamicDataSourceItem {
 }
 
 /**
+ * User list response
+ */
+export interface UserListResponse {
+  users: User[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+/**
+ * Role types
+ */
+export interface Role {
+  id: string;
+  name: string;
+  description: string | null;
+  permissions: Record<string, boolean>;
+  isSystem: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Invite types
+ */
+export interface Invite {
+  id: string;
+  token: string;
+  email: string | null;
+  role: 'admin' | 'editor' | 'viewer';
+  usedAt: string | null;
+  usedBy: string | null;
+  createdBy: string;
+  createdByUsername?: string;
+  expiresAt: string;
+  createdAt: string;
+}
+
+/**
+ * Activity log entry
+ */
+export interface ActivityLogEntry {
+  id: string;
+  userId: string | null;
+  username: string;
+  action: string;
+  entityType: string | null;
+  entityId: string | null;
+  entityName: string | null;
+  details: Record<string, unknown> | null;
+  ipAddress: string | null;
+  createdAt: string;
+}
+
+export interface ActivityLogListResponse {
+  logs: ActivityLogEntry[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+/**
  * API client object with all endpoints
  */
 export const api = {
@@ -413,16 +486,16 @@ export const api = {
     /**
      * Register a new user
      */
-    register: (data: { username: string; email: string; password: string }) =>
+    register: (data: { username: string; email: string; password: string; inviteToken?: string; siteName?: string }) =>
       fetchApi<AuthResponse>('/auth/register', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
     
     /**
-     * Login with email and password
+     * Login with email/username and password
      */
-    login: (data: { email: string; password: string }) =>
+    login: (data: { identifier: string; password: string }) =>
       fetchApi<AuthResponse>('/auth/login', {
         method: 'POST',
         body: JSON.stringify(data),
@@ -447,6 +520,21 @@ export const api = {
     refresh: () =>
       fetchApi<{ message: string; expiresAt: string }>('/auth/refresh', {
         method: 'POST',
+      }),
+
+    /**
+     * Check setup status (public)
+     */
+    setupStatus: () =>
+      fetchApi<{ setupComplete: boolean }>('/auth/setup-status'),
+
+    /**
+     * Update current user profile
+     */
+    updateProfile: (data: { username?: string; email?: string; currentPassword?: string; newPassword?: string }) =>
+      fetchApi<{ user: User }>('/auth/profile', {
+        method: 'PUT',
+        body: JSON.stringify(data),
       }),
   },
 
@@ -752,5 +840,106 @@ export const api = {
      */
     sources: () =>
       fetchApi<{ sources: DynamicDataSourceItem[] }>('/dynamic-data/sources'),
+  },
+
+  /**
+   * Users management endpoints (admin only)
+   */
+  users: {
+    list: (params?: { page?: number; limit?: number; search?: string }) => {
+      const searchParams = new URLSearchParams();
+      if (params?.page) searchParams.set('page', params.page.toString());
+      if (params?.limit) searchParams.set('limit', params.limit.toString());
+      if (params?.search) searchParams.set('search', params.search);
+      const query = searchParams.toString();
+      return fetchApi<UserListResponse>(`/users${query ? `?${query}` : ''}`);
+    },
+
+    get: (id: string) => fetchApi<{ user: User }>(`/users/${id}`),
+
+    create: (data: { username: string; email: string; password: string; role?: string }) =>
+      fetchApi<{ user: User }>('/users', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    update: (id: string, data: { username?: string; email?: string; role?: string; password?: string }) =>
+      fetchApi<{ user: User }>(`/users/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+
+    delete: (id: string) =>
+      fetchApi<{ message: string }>(`/users/${id}`, {
+        method: 'DELETE',
+      }),
+
+    unlock: (id: string) =>
+      fetchApi<{ message: string }>(`/users/${id}/unlock`, {
+        method: 'POST',
+      }),
+  },
+
+  /**
+   * Roles management endpoints
+   */
+  roles: {
+    list: () => fetchApi<{ roles: Role[] }>('/roles'),
+
+    get: (id: string) => fetchApi<{ role: Role }>(`/roles/${id}`),
+
+    create: (data: { name: string; description?: string; permissions: Record<string, boolean> }) =>
+      fetchApi<{ role: Role }>('/roles', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    update: (id: string, data: { name?: string; description?: string | null; permissions?: Record<string, boolean> }) =>
+      fetchApi<{ role: Role }>(`/roles/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+
+    delete: (id: string) =>
+      fetchApi<{ message: string }>(`/roles/${id}`, {
+        method: 'DELETE',
+      }),
+  },
+
+  /**
+   * Invite management endpoints
+   */
+  invites: {
+    list: () => fetchApi<{ invites: Invite[] }>('/invites'),
+
+    create: (data: { email?: string; role?: string; expiresInHours?: number }) =>
+      fetchApi<{ invite: Invite }>('/invites', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    validate: (token: string) =>
+      fetchApi<{ invite: { email: string | null; role: string; expiresAt: string } }>(`/invites/validate/${token}`),
+
+    delete: (id: string) =>
+      fetchApi<{ message: string }>(`/invites/${id}`, {
+        method: 'DELETE',
+      }),
+  },
+
+  /**
+   * Activity logs endpoints
+   */
+  activityLogs: {
+    list: (params?: { page?: number; limit?: number; action?: string; userId?: string; entityType?: string }) => {
+      const searchParams = new URLSearchParams();
+      if (params?.page) searchParams.set('page', params.page.toString());
+      if (params?.limit) searchParams.set('limit', params.limit.toString());
+      if (params?.action) searchParams.set('action', params.action);
+      if (params?.userId) searchParams.set('userId', params.userId);
+      if (params?.entityType) searchParams.set('entityType', params.entityType);
+      const query = searchParams.toString();
+      return fetchApi<ActivityLogListResponse>(`/activity-logs${query ? `?${query}` : ''}`);
+    },
   },
 };

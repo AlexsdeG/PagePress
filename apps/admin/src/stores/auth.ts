@@ -1,4 +1,4 @@
-// PagePress v0.0.14 - 2026-02-28
+// PagePress v0.0.18 - 2026-03-01
 // Zustand auth store for managing authentication state
 
 import { create } from 'zustand';
@@ -28,14 +28,14 @@ interface AuthActions {
   checkAuth: () => Promise<void>;
   
   /**
-   * Login with email and password
+   * Login with email/username and password
    */
-  login: (email: string, password: string) => Promise<void>;
+  login: (identifier: string, password: string) => Promise<void>;
   
   /**
    * Register a new account
    */
-  register: (username: string, email: string, password: string) => Promise<void>;
+  register: (username: string, email: string, password: string, inviteToken?: string, siteName?: string) => Promise<void>;
   
   /**
    * Logout current session
@@ -119,10 +119,10 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => {
     }
   },
   
-  login: async (email: string, password: string) => {
+  login: async (identifier: string, password: string) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await api.auth.login({ email, password });
+      const response = await api.auth.login({ identifier, password });
       set({
         user: response.user,
         isAuthenticated: true,
@@ -140,10 +140,10 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => {
     }
   },
   
-  register: async (username: string, email: string, password: string) => {
+  register: async (username: string, email: string, password: string, inviteToken?: string, siteName?: string) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await api.auth.register({ username, email, password });
+      const response = await api.auth.register({ username, email, password, inviteToken, siteName });
       set({
         user: response.user,
         isAuthenticated: true,

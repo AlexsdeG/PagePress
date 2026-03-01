@@ -1,14 +1,12 @@
-// PagePress v0.0.3 - 2025-11-30
-// Registration form component
+// PagePress v0.0.18 - 2026-03-01
+// Registration form component — supports invite tokens
 
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../stores/auth';
+import { api } from '../lib/api';
 import { Button } from './ui/button';
 
-/**
- * Registration form component
- */
 export function RegisterForm() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -16,9 +14,26 @@ export function RegisterForm() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [inviteInfo, setInviteInfo] = useState<{ role: string; email: string | null } | null>(null);
+  const [inviteError, setInviteError] = useState<string | null>(null);
   
   const { register, error, clearError } = useAuthStore();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const inviteToken = searchParams.get('invite');
+
+  // Validate invite token on mount
+  useEffect(() => {
+    if (!inviteToken) return;
+    api.invites.validate(inviteToken)
+      .then((res) => {
+        setInviteInfo({ role: res.invite.role, email: res.invite.email });
+        if (res.invite.email) setEmail(res.invite.email);
+      })
+      .catch(() => {
+        setInviteError('This invite link is invalid or has expired.');
+      });
+  }, [inviteToken]);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,7 +59,7 @@ export function RegisterForm() {
     setIsSubmitting(true);
     
     try {
-      await register(username, email, password);
+      await register(username, email, password, inviteToken ?? undefined);
       navigate('/dashboard', { replace: true });
     } catch {
       // Error is handled by store
@@ -53,13 +68,35 @@ export function RegisterForm() {
     }
   };
   
-  const displayError = validationError || error;
+  const displayError = validationError || error || inviteError;
+  
+  if (inviteError) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          {inviteError}
+        </div>
+        <p className="text-center text-sm text-gray-600">
+          <Link to="/login" className="text-blue-600 hover:text-blue-700 font-medium">
+            Back to login
+          </Link>
+        </p>
+      </div>
+    );
+  }
   
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {displayError && (
+      {displayError && !inviteError && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
           {displayError}
+        </div>
+      )}
+      
+      {inviteInfo && (
+        <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg text-sm">
+          You've been invited as <strong>{inviteInfo.role}</strong>.
+          {inviteInfo.email && <> Registering for <strong>{inviteInfo.email}</strong>.</>}
         </div>
       )}
       
@@ -94,6 +131,7 @@ export function RegisterForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
+          readOnly={!!inviteInfo?.email}
           autoComplete="email"
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
           placeholder="admin@example.com"

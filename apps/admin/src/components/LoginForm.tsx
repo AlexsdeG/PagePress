@@ -1,16 +1,13 @@
-// PagePress v0.0.3 - 2025-11-30
-// Login form component
+// PagePress v0.0.18 - 2026-03-01
+// Login form component — supports email or username
 
 import { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuthStore } from '../stores/auth';
 import { Button } from './ui/button';
 
-/**
- * Login form component
- */
 export function LoginForm() {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -26,7 +23,7 @@ export function LoginForm() {
     clearError();
     
     try {
-      await login(email, password);
+      await login(identifier, password);
       navigate(from, { replace: true });
     } catch {
       // Error is handled by store
@@ -44,18 +41,18 @@ export function LoginForm() {
       )}
       
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-          Email Address
+        <label htmlFor="identifier" className="block text-sm font-medium text-gray-700 mb-1">
+          Email or Username
         </label>
         <input
-          id="email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          id="identifier"
+          type="text"
+          value={identifier}
+          onChange={(e) => setIdentifier(e.target.value)}
           required
-          autoComplete="email"
+          autoComplete="username"
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-          placeholder="admin@example.com"
+          placeholder="admin@example.com or admin"
         />
       </div>
       

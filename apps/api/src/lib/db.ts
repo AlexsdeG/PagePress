@@ -1,4 +1,4 @@
-// PagePress v0.0.15 - 2026-02-28
+// PagePress v0.0.18 - 2026-03-01
 
 import { createClient, type Client } from '@libsql/client';
 import { drizzle, type LibSQLDatabase } from 'drizzle-orm/libsql';
@@ -236,8 +236,139 @@ export async function initializeDatabase(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_pages_template_type ON pages(template_type)
   `);
 
+  // Phase 13: Create roles table
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS roles (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL UNIQUE,
+      description TEXT,
+      permissions TEXT NOT NULL DEFAULT '{}',
+      is_system INTEGER DEFAULT 0 NOT NULL,
+      created_at INTEGER DEFAULT (unixepoch()) NOT NULL,
+      updated_at INTEGER DEFAULT (unixepoch()) NOT NULL
+    )
+  `);
+
+  // Phase 13: Add new columns to users table (safe migration)
+  await client.execute(`ALTER TABLE users ADD COLUMN role_id TEXT REFERENCES roles(id) ON DELETE SET NULL`).catch(() => {});
+  await client.execute(`ALTER TABLE users ADD COLUMN avatar_url TEXT`).catch(() => {});
+
+  // Phase 13: Create invites table
+  // Guard: if table exists without the token column (broken migration), drop and recreate it
+  try {
+    await client.execute(`SELECT token FROM invites LIMIT 0`);
+  } catch {
+    await client.execute(`DROP TABLE IF EXISTS invites`);
+  }
+
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS invites (
+      id TEXT PRIMARY KEY,
+      token TEXT NOT NULL UNIQUE,
+      email TEXT,
+      role TEXT DEFAULT 'editor' NOT NULL,
+      used_at INTEGER,
+      used_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+      created_by TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      expires_at INTEGER NOT NULL,
+      created_at INTEGER DEFAULT (unixepoch()) NOT NULL
+    )
+  `);
+
+  await client.execute(`
+    CREATE INDEX IF NOT EXISTS idx_invites_token ON invites(token)
+  `);
+
+  // Phase 13: Create activity_logs table
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS activity_logs (
+      id TEXT PRIMARY KEY,
+      user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+      username TEXT NOT NULL,
+      action TEXT NOT NULL,
+      entity_type TEXT,
+      entity_id TEXT,
+      entity_name TEXT,
+      details TEXT,
+      ip_address TEXT,
+      created_at INTEGER DEFAULT (unixepoch()) NOT NULL
+    )
+  `);
+
+  await client.execute(`
+    CREATE INDEX IF NOT EXISTS idx_activity_logs_user_id ON activity_logs(user_id)
+  `);
+
+  await client.execute(`
+    CREATE INDEX IF NOT EXISTS idx_activity_logs_created_at ON activity_logs(created_at)
+  `);
+
+  await client.execute(`
+    CREATE INDEX IF NOT EXISTS idx_activity_logs_action ON activity_logs(action)
+  `);
+
+  // Phase 13: Seed default system roles if they don't exist
+  await seedDefaultRoles();
+
   // Phase 12: Create default home page if no homepage exists
   await createDefaultHomePage();
+}
+
+/**
+ * Seed default system roles (admin, editor, viewer)
+ */
+async function seedDefaultRoles(): Promise<void> {
+  const now = Math.floor(Date.now() / 1000);
+
+  const defaultRoles = [
+    {
+      id: 'role_admin',
+      name: 'Admin',
+      description: 'Full access to all features',
+      permissions: JSON.stringify({
+        'pages.create': true, 'pages.read': true, 'pages.update': true, 'pages.delete': true,
+        'media.create': true, 'media.read': true, 'media.delete': true,
+        'templates.create': true, 'templates.read': true, 'templates.update': true, 'templates.delete': true,
+        'settings.read': true, 'settings.update': true,
+        'users.create': true, 'users.read': true, 'users.update': true, 'users.delete': true,
+        'roles.create': true, 'roles.read': true, 'roles.update': true, 'roles.delete': true,
+        'invites.create': true, 'invites.read': true, 'invites.delete': true,
+        'logs.read': true,
+      }),
+      isSystem: 1,
+    },
+    {
+      id: 'role_editor',
+      name: 'Editor',
+      description: 'Can manage pages and media',
+      permissions: JSON.stringify({
+        'pages.create': true, 'pages.read': true, 'pages.update': true, 'pages.delete': true,
+        'media.create': true, 'media.read': true, 'media.delete': true,
+        'templates.create': true, 'templates.read': true, 'templates.update': true, 'templates.delete': true,
+        'settings.read': true,
+      }),
+      isSystem: 1,
+    },
+    {
+      id: 'role_viewer',
+      name: 'Viewer',
+      description: 'Read-only access',
+      permissions: JSON.stringify({
+        'pages.read': true,
+        'media.read': true,
+        'templates.read': true,
+        'settings.read': true,
+      }),
+      isSystem: 1,
+    },
+  ];
+
+  for (const role of defaultRoles) {
+    await client.execute({
+      sql: `INSERT OR IGNORE INTO roles (id, name, description, permissions, is_system, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      args: [role.id, role.name, role.description, role.permissions, role.isSystem, now, now],
+    });
+  }
 }
 
 /**

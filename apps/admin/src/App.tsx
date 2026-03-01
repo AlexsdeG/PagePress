@@ -1,4 +1,4 @@
-// PagePress v0.0.15 - 2026-02-28
+// PagePress v0.0.18 - 2026-03-01
 
 import { useEffect, Suspense, lazy } from 'react';
 import { 
@@ -25,6 +25,11 @@ const MediaPage = lazy(() => import('./pages/Media').then(m => ({ default: m.Med
 const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })));
 const BuilderPage = lazy(() => import('./pages/Builder').then(m => ({ default: m.BuilderPage })));
 const Templates = lazy(() => import('./pages/Templates').then(m => ({ default: m.Templates })));
+const SetupPage = lazy(() => import('./pages/Setup').then(m => ({ default: m.SetupPage })));
+const UsersPage = lazy(() => import('./pages/Users').then(m => ({ default: m.UsersPage })));
+const RolesPage = lazy(() => import('./pages/Roles').then(m => ({ default: m.RolesPage })));
+const ProfilePage = lazy(() => import('./pages/Profile').then(m => ({ default: m.ProfilePage })));
+const ActivityLogsPage = lazy(() => import('./pages/ActivityLogs').then(m => ({ default: m.ActivityLogsPage })));
 
 /**
  * Suspense fallback for lazy-loaded routes
@@ -72,6 +77,12 @@ const navItems = [
   { path: '/settings', label: 'Settings', icon: '⚙️' },
 ];
 
+const adminNavItems = [
+  { path: '/users', label: 'Users', icon: '👥' },
+  { path: '/roles', label: 'Roles', icon: '🔒' },
+  { path: '/activity-logs', label: 'Activity', icon: '📋' },
+];
+
 /**
  * Admin layout with sidebar navigation
  */
@@ -111,11 +122,43 @@ function AdminLayout() {
               <span>{item.label}</span>
             </NavLink>
           ))}
+
+          {/* Admin-only section */}
+          {user?.role === 'admin' && (
+            <>
+              <div className="pt-4 pb-1 px-4">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Admin</p>
+              </div>
+              {adminNavItems.map((item) => (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${
+                      isActive
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    }`
+                  }
+                >
+                  <span>{item.icon}</span>
+                  <span>{item.label}</span>
+                </NavLink>
+              ))}
+            </>
+          )}
         </nav>
         
         {/* User section */}
         <div className="border-t p-4">
-          <div className="flex items-center gap-3 mb-3">
+          <NavLink
+            to="/profile"
+            className={({ isActive }) =>
+              `flex items-center gap-3 mb-3 rounded-lg px-2 py-1 transition-colors ${
+                isActive ? 'bg-muted' : 'hover:bg-muted'
+              }`
+            }
+          >
             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
               <span className="text-sm font-medium">
                 {user?.username?.charAt(0).toUpperCase() || '?'}
@@ -125,7 +168,7 @@ function AdminLayout() {
               <p className="text-sm font-medium truncate">{user?.username}</p>
               <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
             </div>
-          </div>
+          </NavLink>
           <Button
             variant="outline"
             className="w-full"
@@ -181,6 +224,11 @@ function PublicOnlyRouteWrapper({ children }: { children: React.ReactNode }) {
  * Router configuration using createBrowserRouter for data router features
  */
 const router = createBrowserRouter([
+  // Setup route — first-time install
+  {
+    path: '/setup',
+    element: <Suspense fallback={<PageLoader />}><SetupPage /></Suspense>,
+  },
   // Public routes
   {
     path: '/login',
@@ -199,6 +247,10 @@ const router = createBrowserRouter([
       { path: '/templates', element: <RouteErrorBoundary><Suspense fallback={<PageLoader />}><Templates /></Suspense></RouteErrorBoundary> },
       { path: '/media', element: <RouteErrorBoundary><Suspense fallback={<PageLoader />}><MediaPage /></Suspense></RouteErrorBoundary> },
       { path: '/settings', element: <RouteErrorBoundary><Suspense fallback={<PageLoader />}><Settings /></Suspense></RouteErrorBoundary> },
+      { path: '/profile', element: <RouteErrorBoundary><Suspense fallback={<PageLoader />}><ProfilePage /></Suspense></RouteErrorBoundary> },
+      { path: '/users', element: <RouteErrorBoundary><Suspense fallback={<PageLoader />}><UsersPage /></Suspense></RouteErrorBoundary> },
+      { path: '/roles', element: <RouteErrorBoundary><Suspense fallback={<PageLoader />}><RolesPage /></Suspense></RouteErrorBoundary> },
+      { path: '/activity-logs', element: <RouteErrorBoundary><Suspense fallback={<PageLoader />}><ActivityLogsPage /></Suspense></RouteErrorBoundary> },
     ],
   },
   // Builder route - full screen, no sidebar

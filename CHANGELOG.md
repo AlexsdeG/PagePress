@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.0.18] - 2026-03-01
+
+### Quality of Life (Phase 13)
+- [Feature] **Users Management Page:** Full CRUD for users with role assignment, account status display
+- [Feature] **Role System:** Admin, Editor, Viewer roles with granular permissions and role editor UI
+- [Feature] **Invite System:** Generate one-time invite links for new users, copy to clipboard
+- [Feature] **Activity Logs:** Track user actions (page/template/media CRUD, login/logout, settings changes)
+- [Feature] **First-Time Setup:** Guided setup flow on fresh install (admin account, site name, recovery phrase)
+- [Feature] **Setup Guard:** Registration disabled after first-time setup; only invite links for new users
+- [Feature] **Profile Page:** Change username, email, password with current password verification
+- [Feature] **Login with Username or Email:** Login form accepts either username or email
+- [Feature] **Settings Expansion:** Categories (General, Appearance, SEO, Advanced), custom head/footer code injection
+
 ## [v0.0.17] - 2026-02-28
 
 ### Public Renderer (Phase 12)

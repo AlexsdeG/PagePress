@@ -1,9 +1,9 @@
-// PagePress v0.0.16 - 2026-02-28
+// PagePress v0.0.18 - 2026-03-01
 
 /**
  * User roles in the system
  */
-export type UserRole = 'admin' | 'editor';
+export type UserRole = 'admin' | 'editor' | 'viewer';
 
 /**
  * User model interface (full, including password hash — internal use only)
@@ -14,6 +14,8 @@ export interface User {
   username: string;
   passwordHash: string;
   role: UserRole;
+  roleId: string | null;
+  avatarUrl: string | null;
   failedLoginAttempts: number;
   lockedAt: Date | null;
   createdAt: Date;
@@ -29,6 +31,8 @@ export interface SafeUser {
   email: string;
   username: string;
   role: UserRole;
+  roleId?: string | null;
+  avatarUrl?: string | null;
   createdAt: Date | string;
 }
 
@@ -40,6 +44,67 @@ export interface CreateUserInput {
   username: string;
   passwordHash: string;
   role?: UserRole;
+}
+
+/**
+ * Role model interface
+ */
+export interface RoleItem {
+  id: string;
+  name: string;
+  description: string | null;
+  permissions: Record<string, boolean>;
+  isSystem: boolean;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
+/**
+ * All available permissions
+ */
+export const ALL_PERMISSIONS = [
+  'pages.create', 'pages.read', 'pages.update', 'pages.delete',
+  'media.create', 'media.read', 'media.delete',
+  'templates.create', 'templates.read', 'templates.update', 'templates.delete',
+  'settings.read', 'settings.update',
+  'users.create', 'users.read', 'users.update', 'users.delete',
+  'roles.create', 'roles.read', 'roles.update', 'roles.delete',
+  'invites.create', 'invites.read', 'invites.delete',
+  'logs.read',
+] as const;
+
+export type Permission = typeof ALL_PERMISSIONS[number];
+
+/**
+ * Invite model interface
+ */
+export interface InviteItem {
+  id: string;
+  token: string;
+  email: string | null;
+  role: UserRole;
+  usedAt: Date | string | null;
+  usedBy: string | null;
+  createdBy: string;
+  createdByUsername?: string;
+  expiresAt: Date | string;
+  createdAt: Date | string;
+}
+
+/**
+ * Activity log entry
+ */
+export interface ActivityLogItem {
+  id: string;
+  userId: string | null;
+  username: string;
+  action: string;
+  entityType: string | null;
+  entityId: string | null;
+  entityName: string | null;
+  details: Record<string, unknown> | null;
+  ipAddress: string | null;
+  createdAt: Date | string;
 }
 
 /**

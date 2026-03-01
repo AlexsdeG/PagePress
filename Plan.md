@@ -416,28 +416,31 @@
 
 ## Phase 13: Quality of Life
 **Goal:** Professional admin experience.
-**Status:** ❌ Not Started
+**Status:** ✅ Complete (v0.0.18)
 
-- [ ] **Missing in Admin Dashboard:**
-    - [ ] Users management page
-    - [ ] Role-based permission display. here create a role editor with list where you can also add roles and set permissions for each role in a modal
-    - [ ] invite link send to email in user managment page, also invite link but only one time useable
-    - [ ] first time setup you can create account, after first time setup, var in a created config file or .env file. login page remove create account option. here create good first time setup instructions and steps like revoery phrase, admin email and pw, set website name
-    - [ ] users dispaly eg who created which pages, tempalte, logs of all actions in db table
-    - [ ] email and username login, emial code when changing email or for admin first account setup
+- [x] **Missing in Admin Dashboard:**
+    - [x] Users management page
+    - [x] Role-based permission display. here create a role editor with list where you can also add roles and set permissions for each role in a modal
+    - [x] invite link send to email in user managment page, also invite link but only one time useable
+    - [x] first time setup you can create account, after first time setup, var in a created config file or .env file. login page remove create account option. here create good first time setup instructions and steps like revoery phrase, admin email and pw, set website name
+    - [x] users dispaly eg who created which pages, tempalte, logs of all actions in db table
+    - [x] email and username login, emial code when changing email or for admin first account setup
     - [ ] forgot pw and jwt token login when saved otherwise username/email (here both should work in login) and password
     - [ ] utilize a pp-config.json file for all constants and variables
 
 ### User Management
-- [ ] **Users Page:** List, create, edit, delete users
-- [ ] **Roles:** Admin (full), Editor (pages only), Viewer (read-only)
-- [ ] **Invite System:** Generate invite links (default mode)
-- [ ] **Profile Page:** Change username, email, password, avatar
-- [ ] 
+- [x] **Users Page:** List, create, edit, delete users
+- [x] **Roles:** Admin (full), Editor (pages only), Viewer (read-only) — full role editor with permission matrix
+- [x] **Invite System:** Generate one-time invite links with configurable expiry
+- [x] **Profile Page:** Change username, email, password
+- [x] **Activity Logs:** Full activity log viewer with filtering
+- [x] **Account Lockout:** Auto-lock after failed login attempts, admin unlock
+- [x] **First-Time Setup:** Dedicated setup page for initial admin account + site name
+
 ### Notifications
-- [ ] **Toast System:** Install Sonner
-- [ ] **Success/Error/Info toasts** for all actions
-- [ ] **Confirmation Dialogs:** Delete confirmations
+- [x] **Toast System:** Sonner already installed (Phase 6)
+- [x] **Success/Error/Info toasts** for all actions
+- [x] **Confirmation Dialogs:** Delete confirmations
 - [ ] **Unsaved Warning:** Block navigation with changes
 
 ### Settings Expansion
@@ -471,6 +474,12 @@
 - [ ] **Parser:** Find and replace in rendered HTML
 - [ ] **Registry:** Map shortcode names to components
 
+### Documenation
+- [ ] **Developer Guide:** How to create plugins, components, use hooks
+- [ ] **API Reference:** List of available hooks, slots, registration functions
+- [ ] **Example Plugins:** Gallery, Contact Form, Custom HTML
+- everything in seperate Docs folder Plugins docs
+
 ---
 
 ## Phase 15: Production & DevOps
@@ -495,6 +504,10 @@
 ### Backup
 - [ ] **Database Backup:** SQLite backup script
 - [ ] **Media Backup:** Uploads directory
+
+### Documentation
+- [ ] **Setup:** Setup Docs
+- [ ] **Readme:** update readme fully with all features and good introductoin
 
 ---
 
