@@ -1,4 +1,4 @@
-// PagePress v0.0.18 - 2026-03-01
+// PagePress v0.0.19 - 2026-03-01
 
 import { useEffect, Suspense, lazy } from 'react';
 import { 
@@ -124,7 +124,7 @@ function AdminLayout() {
           ))}
 
           {/* Admin-only section */}
-          {user?.role === 'admin' && (
+          {(user?.role === 'admin' || user?.role === 'super_admin') && (
             <>
               <div className="pt-4 pb-1 px-4">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Admin</p>
