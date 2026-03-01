@@ -136,7 +136,7 @@ export interface User {
   id: string;
   username: string;
   email: string;
-  role: 'admin' | 'editor' | 'viewer';
+  role: 'super_admin' | 'admin' | 'editor' | 'viewer';
   roleId?: string | null;
   avatarUrl?: string | null;
   createdAt?: string;
@@ -433,7 +433,7 @@ export interface Invite {
   id: string;
   token: string;
   email: string | null;
-  role: 'admin' | 'editor' | 'viewer';
+  role: 'super_admin' | 'admin' | 'editor' | 'viewer';
   usedAt: string | null;
   usedBy: string | null;
   createdBy: string;
@@ -658,6 +658,43 @@ export const api = {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
+
+    /**
+     * Reset endpoints (super admin only)
+     */
+    reset: {
+      /**
+       * Delete all pages
+       */
+      pages: () =>
+        fetchApi<{ message: string }>('/settings/reset/pages', {
+          method: 'POST',
+        }),
+
+      /**
+       * Delete all media
+       */
+      media: () =>
+        fetchApi<{ message: string }>('/settings/reset/media', {
+          method: 'POST',
+        }),
+
+      /**
+       * Reset database (delete pages, media, templates, etc. - keep users/roles)
+       */
+      database: () =>
+        fetchApi<{ message: string }>('/settings/reset/database', {
+          method: 'POST',
+        }),
+
+      /**
+       * Full factory reset (delete everything except current super admin session)
+       */
+      full: () =>
+        fetchApi<{ message: string; note?: string }>('/settings/reset/full', {
+          method: 'POST',
+        }),
+    },
   },
 
   /**

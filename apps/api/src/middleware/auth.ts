@@ -70,10 +70,33 @@ export const requireAdmin: preHandlerHookHandler = async (
     });
   }
 
-  if (request.user.role !== 'admin') {
+  if (request.user.role !== 'admin' && request.user.role !== 'super_admin') {
     return reply.status(403).send({
       success: false,
       error: 'Admin access required',
+    });
+  }
+};
+
+/**
+ * Authentication middleware that requires super admin role
+ * Must be used after requireAuth
+ */
+export const requireSuperAdmin: preHandlerHookHandler = async (
+  request: FastifyRequest,
+  reply: FastifyReply
+) => {
+  if (!request.user) {
+    return reply.status(401).send({
+      success: false,
+      error: 'Authentication required',
+    });
+  }
+
+  if (request.user.role !== 'super_admin') {
+    return reply.status(403).send({
+      success: false,
+      error: 'Super admin access required',
     });
   }
 };

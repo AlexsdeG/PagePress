@@ -1,11 +1,12 @@
-// PagePress v0.0.4 - 2025-11-30
-// Site settings management page
+// PagePress v0.0.19 - 2026-03-01
+// Site settings management page with super admin reset controls
 
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { api, type SiteSettings } from '@/lib/api';
+import { useAuthStore } from '@/stores/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -31,6 +32,16 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
 
 // Settings form schema
 const settingsSchema = z.object({
@@ -61,10 +72,18 @@ const settingsSchema = z.object({
 type SettingsFormData = z.infer<typeof settingsSchema>;
 
 export function Settings() {
+  const { user } = useAuthStore();
+  const isSuperAdmin = user?.role === 'super_admin';
+  
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  
+  // Reset dialog states
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [resetType, setResetType] = useState<'pages' | 'media' | 'database' | 'full' | null>(null);
+  const [resetting, setResetting] = useState(false);
 
   const form = useForm<SettingsFormData>({
     resolver: zodResolver(settingsSchema),
@@ -111,7 +130,6 @@ export function Settings() {
     loadSettings();
   }, [form]);
 
-  // Save settings
   const handleSave = async (data: SettingsFormData) => {
     try {
       setSaving(true);
@@ -127,6 +145,45 @@ export function Settings() {
       setError(err instanceof Error ? err.message : 'Failed to save settings');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleReset = async () => {
+    if (!resetType) return;
+
+    try {
+      setResetting(true);
+      setError(null);
+
+      let message = '';
+      switch (resetType) {
+        case 'pages':
+          await api.settings.reset.pages();
+          message = 'All pages have been deleted';
+          break;
+        case 'media':
+          await api.settings.reset.media();
+          message = 'All media have been deleted';
+          break;
+        case 'database':
+          await api.settings.reset.database();
+          message = 'Database has been reset';
+          break;
+        case 'full':
+          await api.settings.reset.full();
+          message = 'PagePress has been fully reset to fresh state';
+          break;
+      }
+
+      toast.success(message);
+      setResetDialogOpen(false);
+      setResetType(null);
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : 'Reset failed';
+      setError(errMsg);
+      toast.error(errMsg);
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -173,6 +230,7 @@ export function Settings() {
               <TabsTrigger value="seo">SEO</TabsTrigger>
               <TabsTrigger value="social">Social</TabsTrigger>
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
+              {isSuperAdmin && <TabsTrigger value="system">System</TabsTrigger>}
             </TabsList>
 
             {/* General Settings */}
@@ -473,6 +531,90 @@ export function Settings() {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            {/* System Settings (Super Admin Only) */}
+            {isSuperAdmin && (
+              <TabsContent value="system">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>System & Danger Zone</CardTitle>
+                    <CardDescription>
+                      Advanced system operations (Super Admin Only)
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <h3 className="font-semibold text-sm">Reset Operations</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        These operations are permanent and cannot be undone. Choose carefully:
+                      </p>
+
+                      <div className="space-y-3">
+                        <Button
+                          variant="destructive"
+                          onClick={() => {
+                            setResetType('pages');
+                            setResetDialogOpen(true);
+                          }}
+                          className="w-full justify-start"
+                        >
+                          Delete All Pages
+                        </Button>
+                        <p className="text-xs text-muted-foreground ml-4">
+                          Permanently deletes all pages but keeps media, users, and settings
+                        </p>
+
+                        <Button
+                          variant="destructive"
+                          onClick={() => {
+                            setResetType('media');
+                            setResetDialogOpen(true);
+                          }}
+                          className="w-full justify-start"
+                        >
+                          Delete All Media
+                        </Button>
+                        <p className="text-xs text-muted-foreground ml-4">
+                          Permanently deletes all uploaded media files but keeps pages
+                        </p>
+
+                        <Button
+                          variant="destructive"
+                          onClick={() => {
+                            setResetType('database');
+                            setResetDialogOpen(true);
+                          }}
+                          className="w-full justify-start"
+                        >
+                          Reset Database
+                        </Button>
+                        <p className="text-xs text-muted-foreground ml-4">
+                          Deletes all pages, media, and templates but keeps users and roles
+                        </p>
+
+                        <Button
+                          variant="destructive"
+                          onClick={() => {
+                            setResetType('full');
+                            setResetDialogOpen(true);
+                          }}
+                          className="w-full justify-start"
+                        >
+                          Factory Reset
+                        </Button>
+                        <p className="text-xs text-muted-foreground ml-4">
+                          Resets PagePress to fresh state (current session preserved)
+                        </p>
+                      </div>
+
+                      <p className="text-xs text-amber-600 dark:text-amber-400 mt-4 p-2 bg-amber-50 dark:bg-amber-950/20 rounded">
+                        💡 For a complete wipe including all users, run: <code className="font-mono">./reset-pagepress.sh</code>
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            )}
           </Tabs>
 
           {/* Save Button */}
@@ -483,6 +625,29 @@ export function Settings() {
           </div>
         </form>
       </Form>
+
+      {/* Reset Confirmation Dialog */}
+      <AlertDialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Reset</AlertDialogTitle>
+            <AlertDialogDescription>
+              {resetType === 'pages' && 'This will permanently delete all pages. This action cannot be undone.'}
+              {resetType === 'media' && 'This will permanently delete all media files. This action cannot be undone.'}
+              {resetType === 'database' && 'This will permanently delete all pages, media, templates, and settings. Users and roles will be preserved. This action cannot be undone.'}
+              {resetType === 'full' && 'This will reset PagePress to fresh state, deleting all content but preserving your current super admin session. This action cannot be undone.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogCancel disabled={resetting}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleReset}
+            disabled={resetting}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {resetting ? 'Resetting...' : 'Yes, reset now'}
+          </AlertDialogAction>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

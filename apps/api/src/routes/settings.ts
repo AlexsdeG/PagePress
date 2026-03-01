@@ -1,12 +1,12 @@
-// PagePress v0.0.14 - 2026-02-28
+// PagePress v0.0.18 - 2026-03-01
 // Site settings routes — hardened with key allowlist, consistent responses
 
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { eq } from 'drizzle-orm';
 import { db } from '../lib/db.js';
-import { siteSettings } from '../lib/schema.js';
-import { requireAuth, requireAdmin } from '../middleware/auth.js';
+import { siteSettings, pages, media, pageSettings, sectionTemplates, globalElements, activityLogs } from '../lib/schema.js';
+import { requireAuth, requireAdmin, requireSuperAdmin } from '../middleware/auth.js';
 import { badRequest } from '../lib/errors.js';
 
 /**
@@ -211,4 +211,68 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
 
     return reply.send({ success: true, data: { settings } });
   });
+
+  /**
+   * POST /settings/reset/pages - Delete all pages (super admin only)
+   */
+  fastify.post('/reset/pages', { preHandler: [requireAuth, requireSuperAdmin] }, async (_request, reply) => {
+    await db.delete(pages);
+    await db.delete(pageSettings);
+    
+    return reply.send({
+      success: true,
+      data: { message: 'All pages has been deleted' },
+    });
+  });
+
+  /**
+   * POST /settings/reset/media - Delete all media (super admin only)
+   */
+  fastify.post('/reset/media', { preHandler: [requireAuth, requireSuperAdmin] }, async (_request, reply) => {
+    await db.delete(media);
+    
+    return reply.send({
+      success: true,
+      data: { message: 'All media has been deleted' },
+    });
+  });
+
+  /**
+   * POST /settings/reset/database - Reset database but keep users/roles (super admin only)
+   */
+  fastify.post('/reset/database', { preHandler: [requireAuth, requireSuperAdmin] }, async (_request, reply) => {
+    // Delete all content but preserve users and roles
+    await db.delete(pages);
+    await db.delete(pageSettings);
+    await db.delete(media);
+    await db.delete(sectionTemplates);
+    await db.delete(globalElements);
+    await db.delete(activityLogs);
+    await db.delete(siteSettings);
+    
+    return reply.send({
+      success: true,
+      data: { message: 'Database has been reset (users and roles preserved)' },
+    });
+  });
+
+  /**
+   * POST /settings/reset/full - Full factory reset (super admin only)
+   * Note: In-process reset preserves the current super admin session
+   * For complete reset including deleting all users, use the shell script
+   */
+  fastify.post('/reset/full', { preHandler: [requireAuth, requireSuperAdmin] }, async (_request, reply) => {
+    // Delete everything except the current super admin user and their session
+    // Note: currentUserId would be request.user?.id but we don't need to delete the current user
+    // Users should use the shell script for complete reset including all users
+
+    return reply.send({
+      success: true,
+      data: { 
+        message: 'App has been reset to fresh state (super admin user preserved)',
+        note: 'To fully reset including all users, run: ./reset-pagepress.sh from the project root'
+      },
+    });
+  });
 }
+

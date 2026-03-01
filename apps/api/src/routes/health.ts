@@ -28,7 +28,7 @@ export async function healthRoutes(
       success: true,
       data: {
         status: dbHealthy ? 'ok' : 'error',
-        version: '0.0.18',
+        version: '0.0.19',
         timestamp: new Date().toISOString(),
         uptime: Math.floor((Date.now() - serverStartTime) / 1000),
         responseTimeMs,

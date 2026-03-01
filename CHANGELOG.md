@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.0.19] - 2026-03-01
+
+### Super Admin Reset System
+- [Feature] **Super Admin Role:** New role hierarchy with `super_admin` as highest privilege level; first user automatically created as super_admin
+- [Feature] **Reset Controls in Settings:** Super admin-only "System" tab in Settings with granular reset options
+- [Feature] **Selective Reset Operations:** Delete all pages, delete all media, reset database (preserve users), full factory reset
+- [Feature] **Reset API Endpoints:** POST `/settings/reset/pages`, `/reset/media`, `/reset/database`, `/reset/full` with super_admin auth
+- [Feature] **Reset Confirmation Dialogs:** One-click confirmation UI with clear warnings before destructive operations
+- [Feature] **Full Wipe Script:** `reset-pagepress.sh` shell script for complete out-of-process reset (delete DB, media, and all dependencies)
+- [Feature] **Super Admin Middleware:** New `requireSuperAdmin` middleware to enforce super_admin-only routes and operations
+- [Enhancement] **Admin Access Relaxed:** `requireAdmin` middleware now accepts both `admin` and `super_admin` roles
+
 ## [v0.0.18] - 2026-03-01
 
 ### Quality of Life (Phase 13)

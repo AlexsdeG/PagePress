@@ -134,17 +134,21 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
     const passwordHash = await hashPassword(password);
     const userId = randomUUID();
     const now = new Date();
-    const role = isFirstUser ? 'admin' : inviteRole;
 
-    await db.insert(users).values({
+    // Determine user role (super_admin for first user, otherwise from invite)
+    const userRole: string = isFirstUser ? 'super_admin' : inviteRole;
+
+    const newUser = {
       id: userId,
       username,
       email,
       passwordHash,
-      role,
+      role: userRole,
       createdAt: now,
       updatedAt: now,
-    });
+    };
+
+    await db.insert(users).values(newUser as any);
 
     // Mark invite as used
     if (inviteRecord) {
@@ -199,7 +203,7 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
     return reply.status(201).send({
       success: true,
       data: {
-        user: { id: userId, username, email, role },
+        user: { id: userId, username, email, role: userRole },
       },
     });
   });

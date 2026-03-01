@@ -3,7 +3,7 @@
 /**
  * User roles in the system
  */
-export type UserRole = 'admin' | 'editor' | 'viewer';
+export type UserRole = 'super_admin' | 'admin' | 'editor' | 'viewer';
 
 /**
  * User model interface (full, including password hash — internal use only)

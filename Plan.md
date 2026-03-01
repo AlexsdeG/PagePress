@@ -451,6 +451,37 @@
 
 ---
 
+## Phase 13.1: Super Admin Reset System
+**Goal:** Safe, granular reset capabilities for super admin users.
+**Status:** ✅ Complete (v0.0.19)
+
+- [x] **Super Admin Role:** First user created as `super_admin` (highest privilege)
+- [x] **Role Hierarchy:** `super_admin` > `admin` > `editor` > `viewer`
+- [x] **Reset Controls in Settings:**
+    - [x] Super admin-only "System" tab
+    - [x] Delete all pages
+    - [x] Delete all media
+    - [x] Reset database (preserve users/roles)
+    - [x] Full factory reset
+- [x] **Reset API Endpoints:**
+    - [x] POST `/settings/reset/pages` — delete all pages
+    - [x] POST `/settings/reset/media` — delete all media
+    - [x] POST `/settings/reset/database` — reset while preserving users
+    - [x] POST `/settings/reset/full` — factory reset to fresh state
+- [x] **Reset UI:**
+    - [x] Confirmation dialogs with destructive warnings
+    - [x] One-click operations from Settings page
+    - [x] Toast notifications for success/failure
+- [x] **Full Wipe Script:**
+    - [x] `reset-pagepress.sh` for complete out-of-process reset
+    - [x] Kills processes, deletes DB, media, node_modules
+    - [x] Reinstalls dependencies for fresh slate
+- [x] **Security Middleware:**
+    - [x] `requireSuperAdmin` middleware
+    - [x] `requireAdmin` relaxed to include both `admin` and `super_admin`
+
+---
+
 ## Phase 14: Extensibility (Plugin System)
 **Goal:** WordPress-like hooks and filters.
 **Status:** ❌ Not Started

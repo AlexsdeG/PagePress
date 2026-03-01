@@ -28,7 +28,7 @@ export const users = sqliteTable('users', {
   email: text('email').notNull().unique(),
   username: text('username').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
-  role: text('role', { enum: ['admin', 'editor', 'viewer'] }).default('editor').notNull(),
+  role: text('role', { enum: ['super_admin', 'admin', 'editor', 'viewer'] }).default('editor').notNull(),
   roleId: text('role_id').references(() => roles.id, { onDelete: 'set null' }),
   avatarUrl: text('avatar_url'),
   failedLoginAttempts: integer('failed_login_attempts').default(0).notNull(),
